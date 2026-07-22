@@ -6,3 +6,6 @@
 
 [functions."send-hydration-reminder"]
   schedule = "0 * * * *"
+
+[functions."send-weekly-tracking-reminder"]
+  schedule = "0 * * * *"

@@ -218,6 +218,39 @@
   .phase-ovulatoire{ background: linear-gradient(135deg,#D9A441,#C98A2E); }
   .phase-luteale{ background: linear-gradient(135deg,#8D6F3E,#6B5330); }
 
+  /* ---------- TRACKER ---------- */
+  .tracker-message{
+    background: linear-gradient(135deg, #FBF0DD 0%, #F4E4E2 100%);
+    border-radius:18px; padding:18px 20px; margin-bottom:20px;
+    border-left: 4px solid var(--gold-deep);
+  }
+  .tracker-message p{ margin:0; font-family:'Lora'; font-style:italic; font-size:14.5px; line-height:1.6; color:var(--brown); }
+  .segmented{
+    display:flex; background:var(--ivoire); border-radius:14px; padding:4px; gap:4px; margin-bottom:12px;
+  }
+  .segmented button{
+    flex:1; border:none; background:transparent; padding:10px 6px; border-radius:11px;
+    font-family:'Poppins'; font-weight:600; font-size:13px; color:var(--taupe); cursor:pointer;
+  }
+  .segmented button.active{ background:var(--white); color:var(--brown); box-shadow:var(--shadow-sm); }
+  .measure-pills{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .measure-pills button{
+    border:2px solid var(--ivoire); background:var(--white); color:var(--taupe);
+    font-family:'Poppins'; font-weight:600; font-size:12.5px; padding:8px 13px; border-radius:99px; cursor:pointer;
+  }
+  .measure-pills button.active{ border-color:var(--gold-deep); color:var(--brown); background:var(--ivoire); }
+  .tracker-chart-card{
+    background:var(--white); border-radius:18px; padding:16px 14px 8px; box-shadow:var(--shadow-sm); margin-bottom:18px;
+  }
+  .tracker-chart-empty{ text-align:center; padding:30px 10px; color:var(--taupe); font-size:13.5px; }
+  .tracker-week-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .tracker-week-row{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--white); border-radius:12px; padding:10px 14px; box-shadow:var(--shadow-sm); font-size:13px;
+  }
+  .tracker-week-row strong{ color:var(--brown); }
+  .tracker-week-row span{ color:var(--taupe); }
+
   .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:6px; margin: 14px 0 20px; }
   .cal-day{
     aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center;
@@ -704,6 +737,87 @@
     </div>
   </div>
 
+  <!-- TRACKER : vue graphique -->
+  <div class="card" id="screen-tracker" style="display:none;">
+    <button onclick="closeTrackerScreen()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div class="hero" style="margin-bottom:6px;">
+      <div class="big-emoji">📊</div>
+      <div class="subtitle">Ta progression</div>
+      <h1 style="font-size:24px;">Ton <em>Tracker</em></h1>
+    </div>
+
+    <div class="tracker-message">
+      <p>⚖️ Le poids n'est qu'un nombre sur la balance. L'important, c'est de te sentir mieux dans ton corps, semaine après semaine. Ce suivi est là pour t'accompagner avec douceur, pas pour te juger 🌸</p>
+    </div>
+
+    <div class="segmented" id="tracker-metric-toggle">
+      <button class="active" data-metric="weight" onclick="setTrackerMetric('weight')">⚖️ Poids</button>
+      <button data-metric="measurements" onclick="setTrackerMetric('measurements')">📏 Mensurations</button>
+    </div>
+
+    <div class="measure-pills" id="tracker-measure-pills" style="display:none;">
+      <button class="active" data-m="waist" onclick="setTrackerSubMetric('waist')">Tour de taille</button>
+      <button data-m="hip" onclick="setTrackerSubMetric('hip')">Tour de hanches</button>
+      <button data-m="arm" onclick="setTrackerSubMetric('arm')">Tour de bras</button>
+      <button data-m="thigh" onclick="setTrackerSubMetric('thigh')">Tour de cuisses</button>
+    </div>
+
+    <div class="segmented" id="tracker-view-toggle">
+      <button class="active" data-view="weekly" onclick="setTrackerView('weekly')">Semaine (S1-S12)</button>
+      <button data-view="monthly" onclick="setTrackerView('monthly')">Mois (M1-M3)</button>
+    </div>
+
+    <div class="tracker-chart-card">
+      <div id="tracker-chart-container"></div>
+    </div>
+
+    <div class="tracker-week-list" id="tracker-week-list"></div>
+
+    <div class="nav-row">
+      <button class="btn btn-primary btn-full" onclick="openTrackerForm()">+ Ajouter le suivi de cette semaine</button>
+    </div>
+  </div>
+
+  <!-- TRACKER : formulaire hebdomadaire -->
+  <div class="card" id="screen-tracker-form" style="display:none;">
+    <button onclick="closeTrackerForm()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div class="hero" style="margin-bottom:6px;">
+      <div class="big-emoji">📝</div>
+      <h1 style="font-size:22px;">Mon suivi de la <em>semaine</em></h1>
+    </div>
+
+    <div class="field">
+      <label>Numéro de semaine de la cure (1 à 12)</label>
+      <input type="number" id="tracker-week-number" min="1" max="12" placeholder="Ex : 1">
+    </div>
+    <div class="field">
+      <label>Poids (kg)</label>
+      <input type="number" step="0.1" id="tracker-weight" placeholder="Ex : 62.5">
+    </div>
+    <div class="field">
+      <label>Tour de taille (cm)</label>
+      <input type="number" step="0.1" id="tracker-waist" placeholder="Ex : 74">
+    </div>
+    <div class="field">
+      <label>Tour de hanches (cm)</label>
+      <input type="number" step="0.1" id="tracker-hip" placeholder="Ex : 96">
+    </div>
+    <div class="field">
+      <label>Tour de bras (cm)</label>
+      <input type="number" step="0.1" id="tracker-arm" placeholder="Ex : 27">
+    </div>
+    <div class="field">
+      <label>Tour de cuisses (cm)</label>
+      <input type="number" step="0.1" id="tracker-thigh" placeholder="Ex : 54">
+    </div>
+
+    <p id="tracker-form-msg" style="display:none; font-size:13.5px; margin:4px 0 14px;"></p>
+
+    <div class="nav-row">
+      <button class="btn btn-primary btn-full" onclick="submitTrackerForm()">Valider mon suivi</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- MENU LATÉRAL -->
@@ -713,6 +827,7 @@
   <div class="drawer-items">
     <button onclick="openAccountFromMenu()">👤 Mon compte</button>
     <button onclick="restartQuizFromMenu()">🔄 Refaire le questionnaire</button>
+    <button onclick="openTrackerFromMenu()">📊 Tracker</button>
     <button onclick="enablePushNotifications()">🔔 Activer les rappels hydratation</button>
     <button onclick="contactAdvisorFromMenu()">📅 Mon rdv de suivi hebdo</button>
   </div>
@@ -998,6 +1113,244 @@ function closeAccountScreen(){
   document.getElementById("screen-account").style.display = "none";
   document.getElementById("screen-account-pwd").style.display = "none";
   document.getElementById("screen-result").style.display = "block";
+}
+
+/* ============================================================
+   TRACKER — poids & mensurations
+   ============================================================ */
+let trackerData = [];
+let trackerMetric = "weight";      // "weight" | "measurements"
+let trackerSubMetric = "waist";    // "waist" | "hip" | "arm" | "thigh"
+let trackerView = "weekly";        // "weekly" | "monthly"
+
+const TRACKER_LABELS = {
+  weight: "Poids (kg)",
+  waist: "Tour de taille (cm)",
+  hip: "Tour de hanches (cm)",
+  arm: "Tour de bras (cm)",
+  thigh: "Tour de cuisses (cm)"
+};
+
+function openTrackerFromMenu(){
+  closeMenu();
+  document.getElementById("screen-result").style.display = "none";
+  document.getElementById("screen-account").style.display = "none";
+  document.getElementById("screen-account-pwd").style.display = "none";
+  document.getElementById("screen-tracker").style.display = "block";
+  loadTrackerData();
+}
+
+function closeTrackerScreen(){
+  document.getElementById("screen-tracker").style.display = "none";
+  document.getElementById("screen-result").style.display = "block";
+}
+
+async function loadTrackerData(){
+  trackerData = [];
+  try{
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if(!userData || !userData.user) return;
+    const { data, error } = await supabaseClient
+      .from("body_tracking")
+      .select("*")
+      .eq("user_id", userData.user.id)
+      .order("week_number", { ascending: true });
+    if(!error && data) trackerData = data;
+  }catch(e){
+    console.error("Erreur chargement tracker:", e);
+  }
+  renderTrackerChart();
+  renderTrackerWeekList();
+}
+
+function setTrackerMetric(metric){
+  trackerMetric = metric;
+  document.querySelectorAll("#tracker-metric-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.metric===metric));
+  document.getElementById("tracker-measure-pills").style.display = (metric==="measurements") ? "flex" : "none";
+  renderTrackerChart();
+}
+
+function setTrackerSubMetric(m){
+  trackerSubMetric = m;
+  document.querySelectorAll("#tracker-measure-pills button").forEach(b=>b.classList.toggle("active", b.dataset.m===m));
+  renderTrackerChart();
+}
+
+function setTrackerView(view){
+  trackerView = view;
+  document.querySelectorAll("#tracker-view-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.view===view));
+  renderTrackerChart();
+}
+
+function trackerCurrentKey(){
+  return trackerMetric === "weight" ? "weight" : trackerSubMetric;
+}
+
+function renderTrackerChart(){
+  const key = trackerCurrentKey();
+  const container = document.getElementById("tracker-chart-container");
+
+  // construit un tableau de 12 valeurs (semaine 1 à 12), null si pas de donnée
+  const weeklyValues = Array(12).fill(null);
+  trackerData.forEach(row=>{
+    if(row.week_number>=1 && row.week_number<=12){
+      weeklyValues[row.week_number-1] = row[key];
+    }
+  });
+
+  let values, labels;
+  if(trackerView === "weekly"){
+    values = weeklyValues;
+    labels = values.map((_,i)=>"S"+(i+1));
+  }else{
+    // vue mensuelle : moyenne des semaines 1-4 / 5-8 / 9-12
+    values = [0,1,2].map(m=>{
+      const chunk = weeklyValues.slice(m*4, m*4+4).filter(v=>v!==null && v!==undefined);
+      if(chunk.length===0) return null;
+      return chunk.reduce((a,b)=>a+b,0) / chunk.length;
+    });
+    labels = ["M1","M2","M3"];
+  }
+
+  const known = values.filter(v=>v!==null && v!==undefined);
+  if(known.length === 0){
+    container.innerHTML = `<div class="tracker-chart-empty">Pas encore de données pour "${TRACKER_LABELS[key]}".<br>Ajoute ton premier suivi ci-dessous 🌸</div>`;
+    return;
+  }
+
+  const W = 320, H = 160, padX = 12, padY = 18;
+  const min = Math.min(...known), max = Math.max(...known);
+  const range = (max - min) || 1;
+  const stepX = (W - padX*2) / (values.length - 1 || 1);
+
+  const points = values.map((v,i)=>{
+    if(v===null || v===undefined) return null;
+    const x = padX + i*stepX;
+    const y = padY + (H - padY*2) * (1 - (v - min)/range);
+    return [x,y];
+  });
+
+  // trace uniquement les segments entre points consécutifs connus
+  let pathD = "";
+  let started = false;
+  points.forEach(p=>{
+    if(!p){ started = false; return; }
+    pathD += (started ? " L " : " M ") + p[0] + " " + p[1];
+    started = true;
+  });
+
+  const dots = points.map((p,i)=> p ? `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="var(--gold-deep)" />` : "").join("");
+  const labelsRow = labels.map((l,i)=>{
+    const x = padX + i*stepX;
+    return `<text x="${x}" y="${H-2}" font-size="8.5" fill="var(--taupe)" text-anchor="middle" font-family="Poppins">${l}</text>`;
+  }).join("");
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">
+      <path d="${pathD}" fill="none" stroke="var(--gold-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}
+      ${labelsRow}
+    </svg>
+    <div style="text-align:center; font-size:11.5px; color:var(--taupe); margin-top:2px;">${TRACKER_LABELS[key]}</div>
+  `;
+}
+
+function renderTrackerWeekList(){
+  const list = document.getElementById("tracker-week-list");
+  if(trackerData.length === 0){ list.innerHTML = ""; return; }
+  const rows = [...trackerData].sort((a,b)=>b.week_number-a.week_number).map(row=>{
+    const parts = [];
+    if(row.weight!=null) parts.push(row.weight+" kg");
+    if(row.waist!=null) parts.push("taille "+row.waist+"cm");
+    if(row.hip!=null) parts.push("hanches "+row.hip+"cm");
+    if(row.arm!=null) parts.push("bras "+row.arm+"cm");
+    if(row.thigh!=null) parts.push("cuisses "+row.thigh+"cm");
+    return `<div class="tracker-week-row"><strong>Semaine ${row.week_number}</strong><span>${parts.join(" · ")}</span></div>`;
+  }).join("");
+  list.innerHTML = rows;
+}
+
+function openTrackerForm(){
+  document.getElementById("screen-tracker").style.display = "none";
+  document.getElementById("screen-tracker-form").style.display = "block";
+  document.getElementById("tracker-form-msg").style.display = "none";
+  ["tracker-week-number","tracker-weight","tracker-waist","tracker-hip","tracker-arm","tracker-thigh"].forEach(id=>{
+    document.getElementById(id).value = "";
+  });
+  const maxWeek = trackerData.reduce((m,r)=>Math.max(m, r.week_number), 0);
+  document.getElementById("tracker-week-number").value = Math.min(maxWeek+1, 12);
+}
+
+function closeTrackerForm(){
+  document.getElementById("screen-tracker-form").style.display = "none";
+  document.getElementById("screen-tracker").style.display = "block";
+}
+
+async function submitTrackerForm(){
+  const msgEl = document.getElementById("tracker-form-msg");
+  const showMsg = (text, isError)=>{
+    msgEl.textContent = text;
+    msgEl.style.display = "block";
+    msgEl.style.color = isError ? "#8a3b34" : "#4C342E";
+  };
+
+  const weekNumber = parseInt(document.getElementById("tracker-week-number").value, 10);
+  if(!weekNumber || weekNumber<1 || weekNumber>12){
+    showMsg("Merci d'indiquer un numéro de semaine entre 1 et 12.", true);
+    return;
+  }
+
+  if(trackerData.some(r=>r.week_number === weekNumber)){
+    showMsg(`Tu as déjà renseigné tes infos pour la semaine ${weekNumber} 🌸`, true);
+    return;
+  }
+
+  const val = (id)=>{
+    const v = document.getElementById(id).value;
+    return v==="" ? null : parseFloat(v);
+  };
+
+  const { data: userData } = await supabaseClient.auth.getUser();
+  if(!userData || !userData.user){
+    showMsg("Erreur : merci de te reconnecter.", true);
+    return;
+  }
+
+  const { error } = await supabaseClient.from("body_tracking").insert({
+    user_id: userData.user.id,
+    week_number: weekNumber,
+    weight: val("tracker-weight"),
+    waist: val("tracker-waist"),
+    hip: val("tracker-hip"),
+    arm: val("tracker-arm"),
+    thigh: val("tracker-thigh")
+  });
+
+  if(error){
+    if(error.code === "23505"){
+      showMsg(`Tu as déjà renseigné tes infos pour la semaine ${weekNumber} 🌸`, true);
+    }else{
+      showMsg("Une erreur est survenue, réessaie dans un instant.", true);
+      console.error(error);
+    }
+    return;
+  }
+
+  await loadTrackerData();
+  closeTrackerForm();
+}
+
+function maybeOpenTrackerFromNotification(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("openTracker") === "1" && !window.__trackerAutoOpened){
+    window.__trackerAutoOpened = true;
+    setTimeout(async ()=>{
+      document.getElementById("screen-result").style.display = "none";
+      document.getElementById("screen-tracker").style.display = "block";
+      await loadTrackerData();
+      openTrackerForm();
+    }, 300);
+  }
 }
 
 function restartQuizFromMenu(){
@@ -1446,6 +1799,8 @@ function showResult(){
   } else {
     safetyBlock.style.display = "none";
   }
+
+  maybeOpenTrackerFromNotification();
 }
 
 /* ============================================================

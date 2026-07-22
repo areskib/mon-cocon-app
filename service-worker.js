@@ -76,19 +76,24 @@ self.addEventListener("push", (event) => {
     body: data.body || "Petit rappel tout en douceur : pense à boire un verre d'eau !",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
-    tag: "hydratation-reminder"
+    tag: data.tag || "hydratation-reminder",
+    data: data
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const targetUrl = event.notification.data && event.notification.data.type === "weekly-tracking"
+    ? "/index.html?openTracker=1"
+    : "/";
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
       for(const client of clientList){
+        if("navigate" in client) client.navigate(targetUrl);
         if("focus" in client) return client.focus();
       }
-      if(clients.openWindow) return clients.openWindow("/");
+      if(clients.openWindow) return clients.openWindow(targetUrl);
     })
   );
 });
