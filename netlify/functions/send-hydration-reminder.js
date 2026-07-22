@@ -3,8 +3,12 @@ const webpush = require("web-push");
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.error("VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquant(e) dans les variables d'environnement Netlify.");
+}
+
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT,
+  process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
