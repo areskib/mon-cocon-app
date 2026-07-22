@@ -499,9 +499,9 @@
 
     <!-- RESULT -->
     <div class="card" id="screen-result" style="display:none;">
-      <div class="encouragement">
-        <div class="tag">Message pour toi</div>
-        <p id="res-encouragement"></p>
+      <div class="result-block">
+        <h3>📋 Ton profil</h3>
+        <div class="pill-row" id="res-profil"></div>
       </div>
 
       <h2 style="font-size:20px; margin-top:0;">Ton programme individualisé · 12 semaines 🌸</h2>
@@ -1357,9 +1357,13 @@ function showResult(){
   document.getElementById("screen-profile").style.display="none";
   document.getElementById("screen-result").style.display="block";
 
-  // message positif aléatoire
-  document.getElementById("res-encouragement").textContent =
-    ENCOURAGEMENTS[Math.floor(Math.random()*ENCOURAGEMENTS.length)];
+  // récap concis du profil (âge / poids / taille)
+  const profileData = loadCycleData() || {};
+  const profilPills = [];
+  if(profileData.age) profilPills.push(`<span class="pill">🎂 ${profileData.age} ans</span>`);
+  if(profileData.weight) profilPills.push(`<span class="pill">⚖️ ${profileData.weight} kg</span>`);
+  if(profileData.height) profilPills.push(`<span class="pill">📏 ${profileData.height} cm</span>`);
+  document.getElementById("res-profil").innerHTML = profilPills.join("") || "<span class='pill'>Non renseigné</span>";
 
   const qObj = QUESTIONS[0];
   const objIdx = answers.objectif;
