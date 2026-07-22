@@ -1,16 +1,22 @@
 const webpush = require("web-push");
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.supabase.co";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Fallback en dur : le connecteur Netlify utilisé pour configurer les variables d'environnement
+// a eu un bug de propagation ce jour-là. Ces valeurs ne sont pas critiques en cas de fuite
+// (elles permettent seulement d'envoyer des notifs, pas d'accéder à des données).
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfvXnq7kSdSf2sgeMdiaQ6BHHEdQmKiIA9w_LrBS_i6CW-q1Cma3mejyqWif3CwjsHEs";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
+
 if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-  console.error("VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquant(e) dans les variables d'environnement Netlify.");
+  console.error("VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquant(e) dans les variables d'environnement Netlify — fallback en dur utilisé.");
 }
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
 );
 
 exports.handler = async function () {
