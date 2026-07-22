@@ -67,3 +67,28 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try{ data = event.data ? event.data.json() : {}; }catch(e){}
+  const title = data.title || "Mon Cocon 💧";
+  const options = {
+    body: data.body || "Petit rappel tout en douceur : pense à boire un verre d'eau !",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: "hydratation-reminder"
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for(const client of clientList){
+        if("focus" in client) return client.focus();
+      }
+      if(clients.openWindow) return clients.openWindow("/");
+    })
+  );
+});
