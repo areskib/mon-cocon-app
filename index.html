@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Bilan Santé — Construis ta liberté</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4C342E">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mon Cocon">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivoire:#F4E4E2;
+    --ivoire-2:#FBF3F1;
+    --gold:#E4C784;
+    --gold-deep:#C9A96E;
+    --taupe:#8D6F3E;
+    --brown:#4C342E;
+    --white:#FFFFFF;
+    --shadow: 0 10px 30px rgba(76,52,46,0.10);
+    --shadow-sm: 0 4px 14px rgba(76,52,46,0.08);
+    --radius: 20px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Poppins', sans-serif;
+    background: linear-gradient(180deg, var(--ivoire-2) 0%, var(--ivoire) 100%);
+    color: var(--brown);
+    min-height:100vh;
+  }
+  h1,h2,h3,.serif{ font-family:'Lora', serif; }
+  .app{
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    min-height:100vh;
+  }
+
+  /* ---------- NAV ---------- */
+  .app-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom: 24px;
+    position: sticky;
+    top: 12px;
+    z-index: 50;
+  }
+  .tabbar{
+    display:flex;
+    gap:8px;
+    background: var(--white);
+    border-radius: 999px;
+    padding:6px;
+    box-shadow: var(--shadow-sm);
+  }
+  #menu-toggle-btn{
+    flex-shrink:0;
+    width:44px; height:44px;
+    border-radius:50%;
+    border:none;
+    background:var(--white);
+    box-shadow: var(--shadow-sm);
+    font-size:18px;
+    color:var(--brown);
+    cursor:pointer;
+  }
+
+  /* MENU LATÉRAL */
+  #menu-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.35);
+    z-index:200;
+  }
+  #side-drawer{
+    position:fixed; top:0; right:0; bottom:0;
+    width:78%; max-width:300px;
+    background:var(--white);
+    z-index:201;
+    transform:translateX(100%);
+    transition:transform .25s ease;
+    display:flex; flex-direction:column;
+    padding:24px 18px;
+    box-shadow:-8px 0 24px rgba(0,0,0,.15);
+  }
+  #side-drawer.open{ transform:translateX(0); }
+  #menu-overlay.open{ display:block; }
+  .drawer-close{
+    align-self:flex-end;
+    background:none; border:none;
+    font-size:20px; color:var(--taupe);
+    cursor:pointer; margin-bottom:20px;
+  }
+  .drawer-items{ display:flex; flex-direction:column; gap:6px; flex:1; }
+  .drawer-items button{
+    display:flex; align-items:center; gap:12px;
+    text-align:left;
+    background:none; border:none;
+    padding:14px 8px;
+    font-family:'Poppins'; font-weight:600; font-size:14.5px;
+    color:var(--brown);
+    border-radius:12px;
+    cursor:pointer;
+  }
+  .drawer-items button:active{ background:var(--ivoire); }
+  .drawer-logout{
+    background:none; border:1.5px solid #8a3b34;
+    color:#8a3b34; font-family:'Poppins'; font-weight:700; font-size:14px;
+    padding:13px; border-radius:14px; cursor:pointer;
+  }
+  .tabbtn{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:11px 6px;
+    border-radius:999px;
+    font-family:'Poppins';
+    font-weight:600;
+    font-size:12.5px;
+    color: var(--taupe);
+    cursor:pointer;
+    transition: all .25s ease;
+    white-space:nowrap;
+  }
+  .tabbtn.active{
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(201,169,110,0.4);
+  }
+
+  .view{ display:none; animation: fadeIn .4s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- CARD ---------- */
+  .card{
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- PROGRESS ---------- */
+  .progress-wrap{ margin-bottom: 18px; }
+  .progress-label{
+    font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    color: var(--taupe); margin-bottom:8px; display:block;
+  }
+  .progress-bar{ height:6px; border-radius:99px; background: var(--ivoire); overflow:hidden; }
+  .progress-fill{ height:100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); border-radius:99px; transition: width .4s ease; }
+
+  .eyebrow{ color:var(--taupe); font-weight:600; font-size:13px; letter-spacing:.05em; text-transform:uppercase; margin-bottom:6px;}
+  .q-title{ font-size:22px; margin: 0 0 6px; line-height:1.3; }
+  .q-sub{ color:var(--taupe); font-size:14px; margin: 0 0 20px; }
+
+  .option{
+    display:flex; align-items:flex-start; gap:14px;
+    padding:16px; border-radius:16px; border:2px solid var(--ivoire);
+    background: var(--ivoire-2);
+    margin-bottom:12px; cursor:pointer; transition: all .2s ease;
+  }
+  .option:hover{ border-color: var(--gold); }
+  .option.selected{ border-color: var(--gold-deep); background: linear-gradient(135deg, #FBF0DD, #FBF3F1); box-shadow: var(--shadow-sm); }
+  .option .emoji{ font-size:24px; line-height:1; }
+  .option .txt strong{ display:block; font-size:15px; margin-bottom:2px; }
+  .option .txt span{ font-size:13px; color: var(--taupe); }
+
+  .nav-row{ display:flex; gap:12px; margin-top:22px; }
+  .btn{
+    border:none; border-radius:14px; padding:14px 20px; font-family:'Poppins'; font-weight:600;
+    font-size:15px; cursor:pointer; transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform: scale(.97); }
+  .btn-primary{
+    flex:1; background: linear-gradient(135deg, var(--brown), #3a2721); color:var(--gold);
+    box-shadow: 0 6px 18px rgba(76,52,46,0.25);
+  }
+  .btn-ghost{ background: var(--ivoire); color: var(--brown); width:52px; }
+  .btn-full{ width:100%; }
+
+  .hero{ text-align:center; }
+  .hero .big-emoji{ font-size:44px; margin-bottom:10px; }
+  .hero h1{ font-size: 30px; margin: 0 0 4px; }
+  .hero .subtitle{ color:var(--taupe); font-weight:500; font-size:13px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:20px;}
+  .hero p{ font-size:15px; line-height:1.6; margin: 16px 0; }
+  .signature{ font-family:'Lora'; font-style:italic; color:var(--taupe); margin-top:18px; }
+
+  /* ---------- RESULT ---------- */
+  .encouragement{
+    background: linear-gradient(135deg, #FBF0DD 0%, #F4E4E2 100%);
+    border-radius:18px; padding:20px; margin-bottom:20px;
+    border-left: 4px solid var(--gold-deep);
+  }
+  .encouragement .tag{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--taupe); margin-bottom:6px;}
+  .encouragement p{ margin:0; font-family:'Lora'; font-style:italic; font-size:16px; line-height:1.55; color:var(--brown); }
+
+  .result-block{ margin-bottom:18px; }
+  .result-block h3{ font-size:16px; margin:0 0 8px; display:flex; align-items:center; gap:8px;}
+  .pill-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pill{ background: var(--ivoire); color: var(--brown); font-size:13px; font-weight:500; padding:7px 13px; border-radius:99px; }
+  .note-box{ background:#FDF6E9; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.6; color:#5c4a2a; }
+  .safety-box{ background:#FBEAE8; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.6; color:#8a3b34; border-left:4px solid #C97567;}
+
+  /* ---------- CYCLE TAB ---------- */
+  .cycle-setup input, .cycle-setup label{ display:block; width:100%; }
+  .field{ margin-bottom:16px; }
+  .field label{ font-size:13px; font-weight:600; color:var(--taupe); margin-bottom:6px; }
+  .field input{
+    width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire);
+    font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);
+  }
+  .field input:focus{ outline:none; border-color:var(--gold-deep); }
+
+  .phase-hero{
+    text-align:center; border-radius:18px; padding:26px 20px; margin-bottom:20px; color:var(--white);
+  }
+  .phase-hero .emoji{ font-size:38px; }
+  .phase-hero h2{ margin:6px 0 2px; font-size:22px; }
+  .phase-hero .day-count{ font-size:13px; opacity:.9; font-weight:500; }
+
+  .phase-menstruelle{ background: linear-gradient(135deg,#B5535B,#8D3A42); }
+  .phase-folliculaire{ background: linear-gradient(135deg,#C9A96E,#B08D4F); }
+  .phase-ovulatoire{ background: linear-gradient(135deg,#D9A441,#C98A2E); }
+  .phase-luteale{ background: linear-gradient(135deg,#8D6F3E,#6B5330); }
+
+  .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:6px; margin: 14px 0 20px; }
+  .cal-day{
+    aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:600; color:var(--brown); background: var(--ivoire-2); position:relative;
+  }
+  .cal-day.pad{ background:transparent; }
+  .cal-day.m{ background:#F1C9CC; }
+  .cal-day.f{ background:#F2E4C4; }
+  .cal-day.o{ background:#F6D896; color:var(--white); }
+  .cal-day.l{ background:#E8DFC6; }
+  .cal-day.today{ box-shadow: inset 0 0 0 2px var(--brown); }
+  .cal-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:11.5px; color:var(--taupe); margin-bottom:20px; }
+  .cal-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  .section-title{ font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--taupe); margin: 22px 0 10px; }
+  .reco-card{ background: var(--ivoire-2); border-radius:14px; padding:16px; margin-bottom:10px; }
+  .reco-card .reco-title{ font-weight:600; font-size:14.5px; margin-bottom:4px; }
+  .reco-card .reco-desc{ font-size:13px; color:var(--taupe); line-height:1.5; }
+
+  .next-periods{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .next-period-row{ display:flex; justify-content:space-between; background:var(--ivoire-2); border-radius:12px; padding:10px 14px; font-size:13.5px; }
+  .next-period-row b{ color: var(--brown); }
+
+  .link-row{ text-align:center; margin-top:18px; }
+  .link-row button{ background:none; border:none; color:var(--taupe); text-decoration:underline; font-family:'Poppins'; font-size:13px; cursor:pointer; }
+
+  /* SPLASH */
+  #screen-splash{ cursor:pointer; }
+  #screen-splash .splash-phrase{ font-family:'Lora'; font-style:italic; font-size:22px; line-height:1.5; color:var(--brown); margin:18px 0 6px; min-height:80px; display:flex; align-items:center; justify-content:center; }
+  #screen-splash .splash-tap{ font-size:12px; color:var(--taupe); margin-top:24px; opacity:.7; }
+
+  /* CHOICE */
+  .choice-actions{ display:flex; flex-direction:column; gap:10px; margin-top:22px; }
+  .btn-secondary{ background:var(--ivoire); color:var(--brown); border:1.5px solid var(--taupe); font-family:'Poppins'; font-weight:600; font-size:15px; border-radius:14px; padding:15px; cursor:pointer; }
+
+  /* INSTALL BANNER */
+  #install-banner{ display:none; position:fixed; left:16px; right:16px; bottom:16px; background:var(--brown); color:#fff; border-radius:16px; padding:14px 16px; font-family:'Poppins'; font-size:13.5px; z-index:999; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  #install-banner .install-row{ display:flex; align-items:center; gap:12px; }
+  #install-banner .install-txt{ flex:1; line-height:1.4; }
+  #install-banner button.install-btn{ background:#fff; color:var(--brown); border:none; border-radius:10px; padding:9px 14px; font-weight:700; font-size:13px; font-family:'Poppins'; cursor:pointer; white-space:nowrap; }
+  #install-banner .install-close{ background:none; border:none; color:#fff; opacity:.6; font-size:18px; cursor:pointer; padding:0 4px; }
+
+
+  .empty-illustration{ text-align:center; padding: 10px 0 6px; }
+  .empty-illustration .emoji{ font-size:40px; }
+
+  .kcal-range{ display:flex; align-items:baseline; gap:8px; margin-bottom:10px; }
+  .kcal-range .num{ font-family:'Lora'; font-size:32px; font-weight:600; color:var(--brown); }
+  .kcal-range .unit{ font-size:13px; color:var(--taupe); font-weight:600; }
+  .kcal-modifier{ display:inline-block; font-size:12px; font-weight:600; background:var(--ivoire); color:var(--taupe); padding:4px 10px; border-radius:99px; margin-bottom:10px; }
+  .kcal-note{ font-size:12.5px; color:var(--taupe); line-height:1.55; }
+
+  .day-card{ background: var(--ivoire-2); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .day-card.today{ border:2px solid var(--gold-deep); background: linear-gradient(135deg,#FBF0DD,#FBF3F1); }
+  .day-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .day-card-head .day-name{ font-family:'Lora'; font-weight:600; font-size:15px; }
+  .day-card-head .day-phase{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 10px; border-radius:99px; color:var(--white); }
+  .meal-row{ display:flex; gap:10px; margin-bottom:7px; font-size:13px; line-height:1.45; }
+  .meal-row .meal-label{ font-weight:700; color:var(--taupe); min-width:78px; flex-shrink:0; }
+
+  ::selection{ background: var(--gold); color:var(--white); }
+
+  /* ---------- RESPONSIVE : petits écrans (iPhone SE, mini, Android compacts) ---------- */
+  @media (max-width: 380px){
+    .app{ padding: 20px 14px 60px; }
+    .app-header{ gap:6px; }
+    .tabbar{ padding:5px; gap:4px; }
+    .tabbtn{ font-size:10.5px; padding:9px 3px; }
+    #menu-toggle-btn{ width:38px; height:38px; font-size:16px; }
+    .hero h1{ font-size:25px; }
+    .hero .big-emoji{ font-size:36px; }
+  }
+  @media (max-width: 340px){
+    .tabbtn{ font-size:9.5px; padding:8px 2px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header" id="app-header" style="display:none;">
+    <div class="tabbar" style="flex:1; margin-bottom:0;">
+      <button class="tabbtn active" data-tab="bilan" onclick="switchTab('bilan')">🌿 Bilan</button>
+      <button class="tabbtn" data-tab="cycle" onclick="switchTab('cycle')">🌙 Nutrition</button>
+      <button class="tabbtn" data-tab="training" onclick="switchTab('training')">🏋️ Sport</button>
+      <button class="tabbtn" data-tab="boost" onclick="switchTab('boost')">✨ Boost</button>
+    </div>
+    <button id="menu-toggle-btn" onclick="openMenu()" aria-label="Menu">☰</button>
+  </div>
+
+  <!-- ============ TAB 1 : BILAN (quiz existant) ============ -->
+  <div class="view active" id="view-bilan">
+
+    <!-- SPLASH -->
+    <div class="card" id="screen-splash" onclick="advanceFromSplash()">
+      <div class="hero">
+        <div class="big-emoji">🌿</div>
+        <div class="splash-phrase" id="splash-phrase-text"></div>
+        <div class="splash-tap">Touche l'écran pour continuer</div>
+      </div>
+    </div>
+
+    <!-- CHOIX : connexion ou création de compte -->
+    <div class="card" id="screen-choice" style="display:none;">
+      <div class="hero">
+        <div class="big-emoji">🌿</div>
+        <div class="subtitle">Programme personnalisé · 12 semaines</div>
+        <h1>Mon Bilan <em>Santé</em></h1>
+        <p>Bienvenue dans ton bilan <strong>Santé &amp; Vitalité</strong>.<br>En 5 questions, je crée ton programme personnalisé pour que tu te sentes bien dans ton corps, dans ton miroir, et dans ta vie.</p>
+        <p>Être en énergie, épanouie et bien dans son corps — ça se construit une assiette à la fois. 🌿</p>
+        <div class="signature">— Lindsay</div>
+        <div class="choice-actions">
+          <button class="btn btn-primary" onclick="startQuiz()">Je crée mon compte ✨</button>
+          <button class="btn-secondary" onclick="showLoginScreen()">Se connecter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNEXION -->
+    <div class="card" id="screen-login" style="display:none;">
+      <div class="hero">
+        <div class="big-emoji">🔐</div>
+        <div class="subtitle">Ton espace personnel</div>
+        <h1>Fière de <em>te revoir</em></h1>
+        <p>Connecte-toi pour retrouver ton programme personnalisé.</p>
+      </div>
+
+      <form id="login-form" autocomplete="on" onsubmit="event.preventDefault(); attemptLogin();">
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" name="username" autocomplete="username" placeholder="ton@email.com">
+        </div>
+        <div class="field">
+          <label for="login-password">Mot de passe</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <p id="login-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:8px 0 0;"></p>
+        <div class="nav-row" style="margin-top:16px;">
+          <button type="button" class="btn btn-ghost" onclick="backToWelcomeFromLogin()">←</button>
+          <button type="submit" class="btn btn-primary" id="login-submit-btn">Me connecter</button>
+        </div>
+        <div class="link-row" style="margin-top:14px;">
+          <button type="button" onclick="window.open('https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT', '_blank')">En cas de difficulté à vous connecter, veuillez contacter le support</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- RÉINITIALISATION MOT DE PASSE (via lien email) -->
+    <div class="card" id="screen-reset-password" style="display:none;">
+      <div class="hero">
+        <div class="big-emoji">🔑</div>
+        <div class="subtitle">Nouveau départ</div>
+        <h1>Choisis un <em>nouveau</em> mot de passe</h1>
+      </div>
+      <div class="field">
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="reset-new-password" autocomplete="new-password" placeholder="••••••••">
+      </div>
+      <p id="reset-password-msg" style="display:none; font-size:13.5px; margin:4px 0 0;"></p>
+      <div class="nav-row" style="margin-top:16px;">
+        <button class="btn btn-primary btn-full" onclick="submitNewPasswordFromRecovery()">Valider</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="card" id="screen-quiz" style="display:none;">
+      <div class="progress-wrap">
+        <span class="progress-label" id="q-counter">Question 1 sur 6</span>
+        <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:16%;"></div></div>
+      </div>
+      <div class="eyebrow" id="q-multi-hint"></div>
+      <h2 class="q-title" id="q-title"></h2>
+      <p class="q-sub" id="q-sub"></p>
+      <div id="q-options"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevQ()">←</button>
+        <button class="btn btn-primary" id="q-next-btn" onclick="nextQ()">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- PROFIL & CYCLE (avant résultat) -->
+    <div class="card" id="screen-profile" style="display:none;">
+      <div class="eyebrow">Dernière étape</div>
+      <h2 class="q-title">Ton profil</h2>
+      <p class="q-sub">Pour un programme vraiment individualisé sur 12 semaines.</p>
+
+      <div id="identity-fields">
+        <div class="field">
+          <label>Prénom</label>
+          <input type="text" id="input-firstname" placeholder="Ex : Camille">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="input-email" placeholder="Ex : camille@email.com">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Âge</label>
+        <input type="number" id="input-age" min="15" max="90" placeholder="Ex : 32">
+      </div>
+      <div class="field">
+        <label>Poids (kg)</label>
+        <input type="number" id="input-weight" min="35" max="200" placeholder="Ex : 65">
+      </div>
+      <div class="field">
+        <label>Taille (cm)</label>
+        <input type="number" id="input-height" min="130" max="210" placeholder="Ex : 165">
+      </div>
+
+      <div class="field">
+        <label>As-tu un cycle menstruel actif ?</label>
+        <select id="input-has-cycle" onchange="toggleCycleFields()" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire); font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);">
+          <option value="yes">Oui, j'ai un cycle régulier ou irrégulier</option>
+          <option value="no">Non (ménopause, aménorrhée, stérilet hormonal...)</option>
+        </select>
+      </div>
+
+      <div id="cycle-fields-yes">
+        <div class="field">
+          <label>Date de début de tes dernières règles</label>
+          <input type="date" id="input-last-period">
+        </div>
+        <div class="field">
+          <label>Durée moyenne de ton cycle (jours)</label>
+          <input type="number" id="input-cycle-length" value="28" min="21" max="45">
+        </div>
+        <div class="field">
+          <label>Durée moyenne de tes règles (jours)</label>
+          <input type="number" id="input-period-length" value="5" min="2" max="10">
+        </div>
+      </div>
+
+      <div id="cycle-fields-no" style="display:none;">
+        <div class="field">
+          <label>Objectif pondéral pour le calcul calorique</label>
+          <select id="input-weight-goal" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire); font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);">
+            <option value="-0.15">Perte de poids progressive</option>
+            <option value="0" selected>Maintien du poids</option>
+            <option value="0.1">Prise de masse musculaire</option>
+          </select>
+        </div>
+      </div>
+
+      <p style="font-size:12px; color:var(--taupe); line-height:1.5;">
+        Ces informations restent sur ton appareil — ce n'est pas un avis médical ou nutritionnel personnalisé.
+      </p>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="backToQuizFromProfile()">←</button>
+        <button class="btn btn-primary" onclick="saveProfileAndShowResult()">Voir mon programme 🌿</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="card" id="screen-result" style="display:none;">
+      <div class="encouragement">
+        <div class="tag">Message pour toi</div>
+        <p id="res-encouragement"></p>
+      </div>
+
+      <h2 style="font-size:20px; margin-top:0;">Ton programme individualisé · 12 semaines 🌸</h2>
+
+      <div class="result-block">
+        <h3>🎯 Ton objectif</h3>
+        <div class="pill-row" id="res-objectif"></div>
+      </div>
+      <div class="result-block">
+        <h3>🧭 Zones ciblées</h3>
+        <div class="pill-row" id="res-zones"></div>
+      </div>
+      <div class="result-block">
+        <h3>🔍 Ta problématique</h3>
+        <div class="pill-row" id="res-problematique"></div>
+      </div>
+      <div class="result-block">
+        <h3>⏱️ Ton rythme sport</h3>
+        <div class="pill-row" id="res-temps"></div>
+      </div>
+      <div class="result-block" id="res-focus-block">
+        <h3>✨ Focus recommandé</h3>
+        <div class="note-box" id="res-focus"></div>
+      </div>
+      <div class="result-block" id="res-safety-block" style="display:none;">
+        <h3>⚠️ À prendre en compte</h3>
+        <div class="safety-box" id="res-safety"></div>
+      </div>
+
+      <div class="result-block">
+        <h3>📆 Le déroulé de tes 12 semaines</h3>
+        <div class="reco-card"><div class="reco-title">Semaines 1 à 4 — Fondations</div><div class="reco-desc">On installe les bons réflexes : rythme d'entraînement, alimentation adaptée à ton profil, écoute de ton corps.</div></div>
+        <div class="reco-card"><div class="reco-title">Semaines 5 à 8 — Intensification</div><div class="reco-desc">On augmente progressivement l'intensité de tes séances selon tes ressentis, en gardant le cap sur ton objectif.</div></div>
+        <div class="reco-card"><div class="reco-title">Semaines 9 à 12 — Optimisation</div><div class="reco-desc">On affine, on ajuste, on consolide les résultats pour qu'ils s'inscrivent durablement.</div></div>
+      </div>
+
+      <div class="note-box" style="margin-top:6px;">
+        💡 Retrouve ton alimentation et ton suivi de cycle dans l'onglet <strong>🌙 Nutrition</strong>, tes séances dans l'onglet <strong>🏋️ Sport</strong>, et un soutien complémentaire pensé pour toi dans l'onglet <strong>✨ Boost</strong>.
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-primary btn-full" onclick="restartQuiz()">🔄 Recommencer le bilan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 2 : MON CYCLE ============ -->
+  <div class="view" id="view-cycle">
+
+    <div class="card" id="cycle-empty">
+      <div class="empty-illustration">
+        <div class="emoji">🌙</div>
+      </div>
+      <h2 style="text-align:center; font-size:20px;">Complète d'abord ton Bilan</h2>
+      <p style="text-align:center; color:var(--taupe); font-size:14px; line-height:1.6;">
+        Ton suivi de cycle, ton alimentation et ton calcul calorique se basent sur ton Bilan. Il ne prend que 2 minutes.
+      </p>
+      <div class="nav-row">
+        <button class="btn btn-primary btn-full" onclick="switchTab('bilan')">🌿 Aller à mon Bilan</button>
+      </div>
+    </div>
+
+    <div id="cycle-dashboard" style="display:none;">
+
+      <div class="phase-hero" id="phase-hero">
+        <div class="emoji" id="phase-emoji">🌸</div>
+        <h2 id="phase-name">Phase</h2>
+        <div class="day-count" id="phase-daycount">Jour 1</div>
+      </div>
+
+      <div class="card" id="calendar-card">
+        <h3 style="margin-top:0; font-size:15px;">📅 Ce mois-ci</h3>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+          <span><span class="dot" style="background:#F1C9CC;"></span>Règles</span>
+          <span><span class="dot" style="background:#F2E4C4;"></span>Folliculaire</span>
+          <span><span class="dot" style="background:#F6D896;"></span>Ovulation</span>
+          <span><span class="dot" style="background:#E8DFC6;"></span>Lutéale</span>
+        </div>
+
+        <div class="section-title">🔮 Prochaines règles estimées</div>
+        <div class="next-periods" id="next-periods"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;" id="calorie-card">
+        <div class="section-title" style="margin-top:0;">🔢 Besoins caloriques estimés — aujourd'hui</div>
+        <div id="calorie-content"></div>
+        <div class="safety-box" style="margin-top:12px; background:#FBF0DD; border-left-color:var(--gold-deep); color:#5c4a2a;">
+          ⚖️ <strong>Pourquoi ne pas se fixer un objectif uniquement sur le chiffre de la balance :</strong> le poids affiché ne fait pas la différence entre masse grasse, masse musculaire et eau. Rétention d'eau, inflammation, cycle hormonal, stress ou simplement l'heure de la pesée peuvent le faire varier de plusieurs kilos sans que cela reflète tes vrais progrès. Mesure plutôt tes avancées avec tes mensurations, tes photos, ton énergie et la façon dont tes vêtements te vont. 🌿
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-title" style="margin-top:0;">🍽️ Alimentation conseillée</div>
+        <div id="reco-nutrition"></div>
+
+        <div class="section-title">🏋️ Entraînement conseillé</div>
+        <div id="reco-training"></div>
+
+        <div class="encouragement" style="margin-top:16px;">
+          <div class="tag">Message pour toi</div>
+          <p id="cycle-encouragement"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-title" style="margin-top:0;">📖 Ton agenda alimentaire de la semaine</div>
+        <p style="font-size:13px; color:var(--taupe); margin-top:-4px;" id="agenda-subtitle">Menus indicatifs, ajustés selon la phase de ton cycle chaque jour.</p>
+        <div id="weekly-agenda"></div>
+      </div>
+
+      <div class="link-row">
+        <button onclick="switchTab('bilan'); restartQuiz();">✏️ Modifier mes informations (refaire le Bilan)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 3 : ENTRAÎNEMENTS ============ -->
+  <div class="view" id="view-training">
+    <div class="card">
+      <h2 style="margin-top:0; font-size:20px;">🏋️ Ton programme sport</h2>
+      <p style="color:var(--taupe); font-size:14px; line-height:1.6;">Choisis ton objectif pour voir le programme et les vidéos qui vont avec.</p>
+      <div class="field">
+        <label>Ton objectif</label>
+        <select id="input-training-objectif" onchange="renderTrainingProgram()" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire); font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);">
+          <option value="0">⚖️ Minceur & Silhouette</option>
+          <option value="1">⚡ Énergie & Vitalité</option>
+          <option value="2">🧬 Me sentir bien dans mon corps</option>
+          <option value="3">🫧 Détox & Drainage</option>
+          <option value="4">🌸 Équilibre hormonal</option>
+          <option value="5">✨ Peau & Éclat</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h3 id="training-title" style="margin-top:0; font-size:17px;"></h3>
+      <div id="training-week-info"></div>
+      <p id="training-intro" style="color:var(--taupe); font-size:13.5px; line-height:1.6;"></p>
+      <div id="training-sessions"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 4 : COUP DE BOOST ============ -->
+  <div class="view" id="view-boost">
+
+    <div class="card" id="boost-empty">
+      <div class="empty-illustration"><div class="emoji">✨</div></div>
+      <h2 style="text-align:center; font-size:20px;">Complète d'abord ton Bilan</h2>
+      <p style="text-align:center; color:var(--taupe); font-size:14px; line-height:1.6;">
+        Ton soutien complémentaire se choisit en fonction de ton profil et de ta problématique.
+      </p>
+      <div class="nav-row">
+        <button class="btn btn-primary btn-full" onclick="switchTab('bilan')">🌿 Aller à mon Bilan</button>
+      </div>
+    </div>
+
+    <div id="boost-content" style="display:none;">
+      <div class="card">
+        <div class="eyebrow">Ton soutien interne</div>
+        <h2 style="margin: 0 0 6px; font-size:21px;">Un coup de boost pensé pour toi</h2>
+        <p style="color:var(--taupe); font-size:14px; line-height:1.6; margin-top:0;">
+          En plus de ton alimentation et de ton sport, voici la cure qui accompagne le mieux ton profil actuel pour ces 12 semaines.
+        </p>
+      </div>
+
+      <div class="card" style="margin-top:16px; border: 2px solid var(--gold-deep); background: linear-gradient(135deg, #FBF0DD 0%, #FFFFFF 100%);">
+        <div class="tag" style="margin-bottom:8px;">⭐ Recommandée pour toi</div>
+        <h3 id="boost-main-title" style="margin:0 0 8px; font-size:19px;"></h3>
+        <p id="boost-main-desc" style="font-size:14px; line-height:1.6; color:var(--brown);"></p>
+        <div class="nav-row">
+          <a id="boost-main-link" href="#" target="_blank" rel="noopener" class="btn btn-primary btn-full" style="text-decoration:none; text-align:center; display:block;">Découvrir cette cure ✨</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-title" style="margin-top:0;">🌿 Envie d'aller plus loin ?</div>
+        <p style="font-size:13px; color:var(--taupe); margin-top:-4px;">D'autres soutiens existent selon ce que tu traverses en ce moment.</p>
+        <div id="boost-other-list"></div>
+      </div>
+
+      <div class="encouragement" style="margin-top:16px;">
+        <div class="tag">Message pour toi</div>
+        <p>Ce n'est pas un produit miracle, c'est un coup de pouce en plus de tes efforts. Ton programme sport et alimentation restent le socle — la cure vient simplement le soutenir. 🌸</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN COMPTE (superposition, plus un onglet) -->
+  <div class="card" id="screen-account" style="display:none;">
+    <button onclick="closeAccountScreen()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div class="hero">
+      <div class="big-emoji">👤</div>
+      <div class="subtitle">Ton espace</div>
+      <h1>Mon <em>compte</em></h1>
+      <p id="account-email" style="font-weight:600; color:var(--brown);"></p>
+    </div>
+  </div>
+
+  <div class="card" id="screen-account-pwd" style="display:none;">
+    <h2 style="font-size:16px; margin-bottom:14px;">Changer mon mot de passe</h2>
+    <div class="field">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="new-password" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <div class="field">
+      <label>Confirme le mot de passe</label>
+      <input type="password" id="new-password-confirm" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <p id="password-change-msg" style="display:none; font-size:13.5px; margin:4px 0 0;"></p>
+    <div class="nav-row" style="margin-top:14px;">
+      <button class="btn btn-primary btn-full" onclick="changePassword()">Mettre à jour</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MENU LATÉRAL -->
+<div id="menu-overlay" onclick="closeMenu()"></div>
+<div id="side-drawer">
+  <button class="drawer-close" onclick="closeMenu()">✕</button>
+  <div class="drawer-items">
+    <button onclick="openAccountFromMenu()">👤 Mon compte</button>
+    <button onclick="restartQuizFromMenu()">🔄 Refaire le questionnaire</button>
+    <button onclick="contactAdvisorFromMenu()">📅 Mon rdv de suivi hebdo</button>
+  </div>
+  <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── Supabase (compte + espace personnel) ──
+// Remplace par l'URL et la clé "anon public" de ton projet Supabase (Settings > API)
+const SUPABASE_URL = "https://gugioqxuwdktruibzisk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
+const supabaseClient = (SUPABASE_URL.startsWith("http"))
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+function showLoginScreen(){
+  document.getElementById("screen-choice").style.display = "none";
+  document.getElementById("screen-login").style.display = "block";
+  document.getElementById("login-error").style.display = "none";
+}
+
+function backToWelcomeFromLogin(){
+  document.getElementById("screen-login").style.display = "none";
+  document.getElementById("screen-choice").style.display = "block";
+}
+
+async function attemptLogin(){
+  const errorEl = document.getElementById("login-error");
+  errorEl.style.display = "none";
+
+  if(!supabaseClient){
+    errorEl.textContent = "Connexion indisponible pour le moment. Réessaie plus tard 🌿";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+
+  if(!email || !password){
+    errorEl.textContent = "Merci de renseigner ton email et ton mot de passe.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("login-submit-btn");
+  const originalLabel = btn.textContent;
+  btn.textContent = "Connexion...";
+  btn.disabled = true;
+
+  const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  if(authError){
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+    errorEl.textContent = "Email ou mot de passe incorrect 🌸";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const userId = authData.user.id;
+  const { data: rows, error: fetchError } = await supabaseClient
+    .from("quiz_results")
+    .select("raw_data")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  btn.textContent = originalLabel;
+  btn.disabled = false;
+
+  if(fetchError || !rows || rows.length === 0){
+    errorEl.textContent = "Aucun programme trouvé pour ce compte. Contacte-nous 🌿";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  restoreSessionFromRawData(rows[0].raw_data);
+}
+
+// ── Mot de passe oublié ──
+async function forgotPassword(){
+  const errorEl = document.getElementById("login-error");
+  const infoEl = document.getElementById("login-info");
+  errorEl.style.display = "none";
+  infoEl.style.display = "none";
+
+  const email = document.getElementById("login-email").value.trim();
+  if(!email){
+    errorEl.textContent = "Entre d'abord ton email ci-dessus, puis clique sur ce lien.";
+    errorEl.style.display = "block";
+    return;
+  }
+  if(!supabaseClient) return;
+
+  await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+
+  infoEl.textContent = "Email envoyé 🌿 Vérifie ta boîte mail pour choisir un nouveau mot de passe.";
+  infoEl.style.display = "block";
+}
+
+// Écoute l'événement Supabase déclenché quand la personne clique sur le lien reçu par email
+if(supabaseClient){
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if(event === "PASSWORD_RECOVERY"){
+      document.getElementById("screen-splash").style.display = "none";
+      document.getElementById("screen-choice").style.display = "none";
+      document.getElementById("screen-login").style.display = "none";
+      document.getElementById("screen-reset-password").style.display = "block";
+    }
+  });
+}
+
+async function submitNewPasswordFromRecovery(){
+  const msgEl = document.getElementById("reset-password-msg");
+  const newPass = document.getElementById("reset-new-password").value;
+
+  if(!newPass || newPass.length < 6){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+
+  if(error){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Une erreur est survenue. Réessaie 🌿";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  msgEl.style.color = "#4a7a5a";
+  msgEl.textContent = "Mot de passe mis à jour ! Redirection...";
+  msgEl.style.display = "block";
+
+  setTimeout(() => {
+    document.getElementById("screen-reset-password").style.display = "none";
+    checkExistingSession();
+  }, 1500);
+}
+
+// ── Compte : infos, changement de mot de passe, déconnexion ──
+async function loadAccountInfo(){
+  if(!supabaseClient) return;
+  const { data } = await supabaseClient.auth.getUser();
+  const emailEl = document.getElementById("account-email");
+  if(data && data.user){
+    emailEl.textContent = data.user.email;
+  }
+}
+
+async function changePassword(){
+  const msgEl = document.getElementById("password-change-msg");
+  const newPass = document.getElementById("new-password").value;
+  const confirmPass = document.getElementById("new-password-confirm").value;
+
+  msgEl.style.display = "none";
+
+  if(!newPass || newPass.length < 6){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    msgEl.style.display = "block";
+    return;
+  }
+  if(newPass !== confirmPass){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Les deux mots de passe ne correspondent pas.";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+
+  if(error){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Une erreur est survenue. Réessaie 🌿";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  msgEl.style.color = "#4a7a5a";
+  msgEl.textContent = "Mot de passe mis à jour ✅";
+  msgEl.style.display = "block";
+  document.getElementById("new-password").value = "";
+  document.getElementById("new-password-confirm").value = "";
+}
+
+async function logout(){
+  closeMenu();
+  if(supabaseClient){
+    await supabaseClient.auth.signOut();
+  }
+  try{ localStorage.removeItem(CYCLE_STORAGE_KEY); }catch(e){}
+  location.reload();
+}
+
+// ── Menu latéral (hamburger) ──
+function openMenu(){
+  document.getElementById("side-drawer").classList.add("open");
+  document.getElementById("menu-overlay").classList.add("open");
+}
+
+function closeMenu(){
+  document.getElementById("side-drawer").classList.remove("open");
+  document.getElementById("menu-overlay").classList.remove("open");
+}
+
+function showAppHeader(){
+  document.getElementById("app-header").style.display = "flex";
+}
+
+function hideAppHeader(){
+  document.getElementById("app-header").style.display = "none";
+}
+
+function openAccountFromMenu(){
+  closeMenu();
+  document.getElementById("screen-result").style.display = "none";
+  document.getElementById("screen-account").style.display = "block";
+  document.getElementById("screen-account-pwd").style.display = "block";
+  loadAccountInfo();
+}
+
+function closeAccountScreen(){
+  document.getElementById("screen-account").style.display = "none";
+  document.getElementById("screen-account-pwd").style.display = "none";
+  document.getElementById("screen-result").style.display = "block";
+}
+
+function restartQuizFromMenu(){
+  closeMenu();
+  document.getElementById("screen-account").style.display = "none";
+  document.getElementById("screen-account-pwd").style.display = "none";
+  isRetakeMode = true;
+  startQuiz();
+}
+
+function contactAdvisorFromMenu(){
+  closeMenu();
+  window.open("https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT", "_blank");
+}
+
+// Reconstruit l'état de l'appli (answers + données profil) à partir du raw_data stocké
+function restoreSessionFromRawData(rawDataRaw){
+  const data = (typeof rawDataRaw === "string") ? JSON.parse(rawDataRaw) : rawDataRaw;
+
+  answers = {
+    objectif: data.objectif,
+    zones: data.zones || [],
+    douleurs: data.douleurs || [],
+    activite: data.activite,
+    problematique: data.problematique || [],
+    temps: data.temps
+  };
+
+  try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+
+  document.getElementById("screen-login").style.display = "none";
+  showAppHeader();
+  showResult();
+}
+
+// Reste connectée entre deux visites : si une session existe déjà, on retrouve directement son espace
+async function checkExistingSession(){
+  if(!supabaseClient) return;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  if(!sessionData || !sessionData.session) return;
+
+  const userId = sessionData.session.user.id;
+  const { data: rows } = await supabaseClient
+    .from("quiz_results")
+    .select("raw_data")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if(rows && rows.length > 0){
+    clearTimeout(splashAutoTimer);
+    splashAdvanced = true;
+    document.getElementById("screen-splash").style.display = "none";
+    document.getElementById("screen-choice").style.display = "none";
+    restoreSessionFromRawData(rows[0].raw_data);
+  }
+}
+
+
+// ── SPLASH : phrase positive aléatoire à chaque ouverture ──
+const POSITIVE_PHRASES = [
+  "Tu es exactement là où tu dois être.",
+  "Chaque petit pas compte, et tu avances.",
+  "Prendre soin de toi n'est jamais un luxe.",
+  "Tu mérites cette attention que tu te portes.",
+  "Aujourd'hui est une belle occasion de te chouchouter.",
+  "Ton corps t'écoute, sois douce avec lui.",
+  "Tu es plus forte que tu ne le penses.",
+  "Chaque jour est une nouvelle chance de t'épanouir.",
+  "Tu construis, patiemment, la meilleure version de toi.",
+  "Sois fière du chemin déjà parcouru.",
+  "Ta bienveillance envers toi-même change tout.",
+  "Tu as le droit de te sentir bien, ici et maintenant."
+];
+
+function showRandomPositivePhrase(){
+  const el = document.getElementById("splash-phrase-text");
+  if(!el) return;
+  const phrase = POSITIVE_PHRASES[Math.floor(Math.random() * POSITIVE_PHRASES.length)];
+  el.textContent = phrase;
+}
+
+let splashAdvanced = false;
+function advanceFromSplash(){
+  if(splashAdvanced) return;
+  splashAdvanced = true;
+  document.getElementById("screen-splash").style.display = "none";
+  document.getElementById("screen-choice").style.display = "block";
+}
+
+// Pas d'avancée automatique : uniquement au toucher (advanceFromSplash déclenché par onclick sur l'écran splash)
+let splashAutoTimer = null;
+
+// ── Installation à l'écran d'accueil ──
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner("android");
+});
+
+function isIos(){
+  return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+}
+
+function isInStandaloneMode(){
+  return ("standalone" in window.navigator && window.navigator.standalone) ||
+         window.matchMedia("(display-mode: standalone)").matches;
+}
+
+function showInstallBanner(platform){
+  if(isInStandaloneMode()) return; // déjà installée
+  if(localStorage.getItem("moncocon_install_dismissed") === "1") return;
+
+  const banner = document.getElementById("install-banner");
+  const txt = document.getElementById("install-banner-text");
+  const btn = document.getElementById("install-banner-btn");
+
+  if(platform === "ios"){
+    txt.textContent = "Installe l'appli : appuie sur ⬆️ Partager, puis \"Sur l'écran d'accueil\".";
+    btn.style.display = "none";
+  } else {
+    txt.textContent = "Installe Mon Cocon sur ton téléphone pour un accès plus rapide.";
+    btn.style.display = "inline-block";
+  }
+  banner.style.display = "block";
+}
+
+function triggerInstall(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(() => {
+      deferredInstallPrompt = null;
+      document.getElementById("install-banner").style.display = "none";
+    });
+  }
+}
+
+function dismissInstallBanner(){
+  document.getElementById("install-banner").style.display = "none";
+  localStorage.setItem("moncocon_install_dismissed", "1");
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  showRandomPositivePhrase();
+  const inShowcase = initShowcaseModeIfNeeded();
+  if(!inShowcase){
+    checkExistingSession();
+    if(isIos() && !isInStandaloneMode()){
+      setTimeout(() => showInstallBanner("ios"), 3500);
+    }
+  }
+});
+</script>
+<script>
+/* ============================================================
+   DONNÉES DU QUIZ
+   ============================================================ */
+const QUESTIONS = [
+  {
+    key: "objectif",
+    multi: false,
+    title: "Quel est ton objectif principal ?",
+    sub: "",
+    options: [
+      { emoji:"⚖️", label:"Minceur & Silhouette", desc:"Affiner, perdre du poids durablement" },
+      { emoji:"⚡", label:"Énergie & Vitalité", desc:"Moins de fatigue, retrouver la pêche" },
+      { emoji:"🧬", label:"Me sentir bien dans mon corps", desc:"Tonifier, se sentir à l'aise dans son corps et dans le miroir" },
+      { emoji:"🫧", label:"Détox & Drainage", desc:"Éliminer, désenflammer, repartir à zéro" },
+      { emoji:"🌸", label:"Équilibre hormonal", desc:"Ménopause, fluctuations, prise de poids hormonale" },
+      { emoji:"✨", label:"Peau & Éclat", desc:"Cellulite, acné, teint terne, anti-âge" }
+    ]
+  },
+  {
+    key: "zones",
+    multi: true,
+    title: "Quelle(s) zone(s) tu veux travailler ?",
+    sub: "Tu peux en choisir plusieurs",
+    options: [
+      { emoji:"🎯", label:"Ventre", desc:"Ventre plat, sangle abdominale" },
+      { emoji:"🦵", label:"Jambes", desc:"Jambes lourdes, cellulite, œdèmes" },
+      { emoji:"💪", label:"Full Body", desc:"Corps entier, tonus général" },
+      { emoji:"🤸", label:"Bras & Dos", desc:"Haut du corps, posture" }
+    ]
+  },
+  {
+    key: "douleurs",
+    multi: true,
+    title: "As-tu des douleurs ou des troubles particuliers ?",
+    sub: "Plusieurs réponses possibles — ta sécurité avant tout",
+    options: [
+      { emoji:"😴", label:"Troubles du sommeil", desc:"Endormissement difficile, réveils nocturnes, fatigue au réveil" },
+      { emoji:"🦴", label:"Douleurs au dos", desc:"Lombaires, cervicales, tensions chroniques" },
+      { emoji:"🦵", label:"Douleurs articulaires", desc:"Genoux, hanches, épaules" },
+      { emoji:"🤰", label:"Grossesse ou allaitement", desc:"En cours ou récent (moins de 6 mois)" },
+      { emoji:"🏥", label:"Pathologie chronique", desc:"Diabète, hypertension, maladie cardiovasculaire, autre" },
+      { emoji:"✅", label:"Aucune douleur ni pathologie", desc:"Je suis en bonne santé générale", exclusive:true }
+    ]
+  },
+  {
+    key: "activite",
+    multi: false,
+    title: "Ton niveau d'activité physique actuel ?",
+    sub: "",
+    options: [
+      { emoji:"🌱", label:"Débutante", desc:"Peu ou pas de sport en ce moment" },
+      { emoji:"🌿", label:"Intermédiaire", desc:"Quelques séances par semaine" },
+      { emoji:"🌳", label:"Active", desc:"Sport régulier, je veux progresser" }
+    ]
+  },
+  {
+    key: "problematique",
+    multi: true,
+    title: "As-tu une problématique spécifique ?",
+    sub: "Plusieurs réponses possibles",
+    options: [
+      { emoji:"🔵", label:"Cellulite fibreuse", desc:"Peau d'orange dure, résistante" },
+      { emoji:"💧", label:"Œdèmes / jambes lourdes", desc:"Rétention d'eau, gonflement" },
+      { emoji:"🌸", label:"Acné / peau réactive", desc:"Boutons, imperfections" },
+      { emoji:"🥚", label:"Manque de protéines", desc:"Fringales, fonte musculaire" },
+      { emoji:"🎈", label:"Ballonnements", desc:"Ventre gonflé, inconfort digestif" },
+      { emoji:"🔥", label:"Graisse abdominale", desc:"Excès localisé au niveau du ventre" },
+      { emoji:"✅", label:"Aucune en particulier", desc:"Je veux juste me sentir mieux", exclusive:true }
+    ]
+  },
+  {
+    key: "temps",
+    multi: false,
+    title: "Combien de temps tu peux consacrer au sport par jour ?",
+    sub: "",
+    options: [
+      { emoji:"⏱️", label:"7 minutes", desc:"Je suis très occupée" },
+      { emoji:"⏰", label:"10 minutes", desc:"Quelques minutes le matin" },
+      { emoji:"🕐", label:"15 minutes", desc:"Je peux m'organiser" }
+    ]
+  }
+];
+
+const ENCOURAGEMENTS = [
+  "Chaque petit pas que tu fais aujourd'hui construit la femme forte et épanouie que tu es en train de devenir. Sois fière du chemin parcouru. 🌿",
+  "Tu n'as pas besoin d'être parfaite, juste régulière. Ton corps t'écoute et il te remercie déjà pour cette attention que tu lui portes. 💛",
+  "Prendre soin de toi n'est pas un luxe, c'est un acte d'amour envers celle que tu es et envers celles qui t'entourent. Continue, tu es sur la bonne voie. ✨",
+  "Ce programme n'est pas une contrainte, c'est un cadeau que tu te fais. Avance à ton rythme, sans culpabilité, avec bienveillance envers toi-même. 🌸",
+  "Tu mérites de te sentir bien dans ton corps et dans ta tête. Chaque effort compte, même les plus petits — surtout les plus petits. 🌷",
+  "Ton énergie d'aujourd'hui construit ta liberté de demain. Fais-toi confiance, tu sais déjà ce dont ton corps a besoin. 🌿",
+  "Il n'y a pas de mauvais moment pour recommencer à s'écouter. Aujourd'hui est le bon jour. Bravo d'avoir fait ce bilan. 💫"
+];
+
+let currentQ = 0;
+let answers = {};
+let isRetakeMode = false; // true quand une utilisatrice déjà connectée refait le questionnaire
+
+function switchTab(tab){
+  document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.getElementById("view-bilan").classList.toggle("active", tab==="bilan");
+  document.getElementById("view-cycle").classList.toggle("active", tab==="cycle");
+  document.getElementById("view-training").classList.toggle("active", tab==="training");
+  document.getElementById("view-boost").classList.toggle("active", tab==="boost");
+  if(tab==="cycle") renderCycleTab();
+  if(tab==="training") renderTrainingProgram();
+  if(tab==="boost") renderBoostTab();
+}
+
+function toggleCycleFields(){
+  const hasCycle = document.getElementById("input-has-cycle").value === "yes";
+  document.getElementById("cycle-fields-yes").style.display = hasCycle ? "block" : "none";
+  document.getElementById("cycle-fields-no").style.display = hasCycle ? "none" : "block";
+}
+
+function startQuiz(){
+  currentQ = 0;
+  answers = {};
+  document.getElementById("screen-choice").style.display="none";
+  document.getElementById("screen-result").style.display="none";
+  document.getElementById("screen-quiz").style.display="block";
+  showAppHeader();
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[currentQ];
+  document.getElementById("q-counter").textContent = `Question ${currentQ+1} sur ${QUESTIONS.length}`;
+  document.getElementById("q-progress").style.width = `${((currentQ+1)/QUESTIONS.length)*100}%`;
+  document.getElementById("q-multi-hint").textContent = q.multi ? "Sélection multiple" : "Sélection unique";
+  document.getElementById("q-title").textContent = q.title;
+  document.getElementById("q-sub").textContent = q.sub;
+
+  const wrap = document.getElementById("q-options");
+  wrap.innerHTML = "";
+  const selected = answers[q.key] || (q.multi ? [] : null);
+
+  q.options.forEach((opt, i)=>{
+    const div = document.createElement("div");
+    const isSelected = q.multi ? selected.includes(i) : selected===i;
+    div.className = "option" + (isSelected ? " selected" : "");
+    div.innerHTML = `<div class="emoji">${opt.emoji}</div><div class="txt"><strong>${opt.label}</strong><span>${opt.desc}</span></div>`;
+    div.onclick = ()=> selectOption(q, i);
+    wrap.appendChild(div);
+  });
+
+  document.getElementById("q-next-btn").textContent = currentQ===QUESTIONS.length-1 ? "Voir mon programme 🌿" : "Continuer →";
+}
+
+function selectOption(q, i){
+  const opt = q.options[i];
+  if(q.multi){
+    let arr = answers[q.key] || [];
+    if(opt.exclusive){
+      arr = arr.includes(i) ? [] : [i];
+    } else {
+      arr = arr.filter(x => !q.options[x].exclusive);
+      if(arr.includes(i)) arr = arr.filter(x=>x!==i);
+      else arr.push(i);
+    }
+    answers[q.key] = arr;
+  } else {
+    answers[q.key] = i;
+  }
+  renderQuestion();
+}
+
+function prevQ(){
+  if(currentQ===0){
+    document.getElementById("screen-quiz").style.display="none";
+    document.getElementById("screen-choice").style.display="block";
+    return;
+  }
+  currentQ--;
+  renderQuestion();
+}
+
+function nextQ(){
+  const q = QUESTIONS[currentQ];
+  const a = answers[q.key];
+  const hasAnswer = q.multi ? (a && a.length>0) : (a!==undefined && a!==null);
+  if(!hasAnswer){
+    // léger feedback visuel sans bloquer agressivement
+    const wrap = document.getElementById("q-options");
+    wrap.style.animation = "none";
+    requestAnimationFrame(()=>{ wrap.style.animation = "fadeIn .3s ease"; });
+    return;
+  }
+  if(currentQ < QUESTIONS.length-1){
+    currentQ++;
+    renderQuestion();
+  } else {
+    document.getElementById("screen-quiz").style.display = "none";
+    if(isRetakeMode){
+      finishRetakeDirectly();
+    } else {
+      document.getElementById("screen-profile").style.display = "block";
+    }
+  }
+}
+
+// Refaire le questionnaire en étant déjà connectée : on réutilise âge/poids/taille/cycle déjà enregistrés,
+// on ne met à jour que les réponses du quiz (objectif, zones, douleurs, activité, problématique, temps)
+function finishRetakeDirectly(){
+  const existing = loadCycleData() || {};
+
+  const activityMap = [1.2, 1.375, 1.55];
+  const activityFactor = activityMap[answers.activite !== undefined ? answers.activite : 1];
+
+  let data = Object.assign({}, existing);
+  data.activityFactor = activityFactor;
+  data.objectif = answers.objectif;
+  data.zones = answers.zones || [];
+  data.douleurs = answers.douleurs || [];
+  data.activite = answers.activite;
+  data.problematique = answers.problematique || [];
+  data.temps = answers.temps;
+
+  if(!data.hasCycle){
+    data.goalObjectif = answers.objectif || 0;
+  }
+  // programStartDate reste inchangé : on ne relance pas le programme de 12 semaines à zéro
+
+  try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  try{ localStorage.setItem("moncocon_last_objectif", answers.objectif); }catch(e){}
+
+  updateQuizResultsDirect(data);
+  isRetakeMode = false;
+  showResult();
+}
+
+
+function restartQuiz(){
+  isRetakeMode = true;
+  document.getElementById("screen-result").style.display="none";
+  document.getElementById("screen-profile").style.display="none";
+  startQuiz();
+}
+
+function showResult(){
+  document.getElementById("screen-quiz").style.display="none";
+  document.getElementById("screen-profile").style.display="none";
+  document.getElementById("screen-result").style.display="block";
+
+  // message positif aléatoire
+  document.getElementById("res-encouragement").textContent =
+    ENCOURAGEMENTS[Math.floor(Math.random()*ENCOURAGEMENTS.length)];
+
+  const qObj = QUESTIONS[0];
+  const objIdx = answers.objectif;
+  document.getElementById("res-objectif").innerHTML =
+    `<span class="pill">${qObj.options[objIdx].emoji} ${qObj.options[objIdx].label}</span>`;
+
+  const qZones = QUESTIONS[1];
+  const zonesArr = answers.zones || [];
+  document.getElementById("res-zones").innerHTML = zonesArr
+    .map(i=>`<span class="pill">${qZones.options[i].emoji} ${qZones.options[i].label}</span>`).join("") || "<span class='pill'>Non renseigné</span>";
+
+  const qProbDisplay = QUESTIONS[4];
+  const probArrDisplay = answers.problematique || [];
+  document.getElementById("res-problematique").innerHTML = probArrDisplay
+    .map(i=>`<span class="pill">${qProbDisplay.options[i].emoji} ${qProbDisplay.options[i].label}</span>`).join("") || "<span class='pill'>Non renseigné</span>";
+
+  const qTemps = QUESTIONS[5];
+  const tempsIdx = answers.temps;
+  document.getElementById("res-temps").innerHTML =
+    `<span class="pill">${qTemps.options[tempsIdx].emoji} ${qTemps.options[tempsIdx].label} / jour</span>`;
+
+  // focus recommandé (texte généré selon objectif + problématique)
+  const qProb = QUESTIONS[4];
+  const probArr = (answers.problematique || []).map(i=>qProb.options[i].label);
+  let focus = `Ton programme met l'accent sur "${qObj.options[objIdx].label}"`;
+  if(zonesArr.length) focus += `, en priorisant : ${zonesArr.map(i=>qZones.options[i].label).join(", ")}`;
+  if(probArr.length && !probArr.includes("Aucune en particulier")) focus += `. On travaille aussi spécifiquement : ${probArr.join(", ")}`;
+  focus += `. Un rythme de ${qTemps.options[tempsIdx].label.toLowerCase()} par jour, adapté à ton niveau, te permettra de tenir sur la durée sans t'épuiser.`;
+  document.getElementById("res-focus").textContent = focus;
+
+  // sécurité : douleurs/pathologies
+  const qDouleurs = QUESTIONS[2];
+  const doulArr = (answers.douleurs || []).map(i=>qDouleurs.options[i].label);
+  const hasAlert = doulArr.some(l => l !== "Aucune douleur ni pathologie");
+  const safetyBlock = document.getElementById("res-safety-block");
+  if(hasAlert){
+    safetyBlock.style.display = "block";
+    document.getElementById("res-safety").textContent =
+      `Tu as signalé : ${doulArr.filter(l=>l!=="Aucune douleur ni pathologie").join(", ")}. Certains soins ou exercices seront adaptés en conséquence, et un avis médical ou un échange avec Lindsay avant certains protocoles (notamment cryolipolyse, drainage intensif) est recommandé pour ta sécurité.`;
+  } else {
+    safetyBlock.style.display = "none";
+  }
+}
+
+/* ============================================================
+   MON CYCLE
+   ============================================================ */
+const CYCLE_STORAGE_KEY = "moncocon_cycle_data_v1";
+
+const PHASES = {
+  menstruelle: {
+    label: "Phase menstruelle",
+    emoji: "🌸",
+    cls: "phase-menstruelle",
+    nutrition: [
+      { t:"Aliments riches en fer", d:"Lentilles, épinards, viande rouge maigre ou légumineuses pour compenser les pertes en fer." },
+      { t:"Chaleur et réconfort", d:"Bouillons, soupes, infusions de gingembre ou de camomille pour apaiser les tensions." },
+      { t:"Magnésium", d:"Chocolat noir, oléagineux, bananes pour limiter les crampes et la fatigue." }
+    ],
+    training: [
+      { t:"Mouvement doux", d:"Marche, étirements, yoga doux. C'est le moment d'écouter ton corps et de ralentir sans culpabiliser." },
+      { t:"Respiration & mobilité", d:"Privilégie des séances courtes et douces plutôt que des efforts intenses." }
+    ],
+    tip: "Cette phase est un temps de repos actif, pas de contre-performance. Ton corps travaille déjà beaucoup en interne — sois douce avec toi-même. 🌸"
+  },
+  folliculaire: {
+    label: "Phase folliculaire",
+    emoji: "🌱",
+    cls: "phase-folliculaire",
+    nutrition: [
+      { t:"Protéines et légumes frais", d:"C'est le moment où l'énergie remonte : privilégie des repas frais, colorés, riches en fibres." },
+      { t:"Bons glucides", d:"Céréales complètes, patate douce, quinoa pour soutenir ton énergie montante." },
+      { t:"Fermentés", d:"Yaourts, kéfir, choucroute pour soutenir la flore intestinale et l'éclat de peau." }
+    ],
+    training: [
+      { t:"Intensité progressive", d:"C'est le bon moment pour reprendre ou augmenter l'intensité de tes séances." },
+      { t:"Renforcement musculaire", d:"Ton corps répond bien à l'effort : profite de ce regain d'énergie pour tes séances ciblées." }
+    ],
+    tip: "Ton énergie et ta motivation remontent naturellement. C'est LE moment pour lancer de nouveaux objectifs. ⚡"
+  },
+  ovulatoire: {
+    label: "Phase ovulatoire",
+    emoji: "☀️",
+    cls: "phase-ovulatoire",
+    nutrition: [
+      { t:"Antioxydants", d:"Baies, légumes crucifères (brocoli, chou-fleur) pour accompagner le pic hormonal." },
+      { t:"Fibres", d:"Aide à l'élimination naturelle des œstrogènes en excès." },
+      { t:"Hydratation ++", d:"C'est le pic d'énergie : bois suffisamment d'eau pour accompagner l'effort physique." }
+    ],
+    training: [
+      { t:"Pic de performance", d:"C'est le moment idéal pour tes séances les plus intenses : cardio, HIIT, charges plus lourdes." },
+      { t:"Profite de ta force", d:"Ton corps est à son pic de puissance et de coordination — ose te challenger." }
+    ],
+    tip: "Tu es à ton pic de forme physique et de confiance. C'est le moment de briller et de te dépasser, en toute sécurité. ☀️"
+  },
+  luteale: {
+    label: "Phase lutéale",
+    emoji: "🍂",
+    cls: "phase-luteale",
+    nutrition: [
+      { t:"Stabiliser la glycémie", d:"Privilégie des repas réguliers avec protéines + fibres pour limiter les fringales et le syndrome prémenstruel." },
+      { t:"Bonnes graisses", d:"Avocat, oléagineux, poisson gras pour soutenir l'équilibre hormonal." },
+      { t:"Limiter excitants", d:"Réduis progressivement café et sucre rapide si tu ressens de l'irritabilité ou des tensions." }
+    ],
+    training: [
+      { t:"Intensité modérée", d:"Pilates, marche rapide, renforcement léger. Ton corps se prépare doucement aux règles." },
+      { t:"Écoute-toi", d:"Si la fatigue ou les tensions prémenstruelles s'installent, privilégie des séances plus courtes." }
+    ],
+    tip: "C'est normal de ressentir un peu plus de fatigue ou de sensibilité. Ralentir ici n'est pas un échec, c'est de l'intelligence corporelle. 🍂"
+  }
+};
+
+const PHASE_BADGE_COLOR = {
+  menstruelle: "#B5535B",
+  folliculaire: "#B08D4F",
+  ovulatoire: "#C98A2E",
+  luteale: "#6B5330"
+};
+
+// Modificateur indicatif des besoins caloriques selon la phase (basé sur les variations physiologiques du métabolisme au cours du cycle)
+const PHASE_CALORIE_MODIFIER = {
+  menstruelle: -0.03,
+  folliculaire: 0,
+  ovulatoire: 0.03,
+  luteale: 0.08
+};
+
+// Menus indicatifs par phase (plusieurs variantes pour éviter la répétition sur la semaine)
+const MENUS = {
+  menstruelle: [
+    { petit_dej:"Porridge flocons d'avoine, banane, un carré de chocolat noir", dejeuner:"Lentilles corail, épinards poêlés, œuf", diner:"Bouillon de légumes, poulet effiloché, riz complet", collation:"Infusion gingembre + amandes" },
+    { petit_dej:"Smoothie épinards-banane-graines de courge", dejeuner:"Bœuf maigre, brocolis, patate douce", diner:"Soupe miso, tofu, algues", collation:"Carré de chocolat noir 70%" },
+    { petit_dej:"Tartines pain complet, purée d'amande, compote", dejeuner:"Poêlée de haricots rouges, quinoa, légumes verts", diner:"Velouté de courge, saumon vapeur", collation:"Tisane camomille + noix" }
+  ],
+  folliculaire: [
+    { petit_dej:"Yaourt grec, fruits rouges, granola maison", dejeuner:"Poulet grillé, riz complet, légumes croquants variés", diner:"Poisson blanc, patate douce rôtie, salade fraîche", collation:"Fruit frais + poignée d'oléagineux" },
+    { petit_dej:"Œufs brouillés, avocat, pain complet", dejeuner:"Bowl quinoa, pois chiches, crudités colorées", diner:"Escalope de dinde, légumes vapeur, riz", collation:"Kéfir ou yaourt fermenté" },
+    { petit_dej:"Pancakes flocons d'avoine et banane", dejeuner:"Salade de lentilles, feta, légumes croquants", diner:"Filet de poisson, brocolis, boulgour", collation:"Fruit de saison" }
+  ],
+  ovulatoire: [
+    { petit_dej:"Smoothie bowl fruits rouges, graines de chia", dejeuner:"Saumon, brocolis vapeur, quinoa", diner:"Poulet rôti, légumes du soleil grillés", collation:"Fruits rouges + yaourt" },
+    { petit_dej:"Œufs, tomates cerises, pain complet", dejeuner:"Bowl poke maison, riz, edamame, saumon", diner:"Tofu mariné grillé, légumes croquants, riz complet", collation:"Carotte, houmous" },
+    { petit_dej:"Porridge, myrtilles, graines de lin", dejeuner:"Poulet grillé, taboulé de quinoa, crudités", diner:"Poisson blanc, ratatouille maison", collation:"Poignée de fruits secs" }
+  ],
+  luteale: [
+    { petit_dej:"Œufs, avocat, pain complet — repas rassasiant", dejeuner:"Bœuf ou lentilles, patate douce, épinards", diner:"Saumon, riz complet, légumes verts", collation:"Chocolat noir + amandes (anti-fringales)" },
+    { petit_dej:"Porridge protéiné, beurre de cacahuète, banane", dejeuner:"Poulet, quinoa, légumes rôtis", diner:"Curry de pois chiches, riz complet", collation:"Yaourt grec + graines" },
+    { petit_dej:"Smoothie protéiné banane-cacao", dejeuner:"Poisson gras (maquereau/sardines), riz, brocolis", diner:"Soupe de légumineuses, pain complet", collation:"Carré de chocolat noir + infusion" }
+  ]
+};
+
+// Modificateurs caloriques liés à l'objectif pondéral (utilisés quand pas de cycle actif)
+// Contenus généraux (non liés au cycle) par objectif du Bilan — pour les femmes sans cycle actif (ménopause, etc.)
+const GENERAL_PROFILE = {
+  0: { // Minceur & Silhouette
+    nutrition: [
+      { t:"Priorité aux protéines", d:"À chaque repas, pour préserver la masse musculaire et bien rassasier." },
+      { t:"Fibres à volonté", d:"Légumes, légumineuses, céréales complètes pour la satiété et le transit." },
+      { t:"Hydratation régulière", d:"1,5 à 2L d'eau par jour, en dehors des repas de préférence." }
+    ],
+    training: [
+      { t:"Cardio modéré", d:"Marche rapide, vélo, natation — 3 à 4 fois par semaine." },
+      { t:"Renforcement musculaire", d:"2 séances par semaine pour tonifier et préserver le métabolisme." }
+    ],
+    tip: "La perte de poids durable se construit sur la régularité, pas sur la restriction. Chaque semaine compte. ⚖️",
+    menus: [
+      { petit_dej:"Yaourt nature, fruits rouges, graines de chia", dejeuner:"Poulet grillé, légumes vapeur, quinoa", diner:"Poisson blanc, salade verte, patate douce", collation:"Pomme + amandes" },
+      { petit_dej:"Œufs, avocat, pain complet", dejeuner:"Salade de lentilles, crudités, feta", diner:"Escalope de dinde, brocolis, riz complet", collation:"Fromage blanc, fruits secs" },
+      { petit_dej:"Porridge flocons d'avoine, banane", dejeuner:"Bowl quinoa, pois chiches, légumes croquants", diner:"Saumon, épinards, boulgour", collation:"Carottes, houmous" }
+    ]
+  },
+  1: { // Énergie & Vitalité
+    nutrition: [
+      { t:"Glucides complexes", d:"Céréales complètes, légumineuses pour une énergie stable toute la journée." },
+      { t:"Fer et vitamines B", d:"Viandes maigres, œufs, légumes verts pour lutter contre la fatigue." },
+      { t:"Petit-déjeuner complet", d:"Ne saute pas ce repas : il conditionne ton énergie du matin." }
+    ],
+    training: [
+      { t:"Routine matinale dynamique", d:"7 à 15 minutes de mouvement dès le réveil pour lancer la journée." },
+      { t:"Marche active quotidienne", d:"20 à 30 minutes par jour, en extérieur si possible." }
+    ],
+    tip: "L'énergie se construit avec la régularité du sommeil, de l'alimentation et du mouvement — pas avec la caféine seule. ⚡",
+    menus: [
+      { petit_dej:"Œufs, pain complet, avocat", dejeuner:"Bœuf maigre, riz complet, légumes", diner:"Lentilles, légumes rôtis, œuf", collation:"Fruit frais + oléagineux" },
+      { petit_dej:"Smoothie banane-épinards-avoine", dejeuner:"Poulet, patate douce, brocolis", diner:"Poisson, quinoa, salade", collation:"Yaourt + miel" },
+      { petit_dej:"Porridge, fruits secs, graines de lin", dejeuner:"Bowl de céréales complètes, légumineuses", diner:"Tofu grillé, légumes vapeur, riz", collation:"Compote + amandes" }
+    ]
+  },
+  2: { // Me sentir bien dans mon corps
+    nutrition: [
+      { t:"Assiette équilibrée", d:"Moitié légumes, un quart protéines, un quart féculents complets." },
+      { t:"Alimentation intuitive", d:"Mange à ta faim, arrête-toi à satiété, sans te priver ni culpabiliser." },
+      { t:"Plaisir et couleurs", d:"Varie les couleurs dans l'assiette pour varier les nutriments et le plaisir." }
+    ],
+    training: [
+      { t:"Mouvement plaisir", d:"Yoga, pilates, danse — choisis ce qui te fait du bien, pas ce qui te punit." },
+      { t:"Mobilité et respiration", d:"Quelques minutes par jour pour te reconnecter à ton corps." }
+    ],
+    tip: "Se sentir bien dans son corps commence par arrêter de le voir comme un projet à corriger. Tu es déjà légitime. 🧬",
+    menus: [
+      { petit_dej:"Yaourt grec, granola maison, fruits", dejeuner:"Bowl coloré : quinoa, légumes, poulet", diner:"Poisson, légumes de saison, riz", collation:"Carré de chocolat noir" },
+      { petit_dej:"Tartines avocat-œuf", dejeuner:"Salade complète : légumineuses, crudités, feta", diner:"Poulet rôti, légumes rôtis", collation:"Fruits secs" },
+      { petit_dej:"Pancakes flocons d'avoine", dejeuner:"Bowl méditerranéen, houmous, falafels", diner:"Saumon, légumes vapeur, boulgour", collation:"Fruit frais" }
+    ]
+  },
+  3: { // Détox & Drainage
+    nutrition: [
+      { t:"Aliments diurétiques doux", d:"Artichaut, concombre, céleri, persil pour soutenir le drainage naturel." },
+      { t:"Réduire sel et sucre", d:"Limite les aliments transformés qui favorisent la rétention d'eau." },
+      { t:"Hydratation renforcée", d:"Eau, infusions drainantes (pissenlit, thé vert) tout au long de la journée." }
+    ],
+    training: [
+      { t:"Mouvement doux et régulier", d:"Marche, vélo léger pour stimuler la circulation sans agresser le corps." },
+      { t:"Étirements et drainage lymphatique", d:"Auto-massages doux, jambes surélevées en fin de journée." }
+    ],
+    tip: "Le vrai drainage vient de la régularité et de l'hydratation, pas des solutions miracles. Sois patiente avec ton corps. 🫧",
+    menus: [
+      { petit_dej:"Infusion pissenlit, porridge, fruits rouges", dejeuner:"Salade concombre-céleri, poisson vapeur", diner:"Soupe de légumes, quinoa", collation:"Thé vert + fruits secs" },
+      { petit_dej:"Smoothie concombre-pomme-menthe", dejeuner:"Bowl artichaut, poulet vapeur, riz", diner:"Poisson blanc, légumes verts", collation:"Infusion drainante" },
+      { petit_dej:"Fruits frais, yaourt nature", dejeuner:"Poêlée de légumes, tofu, quinoa", diner:"Velouté de légumes, œuf", collation:"Eau citronnée, amandes" }
+    ]
+  },
+  4: { // Équilibre hormonal
+    nutrition: [
+      { t:"Bonnes graisses", d:"Avocat, oléagineux, poisson gras pour soutenir la production hormonale." },
+      { t:"Phyto-œstrogènes naturels", d:"Graines de lin moulues, soja fermenté, en quantité modérée." },
+      { t:"Glycémie stable", d:"Repas réguliers avec protéines + fibres pour éviter les pics et chutes d'énergie." }
+    ],
+    training: [
+      { t:"Renforcement musculaire modéré", d:"2 à 3 séances par semaine pour soutenir le métabolisme et la densité osseuse." },
+      { t:"Éviter le surentraînement", d:"Privilégie la régularité douce à l'intensité excessive, qui peut perturber l'équilibre hormonal." }
+    ],
+    tip: "Ton corps traverse une transition, pas une panne. L'écouter et l'accompagner en douceur donne de meilleurs résultats que la contrainte. 🌸",
+    menus: [
+      { petit_dej:"Porridge, graines de lin moulues, fruits", dejeuner:"Saumon, légumes verts, quinoa", diner:"Poulet, patate douce, brocolis", collation:"Oléagineux" },
+      { petit_dej:"Œufs, avocat, pain complet", dejeuner:"Tofu grillé, riz complet, légumes", diner:"Poisson gras, légumes rôtis", collation:"Yaourt + graines" },
+      { petit_dej:"Smoothie avocat-épinards", dejeuner:"Bowl légumineuses, crudités", diner:"Bœuf maigre, légumes vapeur, riz", collation:"Fruits secs + chocolat noir" }
+    ]
+  },
+  5: { // Peau & Éclat
+    nutrition: [
+      { t:"Antioxydants", d:"Fruits rouges, légumes colorés pour lutter contre le vieillissement cutané." },
+      { t:"Oméga-3", d:"Poissons gras, noix, graines de lin pour l'hydratation et l'élasticité de la peau." },
+      { t:"Hydratation généreuse", d:"L'eau reste le meilleur soin de peau de l'intérieur." }
+    ],
+    training: [
+      { t:"Cardio léger régulier", d:"Stimule la circulation sanguine et l'oxygénation de la peau." },
+      { t:"Gestion du stress", d:"Respiration, marche en extérieur — le stress impacte directement l'éclat de peau." }
+    ],
+    tip: "La peau est un miroir de l'intérieur : sommeil, hydratation et alimentation comptent souvent plus que les soins appliqués. ✨",
+    menus: [
+      { petit_dej:"Smoothie fruits rouges, graines de chia", dejeuner:"Saumon, légumes colorés, quinoa", diner:"Poulet, brocolis, patate douce", collation:"Fruits rouges" },
+      { petit_dej:"Yaourt, myrtilles, noix", dejeuner:"Bowl méditerranéen, poisson, légumes", diner:"Tofu, légumes vapeur, riz", collation:"Carré de chocolat noir 70%" },
+      { petit_dej:"Œufs, tomates, pain complet", dejeuner:"Salade de légumineuses, crudités colorées", diner:"Poisson blanc, ratatouille", collation:"Oléagineux" }
+    ]
+  }
+};
+
+const CYCLE_ENCOURAGEMENTS = [
+  "Connaître ton cycle, c'est reprendre le pouvoir sur ton énergie plutôt que de la subir. Tu es en train de devenir experte de ton propre corps. 🌙",
+  "Chaque phase a sa force. Il n'y a pas de 'bon' ou 'mauvais' moment — juste des moments différents à honorer. Tu fais déjà ça très bien. 💫",
+  "Adapter ton alimentation et ton sport à ton cycle, c'est arrêter de te battre contre toi-même. C'est un vrai acte de liberté. 🌸",
+  "Tu n'as pas à performer de la même façon 365 jours par an. Ton corps a des saisons, et tu apprends à danser avec elles. 🌿"
+];
+
+function daysBetween(d1, d2){
+  return Math.floor((d2 - d1) / (1000*60*60*24));
+}
+
+function loadCycleData(){
+  try{
+    const raw = localStorage.getItem(CYCLE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function saveProfileAndShowResult(){
+  const firstname = document.getElementById("input-firstname").value.trim();
+  const email = document.getElementById("input-email").value.trim();
+
+  const hasCycle = document.getElementById("input-has-cycle").value === "yes";
+  const age = parseInt(document.getElementById("input-age").value) || null;
+  const weight = parseFloat(document.getElementById("input-weight").value) || null;
+  const height = parseFloat(document.getElementById("input-height").value) || null;
+
+  // niveau d'activité réutilisé depuis la question du Bilan (Débutante/Intermédiaire/Active)
+  const activityMap = [1.2, 1.375, 1.55];
+  const activityFactor = activityMap[answers.activite !== undefined ? answers.activite : 1];
+
+  let data = { hasCycle, age, weight, height, activityFactor };
+  data.objectif = answers.objectif;
+  data.zones = answers.zones || [];
+  data.douleurs = answers.douleurs || [];
+  data.activite = answers.activite;
+  data.problematique = answers.problematique || [];
+  data.temps = answers.temps;
+
+  if(hasCycle){
+    const lastPeriod = document.getElementById("input-last-period").value;
+    if(!lastPeriod){
+      alert("Merci d'indiquer la date de début de tes dernières règles 🌸");
+      return;
+    }
+    data.lastPeriod = lastPeriod;
+    data.cycleLength = parseInt(document.getElementById("input-cycle-length").value) || 28;
+    data.periodLength = parseInt(document.getElementById("input-period-length").value) || 5;
+  } else {
+    data.goalObjectif = answers.objectif || 0;
+    data.weightGoalModifier = parseFloat(document.getElementById("input-weight-goal").value) || 0;
+  }
+
+  // date de départ du programme 12 semaines (fixée une seule fois)
+  const existing = loadCycleData();
+  data.programStartDate = (existing && existing.programStartDate) ? existing.programStartDate : new Date().toISOString().slice(0,10);
+
+  try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  try{ localStorage.setItem("moncocon_last_objectif", answers.objectif); }catch(e){}
+
+  if(isRetakeMode){
+    // Déjà connectée : on met juste à jour ses données, pas de nouveau compte ni nouveau mail
+    updateQuizResultsDirect(data);
+    isRetakeMode = false;
+  } else {
+    // Première inscription : webhook → Google Sheet + création de compte + email d'identifiants
+    sendResponsesToWebhook(firstname, email, data);
+  }
+
+  document.getElementById("screen-profile").style.display = "none";
+  showResult();
+}
+
+// ── Mode vitrine (showcase) : affiche directement un résultat d'exemple, sans compte ──
+// Utilisé pour intégrer l'appli en aperçu sur le site Scalyo (?showcase=1 dans l'URL)
+function initShowcaseModeIfNeeded(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("showcase") !== "1") return false;
+
+  answers = {
+    objectif: 0,          // Minceur & Silhouette
+    zones: [2],            // Full Body
+    douleurs: [],
+    activite: 1,            // Intermédiaire
+    problematique: [2],     // Acné / peau réactive
+    temps: 2                // 15 minutes
+  };
+
+  const demoData = {
+    hasCycle: true,
+    age: 29,
+    weight: 62,
+    height: 165,
+    activityFactor: 1.375,
+    objectif: 0,
+    zones: [2],
+    douleurs: [],
+    activite: 1,
+    problematique: [2],
+    temps: 2,
+    lastPeriod: new Date().toISOString().slice(0,10),
+    cycleLength: 28,
+    periodLength: 5,
+    programStartDate: new Date().toISOString().slice(0,10)
+  };
+
+  try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(demoData)); }catch(e){}
+
+  document.getElementById("screen-splash").style.display = "none";
+  document.getElementById("screen-choice").style.display = "none";
+  showAppHeader();
+  showResult();
+  return true;
+}
+
+// Met à jour la ligne Supabase existante d'une utilisatrice déjà connectée (pas de recréation de compte)
+async function updateQuizResultsDirect(data){
+  if(!supabaseClient) return;
+  const { data: userData } = await supabaseClient.auth.getUser();
+  if(!userData || !userData.user) return;
+
+  await supabaseClient
+    .from("quiz_results")
+    .update({ raw_data: JSON.stringify(data) })
+    .eq("user_id", userData.user.id);
+}
+
+// ── Capture des réponses du questionnaire ──
+const WEBHOOK_URL = "https://hook.eu1.make.com/6m94i2woi34i9kuw3ipu4jh48d4l8ed6";
+
+// Convertit un index (ou tableau d'index) en libellé(s) lisible(s) à partir de la question correspondante
+function labelFor(questionKey, value){
+  const q = QUESTIONS.find(q => q.key === questionKey);
+  if(!q) return value;
+  if(Array.isArray(value)){
+    return value.map(i => q.options[i] ? q.options[i].label : i).join(", ");
+  }
+  return (q.options[value] !== undefined) ? q.options[value].label : value;
+}
+
+function sendResponsesToWebhook(firstname, email, data){
+  if(!WEBHOOK_URL || WEBHOOK_URL.includes("REMPLACE_PAR_TON_WEBHOOK_ID")) return;
+
+  const payload = {
+    date: new Date().toISOString(),
+    prenom: firstname || "",
+    email: email || "",
+    age: data.age,
+    poids: data.weight,
+    taille: data.height,
+    aCycle: data.hasCycle,
+    objectif: labelFor("objectif", data.objectif),
+    zones: labelFor("zones", data.zones),
+    douleurs: labelFor("douleurs", data.douleurs),
+    niveauActivite: labelFor("activite", data.activite),
+    problematique: labelFor("problematique", data.problematique),
+    tempsDispo: labelFor("temps", data.temps),
+    dateDernieresRegles: data.lastPeriod || "",
+    dureeCycle: data.cycleLength || "",
+    dureeRegles: data.periodLength || "",
+    objectifPonderal: data.weightGoalModifier,
+    raw_data: JSON.stringify(data)
+  };
+
+  fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(()=>{ /* silencieux : ne bloque jamais l'affichage du résultat pour l'utilisatrice */ });
+}
+
+function backToQuizFromProfile(){
+  document.getElementById("screen-profile").style.display = "none";
+  document.getElementById("screen-quiz").style.display = "block";
+  currentQ = QUESTIONS.length - 1;
+  renderQuestion();
+}
+
+// Estimation Mifflin-St Jeor (femme) : BMR = 10*poids + 6.25*taille - 5*âge - 161
+function computeCalorieNeeds(data, modifier){
+  if(!data.age || !data.weight || !data.height) return null;
+  const bmr = 10*data.weight + 6.25*data.height - 5*data.age - 161;
+  const tdee = bmr * (data.activityFactor || 1.375);
+  const adjusted = tdee * (1 + modifier);
+  const low = Math.round((adjusted*0.93)/10)*10;
+  const high = Math.round((adjusted*1.07)/10)*10;
+  return { low, high, modifier };
+}
+
+function renderCalorieCard(data, modifier, modifierContextLabel){
+  const content = document.getElementById("calorie-content");
+  const result = computeCalorieNeeds(data, modifier);
+  if(!result){
+    content.innerHTML = `<p class="kcal-note">Renseigne ton âge, ton poids et ta taille dans tes paramètres pour obtenir une fourchette calorique indicative.</p>`;
+    return;
+  }
+  const modLabel = result.modifier > 0 ? `+${Math.round(result.modifier*100)}% — ${modifierContextLabel}` : (result.modifier < 0 ? `${Math.round(result.modifier*100)}% — ${modifierContextLabel}` : modifierContextLabel);
+  content.innerHTML = `
+    <div class="kcal-modifier">${modLabel}</div>
+    <div class="kcal-range"><span class="num">${result.low}–${result.high}</span><span class="unit">kcal / jour</span></div>
+    <p class="kcal-note">Cette fourchette est une estimation indicative basée sur ton profil — elle ne remplace pas l'avis d'un professionnel de santé ou d'une diététicienne. Écoute toujours tes sensations de faim et de satiété avant tout chiffre. 🌿</p>
+  `;
+}
+
+const DAY_NAMES_FULL = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+
+function renderWeeklyAgendaCycle(lastPeriod, cycleLength, periodLength, today, objectifIdx){
+  const wrap = document.getElementById("weekly-agenda");
+  wrap.innerHTML = "";
+  for(let i=0; i<7; i++){
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const diff = daysBetween(lastPeriod, d);
+    const dayInCycle = (diff % cycleLength + cycleLength) % cycleLength + 1;
+    const phaseKey = getPhaseForDay(dayInCycle, cycleLength, periodLength);
+    const templates = MENUS[phaseKey];
+    const menu = templates[i % templates.length];
+    const isToday = i===0;
+    const badge = `<span class="day-phase" style="background:${PHASE_BADGE_COLOR[phaseKey]};">${PHASES[phaseKey].emoji} ${PHASES[phaseKey].label.replace('Phase ','')}</span>`;
+    appendDayCard(wrap, d, isToday, badge, menu, objectifIdx);
+  }
+}
+
+function renderWeeklyAgendaGeneral(objectifIdx, today){
+  const wrap = document.getElementById("weekly-agenda");
+  wrap.innerHTML = "";
+  const templates = GENERAL_PROFILE[objectifIdx].menus;
+  for(let i=0; i<7; i++){
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const menu = templates[i % templates.length];
+    const isToday = i===0;
+    appendDayCard(wrap, d, isToday, "", menu, objectifIdx);
+  }
+}
+
+function getSessionsForWeekday(objectifIdx, weekday){
+  if(objectifIdx === undefined || objectifIdx === null) return [];
+  const program = TRAININGS[objectifIdx];
+  if(!program) return [];
+  return program.sessions
+    .map((s, idx) => ({ s, idx, days: getScheduledDays(objectifIdx, idx) }))
+    .filter(x => x.days.includes(weekday))
+    .map(x => x.s.title + " (" + x.s.duration + ")");
+}
+
+function appendDayCard(wrap, d, isToday, badgeHtml, menu, objectifIdx){
+  const div = document.createElement("div");
+  div.className = "day-card" + (isToday ? " today" : "");
+  const sessions = getSessionsForWeekday(objectifIdx, d.getDay());
+  const sportRow = sessions.length
+    ? `<div class="meal-row" style="margin-top:4px;"><span class="meal-label">🏋️ Sport</span><span>${sessions.join(" + ")}</span></div>`
+    : "";
+  div.innerHTML = `
+    <div class="day-card-head">
+      <span class="day-name">${isToday ? "Aujourd'hui" : DAY_NAMES_FULL[d.getDay()]} · ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
+      ${badgeHtml}
+    </div>
+    <div class="meal-row"><span class="meal-label">Petit-déj</span><span>${menu.petit_dej}</span></div>
+    <div class="meal-row"><span class="meal-label">Déjeuner</span><span>${menu.dejeuner}</span></div>
+    <div class="meal-row"><span class="meal-label">Dîner</span><span>${menu.diner}</span></div>
+    <div class="meal-row"><span class="meal-label">Collation</span><span>${menu.collation}</span></div>
+    ${sportRow}
+  `;
+  wrap.appendChild(div);
+}
+
+function getPhaseForDay(dayInCycle, cycleLength, periodLength){
+  const ovulationDay = cycleLength - 14; // approximation lutéale fixe à 14j
+  const ovuStart = ovulationDay - 1;
+  const ovuEnd = ovulationDay + 1;
+
+  if(dayInCycle <= periodLength) return "menstruelle";
+  if(dayInCycle < ovuStart) return "folliculaire";
+  if(dayInCycle <= ovuEnd) return "ovulatoire";
+  return "luteale";
+}
+
+function renderCycleTab(){
+  const data = loadCycleData();
+  if(!data){
+    document.getElementById("cycle-empty").style.display = "block";
+    document.getElementById("cycle-dashboard").style.display = "none";
+    return;
+  }
+  document.getElementById("cycle-empty").style.display = "none";
+  document.getElementById("cycle-dashboard").style.display = "block";
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  if(data.hasCycle){
+    document.getElementById("calendar-card").style.display = "block";
+    document.getElementById("agenda-subtitle").textContent = "Menus indicatifs, ajustés selon la phase de ton cycle chaque jour.";
+
+    const lastPeriod = new Date(data.lastPeriod + "T00:00:00");
+    const cycleLength = data.cycleLength;
+    const periodLength = data.periodLength;
+
+    let diff = daysBetween(lastPeriod, today);
+    let dayInCycle = (diff % cycleLength + cycleLength) % cycleLength + 1;
+    const phaseKey = getPhaseForDay(dayInCycle, cycleLength, periodLength);
+    const phase = PHASES[phaseKey];
+
+    const hero = document.getElementById("phase-hero");
+    hero.className = "phase-hero " + phase.cls;
+    document.getElementById("phase-emoji").textContent = phase.emoji;
+    document.getElementById("phase-name").textContent = phase.label;
+    document.getElementById("phase-daycount").textContent = `Jour ${dayInCycle} de ton cycle`;
+
+    document.getElementById("reco-nutrition").innerHTML = phase.nutrition.map(n=>
+      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
+    ).join("");
+    document.getElementById("reco-training").innerHTML = phase.training.map(n=>
+      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
+    ).join("") + `<div class="note-box" style="margin-top:8px;">${phase.tip}</div>`;
+
+    document.getElementById("cycle-encouragement").textContent =
+      CYCLE_ENCOURAGEMENTS[Math.floor(Math.random()*CYCLE_ENCOURAGEMENTS.length)];
+
+    renderCalorieCard(data, PHASE_CALORIE_MODIFIER[phaseKey] || 0, "cette phase du cycle");
+    renderCalendar(lastPeriod, cycleLength, periodLength, today);
+    renderWeeklyAgendaCycle(lastPeriod, cycleLength, periodLength, today, data.objectif);
+
+    const nextWrap = document.getElementById("next-periods");
+    nextWrap.innerHTML = "";
+    const cyclesSinceStart = Math.floor(diff / cycleLength);
+    for(let i=0; i<3; i++){
+      const n = cyclesSinceStart + 1 + i;
+      const nextDate = new Date(lastPeriod);
+      nextDate.setDate(nextDate.getDate() + n*cycleLength);
+      const row = document.createElement("div");
+      row.className = "next-period-row";
+      row.innerHTML = `<span>Cycle ${i===0?"prochain":`+${i+1}`}</span><b>${nextDate.toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</b>`;
+      nextWrap.appendChild(row);
+    }
+
+  } else {
+    document.getElementById("calendar-card").style.display = "none";
+    document.getElementById("agenda-subtitle").textContent = "Menus indicatifs, adaptés à ton objectif.";
+
+    const objectifIdx = data.goalObjectif !== undefined ? data.goalObjectif : 0;
+    const objLabel = QUESTIONS[0].options[objectifIdx].label;
+    const objEmoji = QUESTIONS[0].options[objectifIdx].emoji;
+    const profile = GENERAL_PROFILE[objectifIdx];
+
+    const hero = document.getElementById("phase-hero");
+    hero.className = "phase-hero phase-folliculaire";
+    document.getElementById("phase-emoji").textContent = objEmoji;
+    document.getElementById("phase-name").textContent = objLabel;
+    document.getElementById("phase-daycount").textContent = "Programme sans cycle actif";
+
+    document.getElementById("reco-nutrition").innerHTML = profile.nutrition.map(n=>
+      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
+    ).join("");
+    document.getElementById("reco-training").innerHTML = profile.training.map(n=>
+      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
+    ).join("") + `<div class="note-box" style="margin-top:8px;">${profile.tip}</div>`;
+
+    document.getElementById("cycle-encouragement").textContent =
+      CYCLE_ENCOURAGEMENTS[Math.floor(Math.random()*CYCLE_ENCOURAGEMENTS.length)];
+
+    renderCalorieCard(data, data.weightGoalModifier || 0, "selon ton objectif");
+    renderWeeklyAgendaGeneral(objectifIdx, today);
+  }
+}
+
+function renderCalendar(lastPeriod, cycleLength, periodLength, today){
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
+
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = (firstDay.getDay() + 6) % 7; // lundi=0
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const dayNames = ["L","M","M","J","V","S","D"];
+  dayNames.forEach(d=>{
+    const el = document.createElement("div");
+    el.className = "cal-day pad";
+    el.style.fontWeight = "700";
+    el.style.color = "var(--taupe)";
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  for(let i=0;i<startWeekday;i++){
+    const el = document.createElement("div");
+    el.className = "cal-day pad";
+    grid.appendChild(el);
+  }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const date = new Date(year, month, d);
+    const diff = daysBetween(lastPeriod, date);
+    const dayInCycle = (diff % cycleLength + cycleLength) % cycleLength + 1;
+    const phaseKey = getPhaseForDay(dayInCycle, cycleLength, periodLength);
+    const clsMap = { menstruelle:"m", folliculaire:"f", ovulatoire:"o", luteale:"l" };
+    const el = document.createElement("div");
+    el.className = "cal-day " + clsMap[phaseKey];
+    if(date.getTime() === today.getTime()) el.classList.add("today");
+    el.textContent = d;
+    grid.appendChild(el);
+  }
+}
+
+/* ============================================================
+   ENTRAÎNEMENTS — programmes par objectif (liens YouTube à ajouter par Lindsay)
+   ============================================================ */
+// ⚠️ Remplace chaque videoUrl "#" par le lien YouTube réel correspondant.
+const TRAININGS = {
+  0: { // Minceur & Silhouette
+    title: "Programme Minceur & Silhouette",
+    intro: "Un mix cardio + renforcement pour affiner la silhouette durablement, à ton rythme (7, 10 ou 15 min selon ton temps disponible).",
+    sessions: [
+      { title:"Cardio brûle-graisse", duration:"10 min", focus:"Full body, intensité modérée à soutenue", howTo:"Enchaîne jumping jacks, montées de genoux et talons-fesses par intervalles de 30 sec, sans t'arrêter.", problematiques:[5,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M8OP9w8_eHY", defaultDays:[1,4] },
+      { title:"Gainage & ventre plat", duration:"7 min", focus:"Sangle abdominale, posture", howTo:"Planche sur les avant-bras, dos plat, nombril rentré, respiration régulière — tiens la position par séries de 20-30 sec.", problematiques:[5,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[2,5] },
+      { title:"Renforcement jambes & fessiers", duration:"15 min", focus:"Tonification bas du corps", howTo:"Squats lents (descente 3 sec), fentes avant alternées, pont fessier — genoux alignés avec les pieds.", problematiques:[0,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=FxW7VihuGLM", defaultDays:[3] },
+      { title:"HIIT léger", duration:"10 min", focus:"Full body, alternance effort/repos", howTo:"20 sec d'effort intense (mountain climbers, squat jumps) / 10 sec de repos, sur 8 cycles.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=BpcugHvOv5I", defaultDays:[6] }
+    ]
+  },
+  1: { // Énergie & Vitalité
+    title:"Programme Énergie & Vitalité",
+    intro:"Des séances courtes et dynamiques pour se réveiller le corps et l'esprit, sans épuiser.",
+    sessions: [
+      { title:"Réveil musculaire du matin", duration:"7 min", focus:"Mobilité, réveil en douceur", howTo:"Rotations d'épaules, cercles de bassin, étirements des bras vers le ciel — mouvements amples et lents.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", defaultDays:[1,2,3,4,5] },
+      { title:"Cardio dynamisant", duration:"10 min", focus:"Booster d'énergie, rythme cardiaque", howTo:"Montées de genoux rythmées, alternées avec des pas chassés, sur une musique entraînante.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M0UXxzLJD5c", defaultDays:[2,5] },
+      { title:"Stretching énergisant", duration:"10 min", focus:"Étirements actifs, respiration", howTo:"Étirement chat-vache, torsion douce du buste assise, respiration profonde entre chaque mouvement.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=EcYpNIol2Ws", defaultDays:[4] },
+      { title:"Renforcement léger full body", duration:"15 min", focus:"Tonus général", howTo:"Fentes, pompes sur les genoux, gainage — 3 séries de 12 répétitions, récupération 30 sec.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[6] }
+    ]
+  },
+  2: { // Me sentir bien dans mon corps
+    title:"Programme Bien-être corporel",
+    intro:"Des séances centrées sur le plaisir de bouger et la reconnexion à ton corps, sans pression de performance.",
+    sessions: [
+      { title:"Yoga doux", duration:"15 min", focus:"Souplesse, ancrage, respiration", howTo:"Posture de l'enfant, chien tête en bas, torsion douce assise — reste 5 respirations sur chaque posture.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=k7V7Ua2HjEw", defaultDays:[1,4] },
+      { title:"Pilates tonique", duration:"10 min", focus:"Renforcement profond, posture", howTo:"The hundred, roulé du dos, extension dorsale — mouvements lents, contrôlés, en expirant à l'effort.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=mm8GBCegtCg", defaultDays:[2,5] },
+      { title:"Mobilité & étirements", duration:"7 min", focus:"Détente articulaire", howTo:"Rotations de chevilles, poignets, cou — mouvements très lents, sans forcer.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Wx9sivbUgDw", defaultDays:[3] },
+      { title:"Full body en douceur", duration:"15 min", focus:"Tonus général sans impact", howTo:"Squat léger, fente statique, gainage genoux au sol — sans impact, à ton rythme.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=fdFiD9jMya4", defaultDays:[6] }
+    ]
+  },
+  3: { // Détox & Drainage
+    title:"Programme Détox & Drainage",
+    intro:"Des mouvements doux qui stimulent la circulation et le drainage naturel, sans agresser le corps.",
+    sessions: [
+      { title:"Marche active", duration:"15 min", focus:"Circulation, drainage doux", howTo:"Pas dynamique, bras qui bougent naturellement, respiration ample — en extérieur si possible.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[1,3,5] },
+      { title:"Jambes légères", duration:"10 min", focus:"Drainage jambes lourdes", howTo:"Allongée, jambes surélevées contre un mur, mouvement de pédalage lent pendant 2-3 minutes.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=1J1FgBGGCFI", defaultDays:[2] },
+      { title:"Étirements drainants", duration:"7 min", focus:"Circulation lymphatique", howTo:"Étirement des mollets contre un mur, auto-massage doux des jambes de bas en haut.", problematiques:[1,4], videoLabel:"Voir la vidéo (5 min, la plus proche de 7 min)", videoUrl:"https://www.youtube.com/watch?v=ZOHnQtYvGIY", defaultDays:[4] },
+      { title:"Cardio léger", duration:"10 min", focus:"Stimulation douce", howTo:"Marche sur place rythmée, montées de genoux légères, sans à-coups.", problematiques:[1,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Itcu_SL_j1M", defaultDays:[6] }
+    ]
+  },
+  4: { // Équilibre hormonal
+    title:"Programme Équilibre hormonal",
+    intro:"Un renforcement modéré et régulier, pensé pour soutenir le métabolisme sans surmener le corps.",
+    sessions: [
+      { title:"Renforcement musculaire modéré", duration:"15 min", focus:"Densité osseuse, tonus", howTo:"Squats, soulevé de terre à mains libres, pompes sur les genoux — 3 séries de 10-12 répétitions.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[1,4] },
+      { title:"Marche rapide", duration:"15 min", focus:"Cardio doux, gestion du stress", howTo:"Marche à allure soutenue mais confortable, en pleine conscience de ta respiration.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[2,5] },
+      { title:"Yoga hormonal", duration:"10 min", focus:"Équilibre, respiration", howTo:"Posture du papillon, torsion douce, respiration abdominale profonde.", problematiques:[], videoLabel:"Voir la vidéo (durée approximative)", videoUrl:"https://www.youtube.com/watch?v=ci5d7veXQ3w", defaultDays:[3] },
+      { title:"Gainage doux", duration:"7 min", focus:"Sangle abdominale sans impact", howTo:"Planche genoux au sol, 3 séries de 20 sec, respiration continue.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[6] }
+    ]
+  },
+  5: { // Peau & Éclat
+    title:"Programme Peau & Éclat",
+    intro:"Des séances qui stimulent la circulation sanguine pour un teint et une peau plus éclatants.",
+    sessions: [
+      { title:"Cardio léger circulatoire", duration:"10 min", focus:"Oxygénation, éclat de peau", howTo:"Talons-fesses et montées de genoux légères en continu pendant 10 minutes.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Ln3LyfX9m1I", defaultDays:[1,4] },
+      { title:"Renforcement full body", duration:"15 min", focus:"Tonus général", howTo:"Fentes latérales, squats, gainage — 3 séries de 12 répétitions.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[2,5] },
+      { title:"Étirements & respiration anti-stress", duration:"7 min", focus:"Gestion du stress, cortisol", howTo:"Assise en tailleur, main sur le ventre, respiration profonde 4 sec inspir / 6 sec expir.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=ScBJJc_CNI4", defaultDays:[3] },
+      { title:"Mobilité douce", duration:"10 min", focus:"Détente, circulation", howTo:"Cercles de bras amples, rotations du buste, mouvements lents et fluides.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=-nd6lsbF42Y", defaultDays:[6] }
+    ]
+  }
+};
+
+// Vraies cures Partner.co fournies par Lindsay
+const CURES = {
+  fibrose: {
+    name: "Cellulite fibreuse & graisse abdominale",
+    desc: "Pensée pour les zones de cellulite fibreuse résistante et la graisse abdominale localisée.",
+    url: "https://partner.co/s/ZjYyZGU5ZjY0"
+  },
+  ballonInflam: {
+    name: "Ballonnements avec terrain inflammatoire",
+    desc: "Pensée pour les ballonnements associés à un terrain inflammatoire ou une pathologie chronique.",
+    url: "https://partner.co/s/ODViYTc5Mzcx"
+  },
+  peauOedeme: {
+    name: "Acné, rosacée, cellulite adipeuse & œdèmes des jambes",
+    desc: "Pensée pour la peau réactive (acné, rosacée), la cellulite adipeuse et les jambes gonflées.",
+    url: "https://partner.co/s/MGNhMjlmYTZh"
+  },
+  stressSommeil: {
+    name: "Stress, troubles du sommeil & surmenage",
+    desc: "Pensée pour les femmes stressées, en surmenage ou avec des troubles du sommeil.",
+    url: "https://partner.co/s/ODMzNTQ0MTcy"
+  },
+  ballonSimple: {
+    name: "Ballonnements (sans terrain inflammatoire)",
+    desc: "Pensée pour les ballonnements digestifs simples, sans pathologie inflammatoire associée.",
+    url: "https://partner.co/s/NDU5MjE0YTdj"
+  },
+  menopauseMuscle: {
+    name: "Ménopause — renforcement musculaire",
+    desc: "Pensée pour la ménopause, pour accompagner la volonté de gagner du muscle et se renforcer.",
+    url: "https://partner.co/s/MDQ4YmViYzgw"
+  },
+  menopauseGlobal: {
+    name: "Ménopause — soutien global",
+    desc: "Pensée comme soutien global pendant la ménopause.",
+    url: "https://partner.co/s/ODYxYmJhZDA5"
+  }
+};
+
+// Logique de recommandation : détermine la cure la plus adaptée au profil du Bilan
+function getRecommendedCureKey(data){
+  const problematique = data.problematique || [];
+  const douleurs = data.douleurs || [];
+  const hasPathologie = douleurs.includes(4); // Pathologie chronique
+  const hasTroublesSommeil = douleurs.includes(0); // Troubles du sommeil
+
+  // Pas de cycle actif → ménopause
+  if(data.hasCycle === false){
+    if(data.weightGoalModifier === 0.1) return "menopauseMuscle"; // prise de masse
+    return "menopauseGlobal";
+  }
+
+  // Peau réactive / œdèmes ensemble
+  if(problematique.includes(2) && problematique.includes(1)) return "peauOedeme";
+  if(problematique.includes(2)) return "peauOedeme";
+
+  // Stress / sommeil (prioritaire si signalé, quel que soit l'objectif)
+  if(hasTroublesSommeil) return "stressSommeil";
+
+  // Ballonnements
+  if(problematique.includes(4)){
+    return hasPathologie ? "ballonInflam" : "ballonSimple";
+  }
+
+  // Cellulite fibreuse / graisse abdominale
+  if(problematique.includes(0) || problematique.includes(5) || data.objectif === 0) return "fibrose";
+
+  // Par défaut
+  return "fibrose";
+}
+
+function renderBoostTab(){
+  const data = loadCycleData();
+  if(!data){
+    document.getElementById("boost-empty").style.display = "block";
+    document.getElementById("boost-content").style.display = "none";
+    return;
+  }
+  document.getElementById("boost-empty").style.display = "none";
+  document.getElementById("boost-content").style.display = "block";
+
+  const mainKey = getRecommendedCureKey(data);
+  const mainCure = CURES[mainKey];
+
+  document.getElementById("boost-main-title").textContent = mainCure.name;
+  document.getElementById("boost-main-desc").textContent = mainCure.desc;
+  document.getElementById("boost-main-link").href = mainCure.url;
+
+  const otherWrap = document.getElementById("boost-other-list");
+  otherWrap.innerHTML = Object.keys(CURES)
+    .filter(k => k !== mainKey)
+    .map(k => {
+      const c = CURES[k];
+      return `<div class="reco-card"><div class="reco-title">${c.name}</div><div class="reco-desc" style="margin-bottom:8px;">${c.desc}</div><a href="${c.url}" target="_blank" rel="noopener" style="color:var(--taupe); font-size:12.5px; font-weight:600; text-decoration:underline;">Découvrir →</a></div>`;
+    }).join("");
+}
+
+const SCHEDULE_KEY = "moncocon_schedule_v1";
+const WEEKDAY_LABELS = ["D","L","M","M","J","V","S"];
+
+function loadSchedule(){
+  try{ const raw = localStorage.getItem(SCHEDULE_KEY); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+}
+function saveSchedule(schedule){
+  try{ localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedule)); }catch(e){}
+}
+
+function toggleScheduleDay(objectifIdx, sessionIdx, dayIdx){
+  const schedule = loadSchedule();
+  const key = `${objectifIdx}_${sessionIdx}`;
+  if(!schedule[key]){
+    schedule[key] = TRAININGS[objectifIdx].sessions[sessionIdx].defaultDays.slice();
+  }
+  const days = schedule[key];
+  const pos = days.indexOf(dayIdx);
+  if(pos > -1) days.splice(pos,1); else days.push(dayIdx);
+  schedule[key] = days;
+  saveSchedule(schedule);
+  renderTrainingProgram();
+}
+
+function getScheduledDays(objectifIdx, sessionIdx){
+  const schedule = loadSchedule();
+  const key = `${objectifIdx}_${sessionIdx}`;
+  return schedule[key] || TRAININGS[objectifIdx].sessions[sessionIdx].defaultDays;
+}
+
+let trainingTabInitialized = false;
+
+function renderTrainingProgram(){
+  const select = document.getElementById("input-training-objectif");
+
+  if(!trainingTabInitialized){
+    trainingTabInitialized = true;
+    try{
+      const lastObjectif = localStorage.getItem("moncocon_last_objectif");
+      if(lastObjectif !== null) select.value = lastObjectif;
+    }catch(e){}
+  }
+
+  const objectifIdx = parseInt(select.value) || 0;
+  const program = TRAININGS[objectifIdx];
+  const profileData = loadCycleData();
+  const clientProblematiques = profileData ? (profileData.problematique || []) : [];
+
+  document.getElementById("training-title").textContent = program.title;
+  document.getElementById("training-intro").textContent = program.intro;
+
+  // semaine actuelle sur 12
+  const weekWrap = document.getElementById("training-week-info");
+  if(weekWrap){
+    if(profileData && profileData.programStartDate){
+      const start = new Date(profileData.programStartDate + "T00:00:00");
+      const today = new Date(); today.setHours(0,0,0,0);
+      const weekNum = Math.min(12, Math.max(1, Math.floor(daysBetween(start, today)/7) + 1));
+      const phase = weekNum <= 4 ? "Fondations" : (weekNum <= 8 ? "Intensification" : "Optimisation");
+      weekWrap.innerHTML = `<div class="kcal-modifier">Semaine ${weekNum} / 12 — Phase ${phase}</div>`;
+    } else {
+      weekWrap.innerHTML = "";
+    }
+  }
+
+  document.getElementById("training-sessions").innerHTML = program.sessions.map((s,idx)=>{
+    const hasLink = s.videoUrl && s.videoUrl !== "#";
+    const linkHtml = hasLink
+      ? `<a href="${s.videoUrl}" target="_blank" rel="noopener" style="color:var(--taupe); font-size:12.5px; font-weight:600; text-decoration:underline;">▶ ${s.videoLabel}</a>`
+      : `<span style="color:#B5535B; font-size:12px; font-weight:600;">🔗 Lien vidéo à ajouter</span>`;
+
+    const isRecommended = s.problematiques.some(p => clientProblematiques.includes(p));
+    const recoTag = isRecommended ? `<div style="font-size:11px; font-weight:700; color:var(--gold-deep); margin-bottom:6px;">⭐ Recommandé pour ta problématique</div>` : "";
+
+    const scheduledDays = getScheduledDays(objectifIdx, idx);
+    const dayButtons = WEEKDAY_LABELS.map((label, dayIdx)=>{
+      const active = scheduledDays.includes(dayIdx);
+      return `<button onclick="toggleScheduleDay(${objectifIdx},${idx},${dayIdx})" style="width:28px; height:28px; border-radius:8px; border:none; font-size:11px; font-weight:700; cursor:pointer; margin-right:4px; background:${active ? 'var(--gold-deep)' : 'var(--ivoire)'}; color:${active ? '#fff' : 'var(--taupe)'};">${label}</button>`;
+    }).join("");
+
+    return `
+      <div class="reco-card">
+        ${recoTag}
+        <div class="reco-title">${s.title} · <span style="color:var(--gold-deep);">${s.duration}</span></div>
+        <div class="reco-desc" style="margin-bottom:6px;">${s.focus}</div>
+        <div class="reco-desc" style="margin-bottom:8px; font-style:italic;">💡 ${s.howTo}</div>
+        ${linkHtml}
+        <div style="margin-top:10px;">
+          <div style="font-size:11px; color:var(--taupe); font-weight:600; margin-bottom:6px;">Programmée :</div>
+          ${dayButtons}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // teaser vers l'onglet Boost (la cure recommandée s'y trouve, mise en avant)
+  const teaserWrap = document.getElementById("training-sessions");
+  teaserWrap.innerHTML += `
+    <div class="note-box" style="margin-top:8px; cursor:pointer;" onclick="switchTab('boost')">
+      ✨ Un soutien complémentaire est disponible pour accompagner ce programme → onglet <strong>✨ Boost</strong>
+    </div>
+  `;
+}
+
+/* init */
+toggleCycleFields();
+renderCycleTab();
+
+// ── PWA : enregistrement du service worker (installation + hors-ligne) ──
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+  });
+}
+</script>
+<!-- Bannière d'installation -->
+<div id="install-banner">
+  <div class="install-row">
+    <div class="install-txt" id="install-banner-text"></div>
+    <button class="install-btn" id="install-banner-btn" onclick="triggerInstall()">Installer</button>
+    <button class="install-close" onclick="dismissInstallBanner()">✕</button>
+  </div>
+</div>
+
+</body>
+</html>
