@@ -71,7 +71,7 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   let data = {};
   try{ data = event.data ? event.data.json() : {}; }catch(e){}
-  const title = data.title || "Mon Cocon 💧";
+  const title = data.title || "💧 Rappel hydratation";
   const options = {
     body: data.body || "Petit rappel tout en douceur : pense à boire un verre d'eau !",
     icon: "/icon-192.png",

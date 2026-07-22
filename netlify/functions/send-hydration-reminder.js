@@ -52,7 +52,7 @@ exports.handler = async function () {
     "Prends un peu de temps pour toi et pense à bien t'hydrater 💧"
   ];
   const payload = JSON.stringify({
-    title: "Mon Cocon 💧",
+    title: "💧 Rappel hydratation",
     body: MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
   });
 
