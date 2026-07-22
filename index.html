@@ -50,39 +50,34 @@
   .app{
     max-width: 560px;
     margin: 0 auto;
-    padding: 24px 20px 60px;
+    padding: 24px 20px 100px;
     min-height:100vh;
   }
 
-  /* ---------- NAV ---------- */
-  .app-header{
+  /* ---------- NAV (bottom bar, style minimal sans couleur) ---------- */
+  .bottom-nav{
+    position:fixed; left:0; right:0; bottom:0;
     display:flex;
-    align-items:center;
-    gap:8px;
-    margin-bottom: 24px;
-    position: sticky;
-    top: 12px;
-    z-index: 50;
-  }
-  .tabbar{
-    display:flex;
-    gap:8px;
     background: var(--white);
-    border-radius: 999px;
-    padding:6px;
-    box-shadow: var(--shadow-sm);
+    border-top: 1px solid rgba(76,52,46,0.08);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+    box-shadow: 0 -6px 20px rgba(76,52,46,0.06);
+    max-width: 560px;
+    margin: 0 auto;
   }
-  #menu-toggle-btn{
-    flex-shrink:0;
-    width:44px; height:44px;
-    border-radius:50%;
-    border:none;
-    background:var(--white);
-    box-shadow: var(--shadow-sm);
-    font-size:18px;
-    color:var(--brown);
-    cursor:pointer;
+  .bottom-nav-item{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:none; border:none; cursor:pointer;
+    padding:6px 2px;
+    color:#B9ACA3;
+    font-family:'Poppins'; font-size:10.5px; font-weight:500;
+    transition: color .15s ease;
   }
+  .bottom-nav-item svg{ width:22px; height:22px; }
+  .bottom-nav-item.active{ color: var(--brown); font-weight:700; }
+  .bottom-nav-item.active svg{ stroke-width:2; }
 
   /* MENU LATÉRAL */
   #menu-overlay{
@@ -126,25 +121,6 @@
     background:none; border:1.5px solid #8a3b34;
     color:#8a3b34; font-family:'Poppins'; font-weight:700; font-size:14px;
     padding:13px; border-radius:14px; cursor:pointer;
-  }
-  .tabbtn{
-    flex:1;
-    border:none;
-    background:transparent;
-    padding:11px 6px;
-    border-radius:999px;
-    font-family:'Poppins';
-    font-weight:600;
-    font-size:12.5px;
-    color: var(--taupe);
-    cursor:pointer;
-    transition: all .25s ease;
-    white-space:nowrap;
-  }
-  .tabbtn.active{
-    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
-    color: var(--white);
-    box-shadow: 0 4px 12px rgba(201,169,110,0.4);
   }
 
   .view{ display:none; animation: fadeIn .4s ease; }
@@ -307,31 +283,42 @@
 
   /* ---------- RESPONSIVE : petits écrans (iPhone SE, mini, Android compacts) ---------- */
   @media (max-width: 380px){
-    .app{ padding: 20px 14px 60px; }
-    .app-header{ gap:6px; }
-    .tabbar{ padding:5px; gap:4px; }
-    .tabbtn{ font-size:10.5px; padding:9px 3px; }
-    #menu-toggle-btn{ width:38px; height:38px; font-size:16px; }
+    .app{ padding: 20px 14px 96px; }
+    .bottom-nav-item{ font-size:9.5px; }
+    .bottom-nav-item svg{ width:20px; height:20px; }
     .hero h1{ font-size:25px; }
     .hero .big-emoji{ font-size:36px; }
   }
   @media (max-width: 340px){
-    .tabbtn{ font-size:9.5px; padding:8px 2px; }
+    .bottom-nav-item{ font-size:8.5px; }
   }
 </style>
 </head>
 <body>
 <div class="app">
 
-  <div class="app-header" id="app-header" style="display:none;">
-    <div class="tabbar" style="flex:1; margin-bottom:0;">
-      <button class="tabbtn active" data-tab="bilan" onclick="switchTab('bilan')">🌿 Bilan</button>
-      <button class="tabbtn" data-tab="cycle" onclick="switchTab('cycle')">🌙 Nutrition</button>
-      <button class="tabbtn" data-tab="training" onclick="switchTab('training')">🏋️ Sport</button>
-      <button class="tabbtn" data-tab="boost" onclick="switchTab('boost')">✨ Boost</button>
-    </div>
-    <button id="menu-toggle-btn" onclick="openMenu()" aria-label="Menu">☰</button>
-  </div>
+  <nav class="bottom-nav" id="app-header" style="display:none;">
+    <button class="bottom-nav-item active" data-tab="bilan" onclick="switchTab('bilan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Bilan</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="cycle" onclick="switchTab('cycle')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v6a2 2 0 0 0 2 2v12"/><path d="M5 2v6M9 2v6"/><path d="M17 2c-1.6 0-3 1.6-3 4v3c0 1.6 1 2.6 2 2.6V22"/></svg>
+      <span>Nutrition</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="training" onclick="switchTab('training')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8v8M18 8v8"/><path d="M2 10v4M22 10v4"/><path d="M6 12h12"/></svg>
+      <span>Sport</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="boost" onclick="switchTab('boost')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
+      <span>Boost</span>
+    </button>
+    <button class="bottom-nav-item" id="menu-toggle-btn" onclick="openMenu()" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      <span>Menu</span>
+    </button>
+  </nav>
 
   <!-- ============ TAB 1 : BILAN (quiz existant) ============ -->
   <div class="view active" id="view-bilan">
@@ -1265,7 +1252,7 @@ let answers = {};
 let isRetakeMode = false; // true quand une utilisatrice déjà connectée refait le questionnaire
 
 function switchTab(tab){
-  document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.querySelectorAll(".bottom-nav-item").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
   document.getElementById("view-bilan").classList.toggle("active", tab==="bilan");
   document.getElementById("view-cycle").classList.toggle("active", tab==="cycle");
   document.getElementById("view-training").classList.toggle("active", tab==="training");
