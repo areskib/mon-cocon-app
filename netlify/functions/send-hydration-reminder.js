@@ -37,9 +37,13 @@ exports.handler = async function () {
 
   const subscriptions = await res.json();
 
+  const MESSAGES = [
+    "Petit rappel : pense à bien t'hydrater 💧",
+    "Prends un peu de temps pour toi et pense à bien t'hydrater 💧"
+  ];
   const payload = JSON.stringify({
     title: "Mon Cocon 💧",
-    body: "Petit rappel tout en douceur : pense à boire un verre d'eau !"
+    body: MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
   });
 
   const results = await Promise.allSettled(
