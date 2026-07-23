@@ -1152,17 +1152,25 @@ async function loadTrackerData(){
   try{
     const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
     if(userErr) console.error("Erreur auth.getUser():", userErr);
-    if(!userData || !userData.user) return;
-    const { data, error } = await supabaseClient
+    if(!userData || !userData.user){
+      trackerLoadError = "Session introuvable (non connectée ?)";
+      renderTrackerChart();
+      renderTrackerWeekList();
+      return;
+    }
+    const { data, error, count } = await supabaseClient
       .from("body_tracking")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("user_id", userData.user.id)
       .order("week_number", { ascending: true });
     if(error){
       console.error("Erreur chargement tracker:", error);
       trackerLoadError = error.message || "Erreur inconnue";
-    } else if(data){
+    } else if(data && data.length > 0){
       trackerData = data;
+    } else {
+      // DEBUG TEMPORAIRE : aide à diagnostiquer un éventuel souci d'ID utilisateur
+      trackerLoadError = "DEBUG — user_id utilisé : " + userData.user.id + " (0 ligne trouvée, count=" + count + ")";
     }
   }catch(e){
     console.error("Erreur chargement tracker:", e);
