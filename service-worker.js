@@ -1,4 +1,4 @@
-const CACHE_NAME = "mon-cocon-v2";
+const CACHE_NAME = "mon-cocon-v3";
 const ASSETS_TO_CACHE = [
   "/index.html",
   "/manifest.json",
@@ -34,9 +34,11 @@ self.addEventListener("fetch", (event) => {
 
   if (isHTML) {
     // Network-first : on va toujours chercher la dernière version en ligne.
-    // Le cache ne sert que de secours si l'utilisatrice est hors-ligne.
+    // cache: "no-store" force à ignorer le cache HTTP du navigateur lui-même (pas
+    // seulement le Cache Storage du service worker), sinon certains navigateurs
+    // (Safari iOS notamment) peuvent servir une réponse HTTP disque périmée.
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-store" })
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
