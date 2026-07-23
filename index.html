@@ -243,13 +243,19 @@
     background:var(--white); border-radius:18px; padding:16px 14px 8px; box-shadow:var(--shadow-sm); margin-bottom:18px;
   }
   .tracker-chart-empty{ text-align:center; padding:30px 10px; color:var(--taupe); font-size:13.5px; }
-  .tracker-week-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
-  .tracker-week-row{
-    display:flex; justify-content:space-between; align-items:center;
-    background:var(--white); border-radius:12px; padding:10px 14px; box-shadow:var(--shadow-sm); font-size:13px;
+  .tracker-week-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .tracker-week-card{
+    background:var(--white); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow-sm);
   }
-  .tracker-week-row strong{ color:var(--brown); }
-  .tracker-week-row span{ color:var(--taupe); }
+  .tracker-week-card-header{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .tracker-week-badge{
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color:var(--white);
+    font-family:'Poppins'; font-weight:700; font-size:12px; padding:4px 11px; border-radius:99px;
+  }
+  .tracker-week-stats{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px 8px; }
+  .tracker-stat{ display:flex; flex-direction:column; }
+  .tracker-stat-label{ font-size:10.5px; color:var(--taupe); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .tracker-stat-value{ font-size:14px; color:var(--brown); font-weight:700; font-family:'Poppins'; }
 
   .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:6px; margin: 14px 0 20px; }
   .cal-day{
@@ -1168,9 +1174,6 @@ async function loadTrackerData(){
       trackerLoadError = error.message || "Erreur inconnue";
     } else if(data && data.length > 0){
       trackerData = data;
-    } else {
-      // DEBUG TEMPORAIRE : aide à diagnostiquer un éventuel souci d'ID utilisateur
-      trackerLoadError = "DEBUG — user_id utilisé : " + userData.user.id + " (0 ligne trouvée, count=" + count + ")";
     }
   }catch(e){
     console.error("Erreur chargement tracker:", e);
@@ -1279,16 +1282,25 @@ function renderTrackerChart(){
 function renderTrackerWeekList(){
   const list = document.getElementById("tracker-week-list");
   if(trackerData.length === 0){ list.innerHTML = ""; return; }
-  const rows = [...trackerData].sort((a,b)=>b.week_number-a.week_number).map(row=>{
-    const parts = [];
-    if(row.weight!=null) parts.push(row.weight+" kg");
-    if(row.waist!=null) parts.push("taille "+row.waist+"cm");
-    if(row.hip!=null) parts.push("hanches "+row.hip+"cm");
-    if(row.arm!=null) parts.push("bras "+row.arm+"cm");
-    if(row.thigh!=null) parts.push("cuisses "+row.thigh+"cm");
-    return `<div class="tracker-week-row"><strong>Semaine ${row.week_number}</strong><span>${parts.join(" · ")}</span></div>`;
+  const statDefs = [
+    { key:"weight", label:"Poids", unit:"kg" },
+    { key:"waist", label:"Taille", unit:"cm" },
+    { key:"hip", label:"Hanches", unit:"cm" },
+    { key:"arm", label:"Bras", unit:"cm" },
+    { key:"thigh", label:"Cuisses", unit:"cm" }
+  ];
+  const cards = [...trackerData].sort((a,b)=>b.week_number-a.week_number).map(row=>{
+    const stats = statDefs
+      .filter(s=>row[s.key]!=null)
+      .map(s=>`<div class="tracker-stat"><span class="tracker-stat-label">${s.label}</span><span class="tracker-stat-value">${row[s.key]} ${s.unit}</span></div>`)
+      .join("");
+    return `
+      <div class="tracker-week-card">
+        <div class="tracker-week-card-header"><span class="tracker-week-badge">Semaine ${row.week_number}</span></div>
+        <div class="tracker-week-stats">${stats}</div>
+      </div>`;
   }).join("");
-  list.innerHTML = rows;
+  list.innerHTML = cards;
 }
 
 function openTrackerForm(){
