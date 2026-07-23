@@ -1122,6 +1122,7 @@ let trackerData = [];
 let trackerMetric = "weight";      // "weight" | "measurements"
 let trackerSubMetric = "waist";    // "waist" | "hip" | "arm" | "thigh"
 let trackerView = "weekly";        // "weekly" | "monthly"
+let trackerLoadError = null;
 
 const TRACKER_LABELS = {
   weight: "Poids (kg)",
@@ -1147,17 +1148,25 @@ function closeTrackerScreen(){
 
 async function loadTrackerData(){
   trackerData = [];
+  trackerLoadError = null;
   try{
-    const { data: userData } = await supabaseClient.auth.getUser();
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+    if(userErr) console.error("Erreur auth.getUser():", userErr);
     if(!userData || !userData.user) return;
     const { data, error } = await supabaseClient
       .from("body_tracking")
       .select("*")
       .eq("user_id", userData.user.id)
       .order("week_number", { ascending: true });
-    if(!error && data) trackerData = data;
+    if(error){
+      console.error("Erreur chargement tracker:", error);
+      trackerLoadError = error.message || "Erreur inconnue";
+    } else if(data){
+      trackerData = data;
+    }
   }catch(e){
     console.error("Erreur chargement tracker:", e);
+    trackerLoadError = e.message || "Erreur inconnue";
   }
   renderTrackerChart();
   renderTrackerWeekList();
@@ -1214,7 +1223,11 @@ function renderTrackerChart(){
 
   const known = values.filter(v=>v!==null && v!==undefined);
   if(known.length === 0){
-    container.innerHTML = `<div class="tracker-chart-empty">Pas encore de données pour "${TRACKER_LABELS[key]}".<br>Ajoute ton premier suivi ci-dessous 🌸</div>`;
+    if(trackerLoadError){
+      container.innerHTML = `<div class="tracker-chart-empty">⚠️ Erreur de chargement : ${trackerLoadError}</div>`;
+    }else{
+      container.innerHTML = `<div class="tracker-chart-empty">Pas encore de données pour "${TRACKER_LABELS[key]}".<br>Ajoute ton premier suivi ci-dessous 🌸</div>`;
+    }
     return;
   }
 
