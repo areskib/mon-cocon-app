@@ -1156,24 +1156,22 @@ async function loadTrackerData(){
   trackerData = [];
   trackerLoadError = null;
   try{
-    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
-    if(userErr) console.error("Erreur auth.getUser():", userErr);
-    if(!userData || !userData.user){
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+    if(!token){
       trackerLoadError = "Session introuvable (non connectée ?)";
       renderTrackerChart();
       renderTrackerWeekList();
       return;
     }
-    const { data, error, count } = await supabaseClient
-      .from("body_tracking")
-      .select("*", { count: "exact" })
-      .eq("user_id", userData.user.id)
-      .order("week_number", { ascending: true });
-    if(error){
-      console.error("Erreur chargement tracker:", error);
-      trackerLoadError = error.message || "Erreur inconnue";
-    } else if(data && data.length > 0){
-      trackerData = data;
+    const res = await fetch("/.netlify/functions/tracking-list", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const json = await res.json();
+    if(!res.ok){
+      trackerLoadError = json.error || "Erreur inconnue";
+    }else{
+      trackerData = json.data || [];
     }
   }catch(e){
     console.error("Erreur chargement tracker:", e);
@@ -1343,29 +1341,36 @@ async function submitTrackerForm(){
     return v==="" ? null : parseFloat(v);
   };
 
-  const { data: userData } = await supabaseClient.auth.getUser();
-  if(!userData || !userData.user){
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+  if(!token){
     showMsg("Erreur : merci de te reconnecter.", true);
     return;
   }
 
-  const { error } = await supabaseClient.from("body_tracking").insert({
-    user_id: userData.user.id,
-    week_number: weekNumber,
-    weight: val("tracker-weight"),
-    waist: val("tracker-waist"),
-    hip: val("tracker-hip"),
-    arm: val("tracker-arm"),
-    thigh: val("tracker-thigh")
-  });
+  let res, json;
+  try{
+    res = await fetch("/.netlify/functions/tracking-save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        week_number: weekNumber,
+        weight: val("tracker-weight"),
+        waist: val("tracker-waist"),
+        hip: val("tracker-hip"),
+        arm: val("tracker-arm"),
+        thigh: val("tracker-thigh")
+      })
+    });
+    json = await res.json();
+  }catch(e){
+    showMsg("Une erreur est survenue, réessaie dans un instant.", true);
+    console.error(e);
+    return;
+  }
 
-  if(error){
-    if(error.code === "23505"){
-      showMsg(`Tu as déjà renseigné tes infos pour la semaine ${weekNumber} 🌸`, true);
-    }else{
-      showMsg("Une erreur est survenue, réessaie dans un instant.", true);
-      console.error(error);
-    }
+  if(!res.ok){
+    showMsg(json.error || "Une erreur est survenue, réessaie dans un instant.", true);
     return;
   }
 
