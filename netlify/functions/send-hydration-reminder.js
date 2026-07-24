@@ -25,8 +25,9 @@ exports.handler = async function () {
     new Intl.DateTimeFormat("fr-FR", { hour: "numeric", hour12: false, timeZone: "Europe/Paris" }).format(new Date()),
     10
   );
-  if (parisHour < 8 || parisHour >= 21) {
-    return { statusCode: 200, body: "Hors plage horaire (8h-21h Paris), rien envoyé." };
+  // Envoi toutes les 3h uniquement (8h, 11h, 14h, 17h, 20h heure de Paris)
+  if (parisHour < 8 || parisHour >= 21 || (parisHour - 8) % 3 !== 0) {
+    return { statusCode: 200, body: "Hors créneau (toutes les 3h entre 8h et 21h Paris), rien envoyé." };
   }
 
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
