@@ -107,7 +107,7 @@
   }
   #side-drawer{
     position:fixed; top:0; right:0; bottom:0;
-    width:78%; max-width:300px;
+    width:80%; max-width:310px;
     background: rgba(255,255,255,0.85);
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
@@ -116,35 +116,59 @@
     transform:translateX(100%);
     transition:transform .3s cubic-bezier(.2,.8,.2,1);
     display:flex; flex-direction:column;
-    padding:24px 18px;
+    padding:22px 18px;
     box-shadow:-16px 0 40px rgba(76,52,46,0.18);
   }
   #side-drawer.open{ transform:translateX(0); }
   #menu-overlay.open{ display:block; }
+  .drawer-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:22px; padding-bottom:16px;
+    border-bottom: 1px solid rgba(201,169,110,0.18);
+  }
+  .drawer-logo{
+    display:flex; align-items:center; gap:9px;
+    font-family:'Lora'; font-weight:700; font-size:17px; color:var(--brown);
+  }
+  .drawer-logo .emoji{ font-size:20px; }
   .drawer-close{
-    align-self:flex-end;
-    background:none; border:none;
-    font-size:20px; color:var(--taupe);
-    cursor:pointer; margin-bottom:20px;
+    width:34px; height:34px; border-radius:50%;
+    background: var(--ivoire-2); border:1px solid rgba(201,169,110,0.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; color:var(--taupe);
+    cursor:pointer; transition: background .2s ease;
   }
-  .drawer-items{ display:flex; flex-direction:column; gap:6px; flex:1; }
+  .drawer-close:active{ background: var(--ivoire); }
+  .drawer-items{ display:flex; flex-direction:column; gap:9px; flex:1; }
   .drawer-items button{
-    display:flex; align-items:center; gap:12px;
+    display:flex; align-items:center; gap:13px;
     text-align:left;
-    background:none; border:none;
-    padding:14px 10px;
-    font-family:'Poppins'; font-weight:600; font-size:14.5px;
+    background: linear-gradient(135deg, var(--white), var(--ivoire-2));
+    border: 1px solid rgba(201,169,110,0.14);
+    padding:11px; border-radius:17px;
+    font-family:'Poppins'; font-weight:600; font-size:13.5px;
     color:var(--brown);
-    border-radius:14px;
     cursor:pointer;
-    transition: background .2s ease;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease;
   }
-  .drawer-items button:active{ background: linear-gradient(135deg, var(--ivoire-2), var(--ivoire)); }
+  .drawer-items button:active{ transform: scale(.97); box-shadow:none; }
+  .drawer-item-icon{
+    width:38px; height:38px; border-radius:13px; flex-shrink:0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+    display:flex; align-items:center; justify-content:center;
+    font-size:17px;
+    box-shadow: 0 4px 10px -2px rgba(201,169,110,0.4);
+  }
   .drawer-logout{
-    background:none; border:1.5px solid #8a3b34;
+    margin-top:14px;
+    background: linear-gradient(135deg, var(--white), var(--ivoire-2));
+    border:1.5px solid #8a3b34;
     color:#8a3b34; font-family:'Poppins'; font-weight:700; font-size:14px;
-    padding:13px; border-radius:16px; cursor:pointer;
+    padding:14px; border-radius:17px; cursor:pointer;
+    transition: transform .15s ease;
   }
+  .drawer-logout:active{ transform: scale(.97); }
 
   .view{ display:none; animation: fadeIn .4s ease; }
   .view.active{ display:block; }
@@ -639,10 +663,6 @@
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
         <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
       </div>
-
-      <div class="nav-row">
-        <button class="btn btn-primary btn-full" onclick="restartQuiz()">🔄 Recommencer le bilan</button>
-      </div>
     </div>
   </div>
 
@@ -718,10 +738,6 @@
         <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Découvre "Tempête émotionnelle"</button>
         <button onclick="switchTab('boost')">✨ Va voir tes contenus Boost</button>
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
-      </div>
-
-      <div class="link-row">
-        <button onclick="switchTab('bilan'); restartQuiz();">✏️ Modifier mes informations (refaire le Bilan)</button>
       </div>
     </div>
   </div>
@@ -919,7 +935,7 @@
   </div>
 
   <div class="card" id="screen-video" style="display:none; padding:14px;">
-    <video id="presentation-video" src="/video-presentation.mp4" playsinline autoplay onended="closePresentationVideo()" style="width:100%; display:block; border-radius:16px; background:#000;"></video>
+    <video id="presentation-video" src="/video-presentation.mp4" playsinline controls autoplay onended="closePresentationVideo()" style="width:100%; display:block; border-radius:16px; background:#000;"></video>
     <button class="btn btn-full" style="margin-top:14px;" onclick="closePresentationVideo()">Passer la vidéo →</button>
   </div>
 
@@ -928,13 +944,16 @@
 <!-- MENU LATÉRAL -->
 <div id="menu-overlay" onclick="closeMenu()"></div>
 <div id="side-drawer">
-  <button class="drawer-close" onclick="closeMenu()">✕</button>
+  <div class="drawer-header">
+    <div class="drawer-logo"><span class="emoji">🌿</span> Mon Cocon</div>
+    <button class="drawer-close" onclick="closeMenu()">✕</button>
+  </div>
   <div class="drawer-items">
-    <button onclick="openStormFromMenu()">🌊 Tempête émotionnelle</button>
-    <button onclick="openTrackerFromMenu()">🌱 Mon Évolution</button>
-    <button onclick="playPresentationVideo()">🎬 Visionner la vidéo de présentation</button>
-    <button onclick="enablePushNotifications()">🔔 Activer les rappels hydratation</button>
-    <button onclick="contactAdvisorFromMenu()">📅 Mon rdv de suivi hebdo</button>
+    <button onclick="enablePushNotifications()"><span class="drawer-item-icon">🔔</span><span>Rappels hydratation</span></button>
+    <button onclick="playPresentationVideo()"><span class="drawer-item-icon">🎬</span><span>Vidéo de présentation</span></button>
+    <button onclick="contactAdvisorFromMenu()"><span class="drawer-item-icon">📅</span><span>Mon rdv de suivi hebdo</span></button>
+    <button onclick="openTrackerFromMenu()"><span class="drawer-item-icon">🌱</span><span>Mon Évolution</span></button>
+    <button onclick="openStormFromMenu()"><span class="drawer-item-icon">🌊</span><span>Tempête émotionnelle</span></button>
   </div>
   <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
 </div>
@@ -1479,35 +1498,53 @@ async function submitTrackerForm(){
 /* ============================================================
    TEMPÊTE ÉMOTIONNELLE
    ============================================================ */
-const STORM_TIPS = [
+const STORM_TIPS_POOL = [
   { emoji:"💧", text:"Bois un grand verre d'eau, lentement." },
   { emoji:"🧘‍♀️", text:"Prends 5 minutes de pause pour calmer tes pensées." },
   { emoji:"🍫", text:"Prends un carré de chocolat noir ou un fruit." },
   { emoji:"🏋️‍♀️", text:"Fais quelques squats pour activer ton corps." },
-  { emoji:"🌸", text:"Respire profondément. Cette tempête va passer, et tu es plus forte qu'elle." }
+  { emoji:"🌸", text:"Respire profondément. Cette tempête va passer, et tu es plus forte qu'elle." },
+  { emoji:"🚶‍♀️", text:"Sors marcher 5 minutes, même juste autour du pâté de maisons." },
+  { emoji:"📝", text:"Note ce que tu ressens sur un bout de papier, sans te juger." },
+  { emoji:"🎵", text:"Mets une musique qui te fait du bien et laisse-toi porter." },
+  { emoji:"🤲", text:"Pose une main sur ton cœur et rappelle-toi : tu fais de ton mieux." },
+  { emoji:"🛁", text:"Offre-toi une douche ou un bain chaud, juste pour toi." },
+  { emoji:"📵", text:"Éloigne-toi de ton téléphone 5 minutes, le monde attendra." },
+  { emoji:"🌿", text:"Étire doucement ton corps : épaules, nuque, dos." }
 ];
+let stormSequence = [];
 let stormIndex = 0;
+
+function shuffleArray(arr){
+  const a = [...arr];
+  for(let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
 
 function openStormFromMenu(){
   closeMenu();
   hideAllTopScreens();
   document.getElementById("screen-storm").style.display = "block";
+  stormSequence = shuffleArray(STORM_TIPS_POOL).slice(0, 5);
   stormIndex = 0;
   renderStormStep();
 }
 
 function renderStormStep(){
-  const tip = STORM_TIPS[stormIndex];
+  const tip = stormSequence[stormIndex];
   document.getElementById("storm-emoji").textContent = tip.emoji;
   document.getElementById("storm-text").textContent = tip.text;
-  document.getElementById("storm-dots").innerHTML = STORM_TIPS
+  document.getElementById("storm-dots").innerHTML = stormSequence
     .map((_,i)=>`<span class="storm-dot${i===stormIndex ? ' active' : ''}"></span>`)
     .join("");
 }
 
 function nextStormTip(){
   stormIndex++;
-  if(stormIndex >= STORM_TIPS.length){
+  if(stormIndex >= stormSequence.length){
     closeStormScreen();
     return;
   }
@@ -1578,14 +1615,6 @@ function maybeOpenTrackerFromNotification(){
       openTrackerForm();
     }, 300);
   }
-}
-
-function restartQuizFromMenu(){
-  closeMenu();
-  document.getElementById("screen-account").style.display = "none";
-  document.getElementById("screen-account-pwd").style.display = "none";
-  isRetakeMode = true;
-  startQuiz();
 }
 
 function contactAdvisorFromMenu(){
@@ -1964,13 +1993,6 @@ function finishRetakeDirectly(){
   showResult();
 }
 
-
-function restartQuiz(){
-  isRetakeMode = true;
-  document.getElementById("screen-result").style.display="none";
-  document.getElementById("screen-profile").style.display="none";
-  startQuiz();
-}
 
 function showResult(){
   document.getElementById("screen-quiz").style.display="none";
