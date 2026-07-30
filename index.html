@@ -858,6 +858,16 @@
   </div>
 
   <!-- VIDÉO DE PRÉSENTATION -->
+  <!-- FÉLICITATIONS (juste après le questionnaire, avant la vidéo) -->
+  <div class="card" id="screen-congrats" style="display:none;" onclick="advanceFromCongrats()">
+    <div class="hero">
+      <div class="big-emoji">🥳</div>
+      <h1 id="congrats-title" style="font-size:26px;"></h1>
+      <p id="congrats-text" style="font-family:'Lora'; font-style:italic; font-size:15px; color:var(--brown); line-height:1.6; margin-top:10px; text-align:center;"></p>
+    </div>
+    <p style="text-align:center; color:var(--gold-deep); font-family:'Poppins'; font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; margin-top:30px;">Touche l'écran pour continuer</p>
+  </div>
+
   <div class="card" id="screen-video" style="display:none; padding:14px;">
     <video id="presentation-video" src="/video-presentation.mp4" playsinline autoplay onended="closePresentationVideo()" style="width:100%; display:block; border-radius:16px; background:#000;"></video>
     <button class="btn btn-full" style="margin-top:14px;" onclick="closePresentationVideo()">Passer la vidéo →</button>
@@ -1174,7 +1184,7 @@ function openTrackerFromMenu(){
 
 function hideAllTopScreens(){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  ["screen-result","screen-tracker","screen-tracker-form","screen-storm","screen-video"].forEach(id=>{
+  ["screen-result","screen-tracker","screen-tracker-form","screen-storm","screen-video","screen-congrats"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.display = "none";
   });
@@ -1461,6 +1471,27 @@ function closeStormScreen(){
 /* ============================================================
    VIDÉO DE PRÉSENTATION
    ============================================================ */
+/* ============================================================
+   FÉLICITATIONS (post-questionnaire, avant la vidéo)
+   ============================================================ */
+let congratsCallback = null;
+
+function showCongratsScreen(firstname, onContinue){
+  congratsCallback = onContinue || null;
+  const name = firstname ? firstname : "";
+  document.getElementById("congrats-title").textContent = `Félicitations ${name} 🥳`;
+  document.getElementById("congrats-text").textContent =
+    "Bienvenue dans ton parcours personnalisé de 12 semaines 🌿 ! Tu viens de franchir la première étape ! Tu n'as pas besoin d'être parfaite, tu dois simplement avancer, un pas après l'autre.";
+  document.getElementById("screen-congrats").style.display = "block";
+}
+
+function advanceFromCongrats(){
+  document.getElementById("screen-congrats").style.display = "none";
+  const cb = congratsCallback;
+  congratsCallback = null;
+  if(cb) cb();
+}
+
 let videoOnCloseCallback = null;
 
 function showPresentationVideo(onCloseCallback){
@@ -2233,7 +2264,9 @@ function saveProfileAndShowResult(){
   } else {
     // Première inscription : webhook → Google Sheet + création de compte + email d'identifiants
     sendResponsesToWebhook(firstname, email, data);
-    showPresentationVideo(function(){ showResult(); });
+    showCongratsScreen(firstname, function(){
+      showPresentationVideo(function(){ showResult(); });
+    });
   }
 }
 
