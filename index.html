@@ -201,8 +201,12 @@
     padding:17px; border-radius:18px; border:2px solid transparent;
     background: var(--ivoire-2);
     margin-bottom:12px; cursor:pointer; transition: all .2s ease;
+    touch-action: manipulation;
+    position:relative; z-index:1;
   }
-  .option:hover{ border-color: var(--gold); }
+  @media (hover:hover){
+    .option:hover{ border-color: var(--gold); }
+  }
   .option.selected{
     border-color: var(--gold-deep); background: linear-gradient(135deg, #FBF0DD, #FBF3F1);
     box-shadow: var(--shadow-sm), 0 0 0 4px rgba(228,199,132,0.18);
@@ -382,6 +386,7 @@
   /* SPLASH */
   #screen-splash{ cursor:pointer; }
   #screen-splash .splash-phrase{ font-family:'Lora'; font-style:italic; font-size:22px; line-height:1.5; color:var(--brown); margin:18px 0 6px; min-height:80px; display:flex; align-items:center; justify-content:center; }
+  #screen-splash .splash-signature{ font-family:'Poppins'; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-deep); }
   #screen-splash .splash-tap{ font-size:12px; color:var(--taupe); margin-top:24px; opacity:.7; }
 
   /* CHOICE */
@@ -462,6 +467,7 @@
       <div class="hero">
         <div class="big-emoji">🌿</div>
         <div class="splash-phrase" id="splash-phrase-text"></div>
+        <div class="splash-signature">By Lindsay</div>
         <div class="splash-tap">Touche l'écran pour continuer</div>
       </div>
     </div>
