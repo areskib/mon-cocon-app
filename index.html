@@ -1873,6 +1873,10 @@ function dismissInstallBanner(){
   localStorage.setItem("moncocon_install_dismissed", "1");
 }
 
+window.addEventListener("error", (e)=>{
+  alert("DEBUG erreur globale: " + e.message + " (ligne " + e.lineno + ")");
+});
+
 window.addEventListener("DOMContentLoaded", () => {
   showRandomPositivePhrase();
   const inShowcase = initShowcaseModeIfNeeded();
@@ -2236,6 +2240,7 @@ async function checkCureProgress(){
 }
 
 async function markCureStarted(){
+ try{
   const btn = document.getElementById("btn-cure-started");
   if(cureStarted) return;
   const userId = await getCurrentUserId();
@@ -2256,6 +2261,10 @@ async function markCureStarted(){
   cureStarted = true;
   applyCureStartedUI();
   alert("Bravo, ta cure est officiellement lancée ! 🌿 Retrouve ton évolution dans l'onglet \"Mon Évolution\".");
+ }catch(e){
+  console.error("DEBUG markCureStarted exception:", e);
+  alert("DEBUG markCureStarted exception: " + e.message);
+ }
 }
 
 function applyCureStartedUI(){
