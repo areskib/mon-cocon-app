@@ -656,7 +656,7 @@
     <!-- CONNEXION -->
     <div class="card" id="screen-login" style="display:none;">
       <div class="hero">
-        <div class="big-emoji">🔐</div>
+        <div class="welcome-logo-emoji" style="margin:0 auto 18px;">🌿</div>
         <div class="subtitle">Ton espace personnel</div>
         <h1>Fière de <em>te revoir</em></h1>
         <p>Connecte-toi pour retrouver ton programme personnalisé.</p>
@@ -1859,8 +1859,6 @@ async function checkExistingSession(){
     .limit(1);
 
   if(rows && rows.length > 0){
-    clearTimeout(splashAutoTimer);
-    splashAdvanced = true;
     document.getElementById("screen-splash").style.display = "none";
     document.getElementById("screen-choice").style.display = "none";
     restoreSessionFromRawData(rows[0].raw_data);
