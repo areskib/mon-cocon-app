@@ -1963,10 +1963,6 @@ function dismissInstallBanner(){
   localStorage.setItem("moncocon_install_dismissed", "1");
 }
 
-window.addEventListener("error", (e)=>{
-  alert("DEBUG erreur globale: " + e.message + " (ligne " + e.lineno + ")");
-});
-
 window.addEventListener("DOMContentLoaded", () => {
   initWelcomeMessages();
   const inShowcase = initShowcaseModeIfNeeded();
@@ -2352,8 +2348,8 @@ async function markCureStarted(){
   applyCureStartedUI();
   alert("Bravo, ta cure est officiellement lancée ! 🌿 Retrouve ton évolution dans l'onglet \"Mon Évolution\".");
  }catch(e){
-  console.error("DEBUG markCureStarted exception:", e);
-  alert("DEBUG markCureStarted exception: " + e.message);
+  console.error("Erreur markCureStarted:", e);
+  alert("Une erreur est survenue, réessaie dans un instant.");
  }
 }
 
