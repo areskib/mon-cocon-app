@@ -2300,60 +2300,49 @@ async function getCurrentUserId(){
 }
 
 async function checkCureProgress(){
-  const dbg = (msg)=>{
-    let el = document.getElementById("debug-banner");
-    if(!el){
-      el = document.createElement("div");
-      el.id = "debug-banner";
-      el.style.cssText = "position:fixed; top:0; left:0; right:0; z-index:9999; background:#c0392b; color:white; font-size:11px; padding:8px; font-family:monospace; word-break:break-all;";
-      document.body.appendChild(el);
-    }
-    el.textContent = "DEBUG: " + msg;
-  };
   try{
-    const userId = await getCurrentUserId();
-    if(!userId){
-      dbg("pas de userId (session non trouvée via getSession)");
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+    if(!token){
       applyCureStartedUI();
       return;
     }
-    const { data, error } = await supabaseClient
-      .from("cure_progress")
-      .select("cure_duration_weeks")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if(error){
-      dbg("erreur requête: " + error.message + " (code=" + error.code + ")");
-    }
-    if(data){
-      cureStarted = true;
-      selectedCureDuration = data.cure_duration_weeks || 12;
-      dbg("OK — userId=" + userId + " — ligne trouvée, duration=" + data.cure_duration_weeks);
-    } else if(!error){
-      dbg("userId=" + userId + " — AUCUNE ligne trouvée (data=null, pas d'erreur)");
+    const res = await fetch("/.netlify/functions/cure-status", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if(res.ok){
+      const json = await res.json();
+      if(json.started){
+        cureStarted = true;
+        selectedCureDuration = json.duration || 12;
+      }
     }
   }catch(e){
-    dbg("EXCEPTION: " + e.message);
+    console.error("Erreur vérification cure_progress:", e);
   }
   applyCureStartedUI();
 }
 
 async function markCureStarted(){
  try{
-  const btn = document.getElementById("btn-cure-started");
   if(cureStarted) return;
-  const userId = await getCurrentUserId();
-  if(!userId){
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+  if(!token){
     alert("Merci de te reconnecter pour valider ta cure.");
     return;
   }
-  const { error } = await supabaseClient.from("cure_progress").upsert({
-    user_id: userId,
-    cure_duration_weeks: selectedCureDuration,
-    objectif_idx: answers.objectif
-  }, { onConflict: "user_id" });
-  if(error){
-    console.error(error);
+  const res = await fetch("/.netlify/functions/cure-start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({
+      duration: selectedCureDuration,
+      objectif_idx: answers.objectif
+    })
+  });
+  const json = await res.json();
+  if(!res.ok){
+    console.error(json.error);
     alert("Une erreur est survenue, réessaie dans un instant.");
     return;
   }
