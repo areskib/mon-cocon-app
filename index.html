@@ -216,6 +216,52 @@
   .option .txt span{ font-size:13px; color: var(--taupe); }
 
   .nav-row{ display:flex; gap:12px; margin-top:22px; }
+
+  .duration-tiles{ display:flex; gap:10px; margin-top:18px; }
+  .duration-tile{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background: var(--white); border:2px solid rgba(201,169,110,0.15);
+    border-radius:18px; padding:16px 8px; cursor:pointer;
+    transition: all .2s ease; box-shadow: var(--shadow-sm);
+  }
+  .duration-tile .duration-num{ font-family:'Lora'; font-weight:700; font-size:24px; color:var(--brown); }
+  .duration-tile .duration-label{ font-family:'Poppins'; font-size:11.5px; color:var(--taupe); font-weight:600; }
+  .duration-tile.active{
+    border-color: var(--gold-deep);
+    background: linear-gradient(135deg, #FBF0DD, #FBF3F1);
+    box-shadow: var(--shadow-sm), 0 0 0 4px rgba(228,199,132,0.18);
+    transform: translateY(-2px);
+  }
+  .btn-cure-started{
+    background: linear-gradient(135deg, var(--white), var(--ivoire-2));
+    border: 2px solid var(--gold-deep); color: var(--brown);
+  }
+  .btn-cure-started.done{
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color:var(--white); border-color:transparent;
+  }
+
+  .cure-hero-card{
+    border: 2px solid var(--gold-deep);
+    background: linear-gradient(135deg, #FBF0DD 0%, #FFFFFF 100%);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .duration-tile{ position:relative; }
+  .duration-badge{
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color:var(--white);
+    font-family:'Poppins'; font-weight:700; font-size:9.5px; text-transform:uppercase; letter-spacing:.03em;
+    padding:3px 9px; border-radius:99px; white-space:nowrap;
+    box-shadow: 0 3px 8px rgba(201,169,110,0.4);
+  }
+  .expand-toggle{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:none; border:none; margin-top:16px; padding:8px;
+    font-family:'Poppins'; font-weight:600; font-size:13px; color:var(--taupe); cursor:pointer;
+  }
+  .expand-chevron{ transition: transform .25s ease; display:inline-block; font-size:15px; }
+  .expand-toggle.expanded .expand-chevron{ transform: rotate(180deg); }
   .btn{
     border:none; border-radius:16px; padding:15px 20px; font-family:'Poppins'; font-weight:600;
     font-size:15px; cursor:pointer; transition: transform .15s ease, box-shadow .2s ease, filter .15s ease;
@@ -449,7 +495,7 @@
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8v8M18 8v8"/><path d="M2 10v4M22 10v4"/><path d="M6 12h12"/></svg></span>
       <span>Sport</span>
     </button>
-    <button class="bottom-nav-item" data-tab="boost" onclick="switchTab('boost')">
+    <button class="bottom-nav-item" data-tab="boost" onclick="handleFourthNavClick()">
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg></span>
       <span>Boost</span>
     </button>
@@ -626,51 +672,57 @@
 
     <!-- RESULT -->
     <div class="card" id="screen-result" style="display:none;">
-      <div class="result-block">
-        <h3>📋 Ton profil</h3>
-        <div class="pill-row" id="res-profil"></div>
+
+      <div class="cure-hero-card">
+        <div class="tag" style="margin-bottom:8px;">⭐ Recommandée pour toi</div>
+        <h2 id="res-cure-title" style="margin:0 0 8px; font-size:20px;"></h2>
+        <p id="res-cure-desc" style="font-size:14px; line-height:1.6; color:var(--brown); margin:0;"></p>
       </div>
 
-      <h2 style="font-size:20px; margin-top:0;">Ton programme individualisé · 12 semaines 🌸</h2>
+      <div class="duration-tiles" id="duration-tiles">
+        <button class="duration-tile" data-weeks="4" onclick="selectCureDuration(4)">
+          <span class="duration-num">4</span><span class="duration-label">semaines</span>
+        </button>
+        <button class="duration-tile active" data-weeks="12" onclick="selectCureDuration(12)">
+          <span class="duration-badge">Recommandée</span>
+          <span class="duration-num">12</span><span class="duration-label">semaines</span>
+        </button>
+        <button class="duration-tile" data-weeks="24" onclick="selectCureDuration(24)">
+          <span class="duration-num">24</span><span class="duration-label">semaines</span>
+        </button>
+      </div>
 
-      <div class="result-block">
-        <h3>🎯 Ton objectif</h3>
-        <div class="pill-row" id="res-objectif"></div>
+      <div class="nav-row" style="margin-top:18px;">
+        <a class="btn btn-primary btn-full" id="btn-start-program" href="#" target="_blank" rel="noopener" style="text-align:center; text-decoration:none; display:block;">Démarrer mon programme</a>
       </div>
-      <div class="result-block">
-        <h3>🧭 Zones ciblées</h3>
-        <div class="pill-row" id="res-zones"></div>
+
+      <div class="nav-row">
+        <button class="btn btn-full btn-cure-started" id="btn-cure-started" onclick="markCureStarted()">✅ J'ai commencé ma cure</button>
       </div>
-      <div class="result-block">
-        <h3>🔍 Ta problématique</h3>
-        <div class="pill-row" id="res-problematique"></div>
-      </div>
-      <div class="result-block">
-        <h3>⏱️ Ton rythme sport</h3>
-        <div class="pill-row" id="res-temps"></div>
-      </div>
-      <div class="result-block" id="res-focus-block">
-        <h3>✨ Focus recommandé</h3>
-        <div class="note-box" id="res-focus"></div>
-      </div>
-      <div class="result-block" id="res-safety-block" style="display:none;">
-        <h3>⚠️ À prendre en compte</h3>
+
+      <div id="res-safety-block" style="display:none; margin-top:18px;">
+        <h3 style="font-size:14.5px; margin:0 0 8px;">⚠️ À prendre en compte</h3>
         <div class="safety-box" id="res-safety"></div>
       </div>
 
-      <div class="result-block">
-        <h3>📆 Le déroulé de tes 12 semaines</h3>
-        <div class="reco-card"><div class="reco-title">Semaines 1 à 4 — Fondations</div><div class="reco-desc">On installe les bons réflexes : rythme d'entraînement, alimentation adaptée à ton profil, écoute de ton corps.</div></div>
-        <div class="reco-card"><div class="reco-title">Semaines 5 à 8 — Intensification</div><div class="reco-desc">On augmente progressivement l'intensité de tes séances selon tes ressentis, en gardant le cap sur ton objectif.</div></div>
-        <div class="reco-card"><div class="reco-title">Semaines 9 à 12 — Optimisation</div><div class="reco-desc">On affine, on ajuste, on consolide les résultats pour qu'ils s'inscrivent durablement.</div></div>
+      <button class="expand-toggle" onclick="toggleProgramDetails()" id="toggle-details-btn">
+        <span>📆 Découvrir mon programme</span>
+        <span class="expand-chevron">⌄</span>
+      </button>
+
+      <div id="program-details" style="display:none; margin-top:16px;">
+        <div class="result-block">
+          <h3 id="res-weeks-title">Le déroulé de ton programme</h3>
+          <div id="res-weeks-timeline"></div>
+        </div>
       </div>
 
-      <div class="note-box" style="margin-top:6px;">
-        💡 Retrouve ton alimentation et ton suivi de cycle dans l'onglet <strong>🌙 Nutrition</strong>, tes séances dans l'onglet <strong>🏋️ Sport</strong>, et un soutien complémentaire pensé pour toi dans l'onglet <strong>✨ Boost</strong>.
+      <div class="note-box" style="margin-top:16px;" id="res-tabs-note">
+        💡 Retrouve ton alimentation dans <strong>🌙 Nutrition</strong> et tes séances dans <strong>🏋️ Sport</strong>.
       </div>
 
       <div class="link-row storm-cta-row">
-        <button onclick="switchTab('boost')">✨ Découvre tes contenus Boost</button>
+        <button onclick="handleFourthNavClick()" id="res-boost-cta">✨ Découvre tes contenus Boost</button>
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
         <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
       </div>
@@ -747,7 +799,7 @@
 
       <div class="link-row storm-cta-row">
         <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Découvre "Tempête émotionnelle"</button>
-        <button onclick="switchTab('boost')">✨ Va voir tes contenus Boost</button>
+        <button onclick="handleFourthNavClick()">✨ Va voir tes contenus Boost</button>
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
       </div>
     </div>
@@ -779,7 +831,7 @@
     </div>
 
     <div class="link-row storm-cta-row">
-      <button onclick="switchTab('boost')">✨ Besoin d'un coup de Boost ?</button>
+      <button onclick="handleFourthNavClick()">✨ Besoin d'un coup de Boost ?</button>
       <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
       <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
     </div>
@@ -963,7 +1015,7 @@
     <button onclick="enablePushNotifications()"><span class="drawer-item-icon">🔔</span><span>Rappels hydratation</span></button>
     <button onclick="playPresentationVideo()"><span class="drawer-item-icon">🎬</span><span>Vidéo de présentation</span></button>
     <button onclick="contactAdvisorFromMenu()"><span class="drawer-item-icon">📅</span><span>Mon rdv de suivi hebdo</span></button>
-    <button onclick="openTrackerFromMenu()"><span class="drawer-item-icon">🌱</span><span>Mon Évolution</span></button>
+    <button id="menu-tracker-item" onclick="openTrackerFromMenu()"><span class="drawer-item-icon">🌱</span><span>Mon Évolution</span></button>
     <button onclick="openStormFromMenu()"><span class="drawer-item-icon">🌊</span><span>Tempête émotionnelle</span></button>
   </div>
   <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
@@ -1895,7 +1947,7 @@ function startQuiz(){
   document.getElementById("screen-choice").style.display="none";
   document.getElementById("screen-result").style.display="none";
   document.getElementById("screen-quiz").style.display="block";
-  showAppHeader();
+  hideAppHeader();
   renderQuestion();
 }
 
@@ -2010,43 +2062,18 @@ function showResult(){
   document.getElementById("screen-quiz").style.display="none";
   document.getElementById("screen-profile").style.display="none";
   document.getElementById("screen-result").style.display="block";
-
-  // récap concis du profil (âge / poids / taille)
-  const profileData = loadCycleData() || {};
-  const profilPills = [];
-  if(profileData.age) profilPills.push(`<span class="pill">🎂 ${profileData.age} ans</span>`);
-  if(profileData.weight) profilPills.push(`<span class="pill">⚖️ ${profileData.weight} kg</span>`);
-  if(profileData.height) profilPills.push(`<span class="pill">📏 ${profileData.height} cm</span>`);
-  document.getElementById("res-profil").innerHTML = profilPills.join("") || "<span class='pill'>Non renseigné</span>";
+  showAppHeader();
 
   const qObj = QUESTIONS[0];
   const objIdx = answers.objectif;
-  document.getElementById("res-objectif").innerHTML =
-    `<span class="pill">${qObj.options[objIdx].emoji} ${qObj.options[objIdx].label}</span>`;
+  const cycleData = loadCycleData() || {};
 
-  const qZones = QUESTIONS[1];
-  const zonesArr = answers.zones || [];
-  document.getElementById("res-zones").innerHTML = zonesArr
-    .map(i=>`<span class="pill">${qZones.options[i].emoji} ${qZones.options[i].label}</span>`).join("") || "<span class='pill'>Non renseigné</span>";
-
-  const qProbDisplay = QUESTIONS[4];
-  const probArrDisplay = answers.problematique || [];
-  document.getElementById("res-problematique").innerHTML = probArrDisplay
-    .map(i=>`<span class="pill">${qProbDisplay.options[i].emoji} ${qProbDisplay.options[i].label}</span>`).join("") || "<span class='pill'>Non renseigné</span>";
-
-  const qTemps = QUESTIONS[5];
-  const tempsIdx = answers.temps;
-  document.getElementById("res-temps").innerHTML =
-    `<span class="pill">${qTemps.options[tempsIdx].emoji} ${qTemps.options[tempsIdx].label} / jour</span>`;
-
-  // focus recommandé (texte généré selon objectif + problématique)
-  const qProb = QUESTIONS[4];
-  const probArr = (answers.problematique || []).map(i=>qProb.options[i].label);
-  let focus = `Ton programme met l'accent sur "${qObj.options[objIdx].label}"`;
-  if(zonesArr.length) focus += `, en priorisant : ${zonesArr.map(i=>qZones.options[i].label).join(", ")}`;
-  if(probArr.length && !probArr.includes("Aucune en particulier")) focus += `. On travaille aussi spécifiquement : ${probArr.join(", ")}`;
-  focus += `. Un rythme de ${qTemps.options[tempsIdx].label.toLowerCase()} par jour, adapté à ton niveau, te permettra de tenir sur la durée sans t'épuiser.`;
-  document.getElementById("res-focus").textContent = focus;
+  const mainKey = getRecommendedCureKey(cycleData);
+  const mainCure = CURES[mainKey];
+  document.getElementById("res-cure-title").textContent = mainCure.name;
+  document.getElementById("res-cure-desc").textContent = mainCure.desc;
+  window.__mainCureUrl = mainCure.url;
+  selectCureDuration(selectedCureDuration);
 
   // sécurité : douleurs/pathologies
   const qDouleurs = QUESTIONS[2];
@@ -2062,6 +2089,146 @@ function showResult(){
   }
 
   maybeOpenTrackerFromNotification();
+  checkCureProgress();
+}
+
+/* ============================================================
+   CURE : durée choisie, démarrage, timeline dynamique
+   ============================================================ */
+let selectedCureDuration = 12;
+let cureStarted = false;
+
+const CURE_PHASE_THEMES = [
+  { title:"Fondations", desc:"On installe les bons réflexes : rythme d'entraînement, alimentation adaptée à ton profil, écoute de ton corps." },
+  { title:"Intensification", desc:"On augmente progressivement l'intensité de tes séances selon tes ressentis, en gardant le cap sur ton objectif." },
+  { title:"Optimisation", desc:"On affine, on ajuste, on consolide les résultats pour qu'ils s'inscrivent durablement." },
+  { title:"Consolidation", desc:"On ancre les nouvelles habitudes pour qu'elles deviennent naturelles, sur le long terme." }
+];
+
+function renderWeeksTimeline(totalWeeks){
+  const container = document.getElementById("res-weeks-timeline");
+  const chunk = 4;
+  let html = "";
+  let start = 1, themeIdx = 0;
+  while(start <= totalWeeks){
+    const end = Math.min(start + chunk - 1, totalWeeks);
+    const theme = CURE_PHASE_THEMES[themeIdx % CURE_PHASE_THEMES.length];
+    html += `<div class="reco-card"><div class="reco-title">Semaines ${start} à ${end} — ${theme.title}</div><div class="reco-desc">${theme.desc}</div></div>`;
+    start = end + 1;
+    themeIdx++;
+  }
+  container.innerHTML = html;
+  document.getElementById("res-weeks-title").textContent = `Le déroulé de tes ${totalWeeks} semaines`;
+}
+
+function selectCureDuration(weeks){
+  selectedCureDuration = weeks;
+  document.querySelectorAll("#duration-tiles .duration-tile").forEach(t=>{
+    t.classList.toggle("active", parseInt(t.dataset.weeks,10) === weeks);
+  });
+  const linkBtn = document.getElementById("btn-start-program");
+  if(linkBtn) linkBtn.href = window.__mainCureUrl || "#";
+  renderWeeksTimeline(weeks);
+}
+
+function toggleProgramDetails(){
+  const el = document.getElementById("program-details");
+  const btn = document.getElementById("toggle-details-btn");
+  const isHidden = el.style.display === "none";
+  el.style.display = isHidden ? "block" : "none";
+  btn.classList.toggle("expanded", isHidden);
+}
+
+async function checkCureProgress(){
+  try{
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if(!userData || !userData.user) return;
+    const { data } = await supabaseClient
+      .from("cure_progress")
+      .select("cure_duration_weeks")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if(data){
+      cureStarted = true;
+      selectedCureDuration = data.cure_duration_weeks || 12;
+    }
+  }catch(e){
+    console.error("Erreur vérification cure_progress:", e);
+  }
+  applyCureStartedUI();
+}
+
+async function markCureStarted(){
+  const btn = document.getElementById("btn-cure-started");
+  if(cureStarted) return;
+  const { data: userData } = await supabaseClient.auth.getUser();
+  if(!userData || !userData.user){
+    alert("Merci de te reconnecter pour valider ta cure.");
+    return;
+  }
+  const { error } = await supabaseClient.from("cure_progress").upsert({
+    user_id: userData.user.id,
+    cure_duration_weeks: selectedCureDuration,
+    objectif_idx: answers.objectif
+  }, { onConflict: "user_id" });
+  if(error){
+    console.error(error);
+    alert("Une erreur est survenue, réessaie dans un instant.");
+    return;
+  }
+  cureStarted = true;
+  applyCureStartedUI();
+  alert("Bravo, ta cure est officiellement lancée ! 🌿 Ton suivi t'attend désormais dans l'onglet qui remplace Boost.");
+}
+
+function applyCureStartedUI(){
+  const btn = document.getElementById("btn-cure-started");
+  if(btn){
+    if(cureStarted){
+      btn.textContent = "✅ Cure en cours";
+      btn.classList.add("done");
+    }else{
+      btn.textContent = "✅ J'ai commencé ma cure";
+      btn.classList.remove("done");
+    }
+  }
+
+  const navBtn = document.querySelector('.bottom-nav-item[data-tab="boost"]');
+  if(navBtn){
+    const iconWrap = navBtn.querySelector(".nav-icon-wrap");
+    const label = navBtn.querySelector("span:last-child");
+    if(cureStarted){
+      if(iconWrap) iconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9C12 9 8 9 8 5C8 5 12 3 12 9M12 9C12 9 16 9 16 5C16 5 12 3 12 9M6 14c0 3.5 2.5 6 6 6s6-2.5 6-6c0-2-1.5-3.5-3-4"/></svg>';
+      if(label) label.textContent = "Évolution";
+    }else{
+      if(iconWrap) iconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>';
+      if(label) label.textContent = "Boost";
+    }
+  }
+
+  const menuItem = document.getElementById("menu-tracker-item");
+  if(menuItem) menuItem.style.display = cureStarted ? "none" : "flex";
+
+  const boostCta = document.getElementById("res-boost-cta");
+  if(boostCta) boostCta.textContent = cureStarted ? "🌱 Suis ton Évolution" : "✨ Découvre tes contenus Boost";
+
+  const tabsNote = document.getElementById("res-tabs-note");
+  if(tabsNote){
+    tabsNote.innerHTML = cureStarted
+      ? `💡 Retrouve ton alimentation dans <strong>🌙 Nutrition</strong>, tes séances dans <strong>🏋️ Sport</strong>, et ton suivi dans <strong>🌱 Évolution</strong>.`
+      : `💡 Retrouve ton alimentation dans <strong>🌙 Nutrition</strong>, tes séances dans <strong>🏋️ Sport</strong>, et un soutien complémentaire dans <strong>✨ Boost</strong>.`;
+  }
+}
+
+function handleFourthNavClick(){
+  if(cureStarted){
+    document.querySelectorAll(".bottom-nav-item").forEach(b=>b.classList.toggle("active", b.dataset.tab==="boost"));
+    hideAllTopScreens();
+    document.getElementById("screen-tracker").style.display = "block";
+    loadTrackerData();
+  }else{
+    switchTab("boost");
+  }
 }
 
 /* ============================================================
@@ -3045,7 +3212,7 @@ function renderTrainingProgram(){
   // teaser vers l'onglet Boost (la cure recommandée s'y trouve, mise en avant)
   const teaserWrap = document.getElementById("training-sessions");
   teaserWrap.innerHTML += `
-    <div class="note-box" style="margin-top:8px; cursor:pointer;" onclick="switchTab('boost')">
+    <div class="note-box" style="margin-top:8px; cursor:pointer;" onclick="handleFourthNavClick()">
       ✨ Un soutien complémentaire est disponible pour accompagner ce programme → onglet <strong>✨ Boost</strong>
     </div>
   `;
