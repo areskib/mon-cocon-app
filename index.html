@@ -2153,18 +2153,29 @@ async function getCurrentUserId(){
 async function checkCureProgress(){
   try{
     const userId = await getCurrentUserId();
-    if(!userId) return;
-    const { data } = await supabaseClient
+    if(!userId){
+      console.error("DEBUG checkCureProgress: pas d'userId trouvé via getSession()");
+      applyCureStartedUI();
+      return;
+    }
+    const { data, error } = await supabaseClient
       .from("cure_progress")
       .select("cure_duration_weeks")
       .eq("user_id", userId)
       .maybeSingle();
+    if(error){
+      console.error("DEBUG checkCureProgress erreur requête:", error);
+      alert("DEBUG cure_progress erreur: " + error.message);
+    }
     if(data){
       cureStarted = true;
       selectedCureDuration = data.cure_duration_weeks || 12;
+    } else {
+      alert("DEBUG checkCureProgress: userId=" + userId + " — aucune ligne trouvée (data=" + JSON.stringify(data) + ")");
     }
   }catch(e){
     console.error("Erreur vérification cure_progress:", e);
+    alert("DEBUG checkCureProgress exception: " + e.message);
   }
   applyCureStartedUI();
 }
