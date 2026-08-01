@@ -2145,14 +2145,19 @@ function toggleProgramDetails(){
   btn.classList.toggle("expanded", isHidden);
 }
 
+async function getCurrentUserId(){
+  const { data } = await supabaseClient.auth.getSession();
+  return (data && data.session && data.session.user) ? data.session.user.id : null;
+}
+
 async function checkCureProgress(){
   try{
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(!userData || !userData.user) return;
+    const userId = await getCurrentUserId();
+    if(!userId) return;
     const { data } = await supabaseClient
       .from("cure_progress")
       .select("cure_duration_weeks")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .maybeSingle();
     if(data){
       cureStarted = true;
@@ -2167,13 +2172,13 @@ async function checkCureProgress(){
 async function markCureStarted(){
   const btn = document.getElementById("btn-cure-started");
   if(cureStarted) return;
-  const { data: userData } = await supabaseClient.auth.getUser();
-  if(!userData || !userData.user){
+  const userId = await getCurrentUserId();
+  if(!userId){
     alert("Merci de te reconnecter pour valider ta cure.");
     return;
   }
   const { error } = await supabaseClient.from("cure_progress").upsert({
-    user_id: userData.user.id,
+    user_id: userId,
     cure_duration_weeks: selectedCureDuration,
     objectif_idx: answers.objectif
   }, { onConflict: "user_id" });
