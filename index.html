@@ -203,6 +203,9 @@
     margin-bottom:12px; cursor:pointer; transition: all .2s ease;
     touch-action: manipulation;
     position:relative; z-index:1;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   @media (hover:hover){
     .option:hover{ border-color: var(--gold); }
@@ -1016,6 +1019,7 @@
     <button onclick="playPresentationVideo()"><span class="drawer-item-icon">🎬</span><span>Vidéo de présentation</span></button>
     <button onclick="contactAdvisorFromMenu()"><span class="drawer-item-icon">📅</span><span>Mon rdv de suivi hebdo</span></button>
     <button id="menu-tracker-item" onclick="openTrackerFromMenu()"><span class="drawer-item-icon">🌱</span><span>Mon Évolution</span></button>
+    <button onclick="openCuresFromMenu()"><span class="drawer-item-icon">🛍️</span><span>Découvrir les cures</span></button>
     <button onclick="openStormFromMenu()"><span class="drawer-item-icon">🌊</span><span>Tempête émotionnelle</span></button>
   </div>
   <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
@@ -2178,7 +2182,7 @@ async function markCureStarted(){
   }
   cureStarted = true;
   applyCureStartedUI();
-  alert("Bravo, ta cure est officiellement lancée ! 🌿 Ton suivi t'attend désormais dans l'onglet qui remplace Boost.");
+  alert("Bravo, ta cure est officiellement lancée ! 🌿 Retrouve ton évolution dans l'onglet \"Mon Évolution\".");
 }
 
 function applyCureStartedUI(){
@@ -2218,6 +2222,11 @@ function applyCureStartedUI(){
       ? `💡 Retrouve ton alimentation dans <strong>🌙 Nutrition</strong>, tes séances dans <strong>🏋️ Sport</strong>, et ton suivi dans <strong>🌱 Évolution</strong>.`
       : `💡 Retrouve ton alimentation dans <strong>🌙 Nutrition</strong>, tes séances dans <strong>🏋️ Sport</strong>, et un soutien complémentaire dans <strong>✨ Boost</strong>.`;
   }
+}
+
+function openCuresFromMenu(){
+  closeMenu();
+  switchTab("boost");
 }
 
 function handleFourthNavClick(){
