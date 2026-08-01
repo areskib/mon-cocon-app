@@ -2300,9 +2300,20 @@ async function getCurrentUserId(){
 }
 
 async function checkCureProgress(){
+  const dbg = (msg)=>{
+    let el = document.getElementById("debug-banner");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "debug-banner";
+      el.style.cssText = "position:fixed; top:0; left:0; right:0; z-index:9999; background:#c0392b; color:white; font-size:11px; padding:8px; font-family:monospace; word-break:break-all;";
+      document.body.appendChild(el);
+    }
+    el.textContent = "DEBUG: " + msg;
+  };
   try{
     const userId = await getCurrentUserId();
     if(!userId){
+      dbg("pas de userId (session non trouvée via getSession)");
       applyCureStartedUI();
       return;
     }
@@ -2312,14 +2323,17 @@ async function checkCureProgress(){
       .eq("user_id", userId)
       .maybeSingle();
     if(error){
-      console.error("Erreur requête cure_progress:", error);
+      dbg("erreur requête: " + error.message + " (code=" + error.code + ")");
     }
     if(data){
       cureStarted = true;
       selectedCureDuration = data.cure_duration_weeks || 12;
+      dbg("OK — userId=" + userId + " — ligne trouvée, duration=" + data.cure_duration_weeks);
+    } else if(!error){
+      dbg("userId=" + userId + " — AUCUNE ligne trouvée (data=null, pas d'erreur)");
     }
   }catch(e){
-    console.error("Erreur vérification cure_progress:", e);
+    dbg("EXCEPTION: " + e.message);
   }
   applyCureStartedUI();
 }
