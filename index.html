@@ -827,14 +827,14 @@
             <span class="duration-num">4</span><span class="duration-label">semaines</span>
             <span class="duration-price" id="price-starter"></span>
           </button>
+          <button class="duration-tile" data-pack="standard" onclick="selectCurePack('standard')">
+            <span class="duration-num">8</span><span class="duration-label">semaines</span>
+            <span class="duration-price" id="price-standard"></span>
+          </button>
           <button class="duration-tile active" data-pack="premium" onclick="selectCurePack('premium')">
             <span class="duration-badge">Recommandée</span>
             <span class="duration-num">12</span><span class="duration-label">semaines</span>
             <span class="duration-price" id="price-premium"></span>
-          </button>
-          <button class="duration-tile" data-pack="standard" onclick="selectCurePack('standard')">
-            <span class="duration-num">8</span><span class="duration-label">semaines</span>
-            <span class="duration-price" id="price-standard"></span>
           </button>
         </div>
 
@@ -2375,7 +2375,7 @@ function pickCureFamily(cycleData){
   if(texture === 3) return silhouette ? "cure10" : "cure11";
 
   if(hasDouleurArt) return "cure13";
-  if(hasCheveux) return "cure14";
+  if(hasCheveux && problematique.length === 1) return "cure14";
   return "cure01";
 }
 
