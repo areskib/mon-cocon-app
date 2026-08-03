@@ -228,6 +228,7 @@
   }
   .duration-tile .duration-num{ font-family:'Lora'; font-weight:700; font-size:24px; color:var(--brown); }
   .duration-tile .duration-label{ font-family:'Poppins'; font-size:11.5px; color:var(--taupe); font-weight:600; }
+  .duration-tile .duration-price{ font-family:'Poppins'; font-size:11px; color:var(--gold-deep); font-weight:700; margin-top:2px; }
   .duration-tile.active{
     box-shadow: var(--shadow-inset);
   }
@@ -456,6 +457,27 @@
   }
   .reco-card .reco-title{ font-weight:600; font-size:14.5px; margin-bottom:4px; }
   .reco-card .reco-desc{ font-size:13px; color:var(--taupe); line-height:1.5; }
+
+  .cure-feedback-card{
+    background: var(--neu-base); border-radius:20px; padding:20px; margin-top:18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cure-feedback-text{
+    font-family:'Lora'; font-style:italic; font-size:14.5px; line-height:1.6; color:var(--brown);
+    margin:0; white-space:pre-line;
+  }
+  .cure-feedback-name{
+    margin-top:10px; font-family:'Poppins'; font-weight:700; font-size:12.5px; color:var(--gold-deep);
+  }
+  .cure-photo-toggle{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
+    background: var(--neu-base); border:none; margin-top:14px; padding:11px;
+    border-radius:14px; box-shadow: var(--shadow-sm);
+    font-family:'Poppins'; font-weight:600; font-size:12.5px; color:var(--taupe); cursor:pointer;
+  }
+  .cure-photo-toggle:active{ box-shadow: var(--shadow-inset); }
+  #cure-photo-chevron{ transition: transform .25s ease; display:inline-block; }
+  .cure-photo-toggle.expanded #cure-photo-chevron{ transform: rotate(180deg); }
 
   .next-periods{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
   .next-period-row{ display:flex; justify-content:space-between; background: var(--neu-base); border-radius:14px; padding:12px 16px; font-size:13.5px; border:none; box-shadow: var(--shadow-sm); }
@@ -749,7 +771,8 @@
         <label>As-tu un cycle menstruel actif ?</label>
         <select id="input-has-cycle" onchange="toggleCycleFields()" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire); font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);">
           <option value="yes">Oui, j'ai un cycle régulier ou irrégulier</option>
-          <option value="no">Non (ménopause, aménorrhée, stérilet hormonal...)</option>
+          <option value="menopause">Non, je suis en périménopause ou ménopause</option>
+          <option value="no">Non, autre raison (aménorrhée, stérilet hormonal...)</option>
         </select>
       </div>
 
@@ -796,19 +819,22 @@
         <div class="cure-hero-card">
           <div class="tag" style="margin-bottom:8px;">⭐ Recommandée pour toi</div>
           <h2 id="res-cure-title" style="margin:0 0 8px; font-size:20px;"></h2>
-          <p id="res-cure-desc" style="font-size:14px; line-height:1.6; color:var(--brown); margin:0;"></p>
+          <p id="res-cure-desc" style="font-size:14px; line-height:1.6; color:var(--brown); margin:0; display:none;"></p>
         </div>
 
         <div class="duration-tiles" id="duration-tiles">
-          <button class="duration-tile" data-weeks="4" onclick="selectCureDuration(4)">
+          <button class="duration-tile" data-pack="starter" onclick="selectCurePack('starter')">
             <span class="duration-num">4</span><span class="duration-label">semaines</span>
+            <span class="duration-price" id="price-starter"></span>
           </button>
-          <button class="duration-tile active" data-weeks="12" onclick="selectCureDuration(12)">
+          <button class="duration-tile active" data-pack="premium" onclick="selectCurePack('premium')">
             <span class="duration-badge">Recommandée</span>
             <span class="duration-num">12</span><span class="duration-label">semaines</span>
+            <span class="duration-price" id="price-premium"></span>
           </button>
-          <button class="duration-tile" data-weeks="24" onclick="selectCureDuration(24)">
-            <span class="duration-num">24</span><span class="duration-label">semaines</span>
+          <button class="duration-tile" data-pack="standard" onclick="selectCurePack('standard')">
+            <span class="duration-num">8</span><span class="duration-label">semaines</span>
+            <span class="duration-price" id="price-standard"></span>
           </button>
         </div>
 
@@ -818,6 +844,17 @@
 
         <div class="nav-row">
           <button class="btn btn-full btn-cure-started" id="btn-cure-started" onclick="markCureStarted()">✅ J'ai commencé ma cure</button>
+        </div>
+
+        <div class="cure-feedback-card" id="cure-feedback-card" style="display:none;">
+          <p class="cure-feedback-text" id="cure-feedback-text"></p>
+          <div class="cure-feedback-name" id="cure-feedback-name"></div>
+          <button class="cure-photo-toggle" id="cure-photo-toggle" style="display:none;" onclick="toggleCurePhoto()">
+            <span id="cure-photo-toggle-label">Voir le résultat avant/après</span> <span id="cure-photo-chevron">▾</span>
+          </button>
+          <div class="cure-photo-wrap" id="cure-photo-wrap" style="display:none;">
+            <img id="cure-photo-img" alt="Avant / après" style="width:100%; border-radius:14px; display:block; margin-top:10px;">
+          </div>
         </div>
       </div>
 
@@ -2005,17 +2042,65 @@ const QUESTIONS = [
     ]
   },
   {
+    key: "texture",
+    multi: false,
+    title: "Comment décrirais-tu la zone qui te préoccupe le plus ?",
+    sub: "Choisis la description qui te correspond le mieux",
+    options: [
+      { emoji:"🔘", label:"Ventre dur, non pinçable", desc:"Tendu, gonflé, plutôt profond" },
+      { emoji:"🫳", label:"Ventre ou cuisses pinçables", desc:"Zone souple, graisse superficielle" },
+      { emoji:"🔵", label:"Peau capitonnée", desc:"Douloureuse au pincement, effet peau d'orange" },
+      { emoji:"💧", label:"Jambes lourdes", desc:"Sensation d'eau, peu douloureux" },
+      { emoji:"➖", label:"Aucune de ces descriptions", desc:"Rien de tout ça ne me correspond", exclusive:true }
+    ]
+  },
+  {
+    key: "ressenti",
+    multi: true,
+    title: "Comment te sens-tu en ce moment ?",
+    sub: "Plusieurs réponses possibles",
+    options: [
+      { emoji:"😴", label:"Je dors mal", desc:"Endormissement difficile, réveils nocturnes, insomnies" },
+      { emoji:"🔋", label:"Fatigue installée", desc:"Manque d'énergie qui dure depuis un moment" },
+      { emoji:"😰", label:"Stress élevé", desc:"Tension nerveuse, charge mentale importante" },
+      { emoji:"✅", label:"Tout va bien pour moi", desc:"Rien de particulier à signaler", exclusive:true }
+    ]
+  },
+  {
     key: "douleurs",
     multi: true,
     title: "As-tu des douleurs ou des troubles particuliers ?",
     sub: "Plusieurs réponses possibles — ta sécurité avant tout",
     options: [
-      { emoji:"😴", label:"Troubles du sommeil", desc:"Endormissement difficile, réveils nocturnes, fatigue au réveil" },
       { emoji:"🦴", label:"Douleurs au dos", desc:"Lombaires, cervicales, tensions chroniques" },
-      { emoji:"🦵", label:"Douleurs articulaires", desc:"Genoux, hanches, épaules" },
-      { emoji:"🤰", label:"Grossesse ou allaitement", desc:"En cours ou récent (moins de 6 mois)" },
-      { emoji:"🏥", label:"Pathologie chronique", desc:"Diabète, hypertension, maladie cardiovasculaire, autre" },
+      { emoji:"🦵", label:"Douleurs articulaires modérées", desc:"Genoux, hanches, épaules — gênantes mais supportables" },
+      { emoji:"⚠️", label:"Douleurs articulaires invalidantes", desc:"Genoux, hanches, épaules — qui limitent le quotidien" },
+      { emoji:"🤰", label:"Grossesse en cours", desc:"Grossesse actuelle" },
+      { emoji:"🩺", label:"Maladie de Crohn / MICI", desc:"Suivi gastro-entérologue nécessaire" },
+      { emoji:"🔬", label:"Diagnostic de lipœdème déclaré", desc:"Diagnostic médical confirmé" },
+      { emoji:"🏥", label:"Autre pathologie chronique", desc:"Diabète, hypertension, maladie cardiovasculaire, autre" },
       { emoji:"✅", label:"Aucune douleur ni pathologie", desc:"Je suis en bonne santé générale", exclusive:true }
+    ]
+  },
+  {
+    key: "postpartum",
+    multi: false,
+    title: "Es-tu concernée par un accouchement récent ?",
+    sub: "",
+    options: [
+      { emoji:"➖", label:"Non, pas concernée", desc:"" },
+      { emoji:"🍼", label:"Oui, il y a moins de 4 semaines", desc:"" },
+      { emoji:"🌱", label:"Oui, il y a plus de 4 semaines", desc:"" }
+    ]
+  },
+  {
+    key: "allaitement",
+    multi: false,
+    title: "Allaites-tu actuellement ?",
+    sub: "",
+    options: [
+      { emoji:"🤱", label:"Oui", desc:"Allaitement en cours" },
+      { emoji:"➖", label:"Non", desc:"" }
     ]
   },
   {
@@ -2035,12 +2120,11 @@ const QUESTIONS = [
     title: "As-tu une problématique spécifique ?",
     sub: "Plusieurs réponses possibles",
     options: [
-      { emoji:"🔵", label:"Cellulite fibreuse", desc:"Peau d'orange dure, résistante" },
-      { emoji:"💧", label:"Œdèmes / jambes lourdes", desc:"Rétention d'eau, gonflement" },
       { emoji:"🌸", label:"Acné / peau réactive", desc:"Boutons, imperfections" },
       { emoji:"🥚", label:"Manque de protéines", desc:"Fringales, fonte musculaire" },
       { emoji:"🎈", label:"Ballonnements", desc:"Ventre gonflé, inconfort digestif" },
       { emoji:"🔥", label:"Graisse abdominale", desc:"Excès localisé au niveau du ventre" },
+      { emoji:"💇‍♀️", label:"Chute de cheveux", desc:"Récente ou installée depuis longtemps" },
       { emoji:"✅", label:"Aucune en particulier", desc:"Je veux juste me sentir mieux", exclusive:true }
     ]
   },
@@ -2142,13 +2226,23 @@ function selectOption(q, i){
   renderQuestion();
 }
 
+function shouldSkipQuestion(idx){
+  const q = QUESTIONS[idx];
+  if(q.key === "allaitement"){
+    return answers.postpartum === 0 || answers.postpartum === undefined || answers.postpartum === null;
+  }
+  return false;
+}
+
 function prevQ(){
-  if(currentQ===0){
+  let prev = currentQ - 1;
+  while(prev >= 0 && shouldSkipQuestion(prev)) prev--;
+  if(prev < 0){
     document.getElementById("screen-quiz").style.display="none";
     document.getElementById("screen-choice").style.display="block";
     return;
   }
-  currentQ--;
+  currentQ = prev;
   renderQuestion();
 }
 
@@ -2163,8 +2257,10 @@ function nextQ(){
     requestAnimationFrame(()=>{ wrap.style.animation = "fadeIn .3s ease"; });
     return;
   }
-  if(currentQ < QUESTIONS.length-1){
-    currentQ++;
+  let next = currentQ + 1;
+  while(next < QUESTIONS.length && shouldSkipQuestion(next)) next++;
+  if(next < QUESTIONS.length){
+    currentQ = next;
     renderQuestion();
   } else {
     document.getElementById("screen-quiz").style.display = "none";
@@ -2192,6 +2288,10 @@ function finishRetakeDirectly(){
   data.activite = answers.activite;
   data.problematique = answers.problematique || [];
   data.temps = answers.temps;
+  data.ressenti = answers.ressenti || [];
+  data.texture = answers.texture;
+  data.postpartum = answers.postpartum;
+  data.allaitement = answers.allaitement;
 
   if(!data.hasCycle){
     data.goalObjectif = answers.objectif || 0;
@@ -2213,25 +2313,15 @@ function showResult(){
   document.getElementById("screen-result").style.display="block";
   showAppHeader();
 
-  const qObj = QUESTIONS[0];
-  const objIdx = answers.objectif;
   const cycleData = loadCycleData() || {};
+  window.__mainCureFamily = pickCureFamily(cycleData);
 
-  const mainKey = getRecommendedCureKey(cycleData);
-  const mainCure = CURES[mainKey];
-  document.getElementById("res-cure-title").textContent = mainCure.name;
-  document.getElementById("res-cure-desc").textContent = mainCure.desc;
-  document.getElementById("res-started-cure-title").textContent = mainCure.name;
-  window.__mainCureUrl = mainCure.url;
-  selectCureDuration(selectedCureDuration);
-
-  document.getElementById("res-other-cures").innerHTML = Object.keys(CURES)
-    .filter(k => k !== mainKey)
-    .map(k => `<a href="${CURES[k].url}" target="_blank" rel="noopener"><span>${CURES[k].name}</span><span class="mini-tile-arrow">→</span></a>`)
-    .join("");
+  loadCuresData().then(()=>{
+    renderCureSection();
+  });
 
   // sécurité : douleurs/pathologies
-  const qDouleurs = QUESTIONS[2];
+  const qDouleurs = QUESTIONS.find(q=>q.key==="douleurs");
   const doulArr = (answers.douleurs || []).map(i=>qDouleurs.options[i].label);
   const hasAlert = doulArr.some(l => l !== "Aucune douleur ni pathologie");
   const safetyBlock = document.getElementById("res-safety-block");
@@ -2248,9 +2338,193 @@ function showResult(){
 }
 
 /* ============================================================
-   CURE : durée choisie, démarrage, timeline dynamique
+   MOTEUR DE DÉCISION : quelles réponses -> quelle cure
    ============================================================ */
-let selectedCureDuration = 12;
+function pickCureFamily(cycleData){
+  const texture = answers.texture;
+  const douleurs = answers.douleurs || [];
+  const ressenti = answers.ressenti || [];
+  const problematique = answers.problematique || [];
+  const hasCrohn = douleurs.includes(4);
+  const hasLipoedeme = douleurs.includes(5);
+  const hasDouleurArt = douleurs.includes(1) || douleurs.includes(2);
+  const hasCheveux = problematique.includes(4);
+  const isMenopause = (cycleData && cycleData.cycleStatus) === "menopause";
+  const sommeilFatigue = ressenti.includes(0) || ressenti.includes(1);
+  const stressEleve = ressenti.includes(2);
+  const sedentaire = answers.activite === 0;
+  const postpartumOld = answers.postpartum === 2;
+  const postpartumRecent = answers.postpartum === 1;
+  const silhouette = answers.objectif === 0;
+
+  if(postpartumRecent) return null;
+  if(hasLipoedeme) return "cure12";
+
+  if(texture === 0){
+    if(hasCrohn) return "cure03";
+    if(isMenopause) return "cure02";
+    if(sommeilFatigue) return "cure04";
+    return "cure01";
+  }
+  if(texture === 1){
+    if(postpartumOld) return "cure07";
+    if(stressEleve && sedentaire) return "cure08";
+    return "cure06";
+  }
+  if(texture === 2) return "cure09";
+  if(texture === 3) return silhouette ? "cure10" : "cure11";
+
+  if(hasDouleurArt) return "cure13";
+  if(hasCheveux) return "cure14";
+  return "cure01";
+}
+
+/* ============================================================
+   DONNÉES CURES : lecture live du Google Sheet publié
+   ============================================================ */
+let __curesDataPromise = null;
+function loadCuresData(){
+  if(window.__curesData) return Promise.resolve(window.__curesData);
+  if(__curesDataPromise) return __curesDataPromise;
+  __curesDataPromise = fetch("/.netlify/functions/cures-data")
+    .then(r=>r.json())
+    .then(json=>{
+      window.__curesData = json.cures || {};
+      return window.__curesData;
+    })
+    .catch(e=>{
+      console.error("Erreur chargement cures-data:", e);
+      window.__curesData = {};
+      return window.__curesData;
+    });
+  return __curesDataPromise;
+}
+
+function extractFeedback(raw){
+  if(!raw) return { name:null, text:"" };
+  const text = raw.trim();
+  const nlIdx = text.indexOf("\n");
+  let firstLine = (nlIdx === -1 ? text : text.slice(0, nlIdx)).trim();
+
+  const colonMatch = firstLine.match(/^([A-ZÀ-Ÿ][a-zà-ÿ'\-]{1,20})\s*:\s*(.+)$/);
+  if(colonMatch){
+    const rest = colonMatch[2] + (nlIdx === -1 ? "" : "\n" + text.slice(nlIdx+1));
+    return { name: colonMatch[1], text: rest.trim() };
+  }
+
+  const words = firstLine.split(/\s+/);
+  const looksLikeName = words.length <= 2 && /^[A-ZÀ-Ÿ][a-zà-ÿ'\-]+$/.test(words[0]) && !/[.!?…»]/.test(firstLine);
+  if(looksLikeName && nlIdx !== -1){
+    return { name: firstLine, text: text.slice(nlIdx+1).trim() };
+  }
+  return { name:null, text: text };
+}
+
+let selectedPack = "premium";
+
+function selectCurePack(pack){
+  const family = window.__mainCureFamily;
+  const data = window.__curesData || {};
+  const variant = data[family + "_" + pack];
+  if(!variant) return; // pack indisponible pour cette cure
+  selectedPack = pack;
+  document.querySelectorAll("#duration-tiles .duration-tile").forEach(t=>{
+    t.classList.toggle("active", t.dataset.pack === pack);
+  });
+  applyCureVariantToUI(variant);
+}
+
+function applyCureVariantToUI(variant){
+  const linkBtn = document.getElementById("btn-start-program");
+  if(linkBtn) linkBtn.href = variant.lien || "#";
+
+  const fb = extractFeedback(variant.feedback);
+  const card = document.getElementById("cure-feedback-card");
+  if(fb.text){
+    card.style.display = "block";
+    document.getElementById("cure-feedback-text").textContent = fb.text;
+    const nameEl = document.getElementById("cure-feedback-name");
+    if(fb.name){ nameEl.textContent = "— " + fb.name; nameEl.style.display = "block"; }
+    else { nameEl.style.display = "none"; }
+  } else {
+    card.style.display = "none";
+  }
+
+  const photoToggle = document.getElementById("cure-photo-toggle");
+  const photoWrap = document.getElementById("cure-photo-wrap");
+  photoWrap.style.display = "none";
+  photoToggle.classList.remove("expanded");
+  if(variant.photo){
+    photoToggle.style.display = "flex";
+    document.getElementById("cure-photo-img").src = variant.photo;
+  } else {
+    photoToggle.style.display = "none";
+  }
+}
+
+function toggleCurePhoto(){
+  const wrap = document.getElementById("cure-photo-wrap");
+  const btn = document.getElementById("cure-photo-toggle");
+  const label = document.getElementById("cure-photo-toggle-label");
+  const isHidden = wrap.style.display === "none";
+  wrap.style.display = isHidden ? "block" : "none";
+  btn.classList.toggle("expanded", isHidden);
+  label.textContent = isHidden ? "Masquer le résultat avant/après" : "Voir le résultat avant/après";
+}
+
+function renderCureSection(){
+  const family = window.__mainCureFamily;
+  const data = window.__curesData || {};
+
+  if(!family){
+    // cas particulier (ex: post-accouchement trop récent) : pas de cure recommandée
+    document.getElementById("res-cure-title").textContent = "Pas encore de cure adaptée pour l'instant";
+    document.getElementById("res-cure-desc").style.display = "block";
+    document.getElementById("res-cure-desc").textContent = "Vu ton accouchement très récent, on préfère attendre un peu avant de te recommander une cure. Prends rendez-vous avec Lindsay pour en discuter avec elle.";
+    document.getElementById("duration-tiles").style.display = "none";
+    document.getElementById("btn-start-program").style.display = "none";
+    return;
+  }
+
+  const packs = ["starter","premium","standard"];
+  packs.forEach(pack=>{
+    const variant = data[family + "_" + pack];
+    const tile = document.querySelector(`#duration-tiles .duration-tile[data-pack="${pack}"]`);
+    const priceEl = document.getElementById("price-" + pack);
+    if(variant){
+      tile.style.display = "flex";
+      tile.disabled = false;
+      priceEl.textContent = variant.prix || "";
+      if(variant.problematique){
+        document.getElementById("res-cure-title").textContent = variant.problematique;
+        document.getElementById("res-started-cure-title").textContent = variant.problematique;
+      }
+    } else {
+      tile.style.display = "none";
+    }
+  });
+
+  // pack par défaut : Premium si dispo, sinon le premier pack disponible
+  let defaultPack = data[family + "_premium"] ? "premium" : (data[family + "_starter"] ? "starter" : "standard");
+  selectCurePack(defaultPack);
+
+  // autres cures pour "Envie d'aller plus loin ?"
+  const seenFamilies = new Set();
+  const otherHtml = Object.keys(data)
+    .filter(k => {
+      const fam = k.replace(/_(starter|standard|premium)$/, "");
+      if(fam === family || seenFamilies.has(fam)) return false;
+      seenFamilies.add(fam);
+      return true;
+    })
+    .map(k => `<a href="${data[k].lien}" target="_blank" rel="noopener"><span>${data[k].problematique}</span><span class="mini-tile-arrow">→</span></a>`)
+    .join("");
+  document.getElementById("res-other-cures").innerHTML = otherHtml;
+}
+
+/* ============================================================
+   CURE DÉMARRÉE : timeline générique
+   ============================================================ */
 let cureStarted = false;
 
 const CURE_PHASE_THEMES = [
@@ -2262,6 +2536,7 @@ const CURE_PHASE_THEMES = [
 
 function renderWeeksTimeline(totalWeeks){
   const container = document.getElementById("res-weeks-timeline");
+  if(!container) return;
   const chunk = 4;
   let html = "";
   let start = 1, themeIdx = 0;
@@ -2276,22 +2551,16 @@ function renderWeeksTimeline(totalWeeks){
   document.getElementById("res-weeks-title").textContent = `Le déroulé de tes ${totalWeeks} semaines`;
 }
 
-function selectCureDuration(weeks){
-  selectedCureDuration = weeks;
-  document.querySelectorAll("#duration-tiles .duration-tile").forEach(t=>{
-    t.classList.toggle("active", parseInt(t.dataset.weeks,10) === weeks);
-  });
-  const linkBtn = document.getElementById("btn-start-program");
-  if(linkBtn) linkBtn.href = window.__mainCureUrl || "#";
-  renderWeeksTimeline(weeks);
-}
-
 function toggleProgramDetails(){
   const el = document.getElementById("program-details");
   const btn = document.getElementById("toggle-details-btn");
   const isHidden = el.style.display === "none";
   el.style.display = isHidden ? "block" : "none";
   btn.classList.toggle("expanded", isHidden);
+  if(isHidden){
+    const packWeeks = { starter:4, standard:8, premium:12 };
+    renderWeeksTimeline(packWeeks[selectedPack] || 12);
+  }
 }
 
 async function getCurrentUserId(){
@@ -2314,7 +2583,6 @@ async function checkCureProgress(){
       const json = await res.json();
       if(json.started){
         cureStarted = true;
-        selectedCureDuration = json.duration || 12;
       }
     }
   }catch(e){
@@ -2332,11 +2600,12 @@ async function markCureStarted(){
     alert("Merci de te reconnecter pour valider ta cure.");
     return;
   }
+  const packWeeksMap = { starter:4, standard:8, premium:12 };
   const res = await fetch("/.netlify/functions/cure-start", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
     body: JSON.stringify({
-      duration: selectedCureDuration,
+      duration: packWeeksMap[selectedPack] || 12,
       objectif_idx: answers.objectif
     })
   });
@@ -2652,7 +2921,8 @@ function saveProfileAndShowResult(){
   const email = document.getElementById("input-email").value.trim();
   try{ if(firstname) localStorage.setItem("moncocon_firstname", firstname); }catch(e){}
 
-  const hasCycle = document.getElementById("input-has-cycle").value === "yes";
+  const cycleStatusValue = document.getElementById("input-has-cycle").value;
+  const hasCycle = cycleStatusValue === "yes";
   const age = parseInt(document.getElementById("input-age").value) || null;
   const weight = parseFloat(document.getElementById("input-weight").value) || null;
   const height = parseFloat(document.getElementById("input-height").value) || null;
@@ -2661,13 +2931,17 @@ function saveProfileAndShowResult(){
   const activityMap = [1.2, 1.375, 1.55];
   const activityFactor = activityMap[answers.activite !== undefined ? answers.activite : 1];
 
-  let data = { hasCycle, age, weight, height, activityFactor };
+  let data = { hasCycle, cycleStatus: cycleStatusValue, age, weight, height, activityFactor };
   data.objectif = answers.objectif;
   data.zones = answers.zones || [];
   data.douleurs = answers.douleurs || [];
   data.activite = answers.activite;
   data.problematique = answers.problematique || [];
   data.temps = answers.temps;
+  data.ressenti = answers.ressenti || [];
+  data.texture = answers.texture;
+  data.postpartum = answers.postpartum;
+  data.allaitement = answers.allaitement;
 
   if(hasCycle){
     const lastPeriod = document.getElementById("input-last-period").value;
