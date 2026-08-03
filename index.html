@@ -2340,6 +2340,22 @@ function showResult(){
 /* ============================================================
    MOTEUR DE DÉCISION : quelles réponses -> quelle cure
    ============================================================ */
+const CURE_PHOTOS = {
+  cure01: "images/cures/cure01.jpg",
+  cure02: "images/cures/cure02.jpg",
+  cure03: "images/cures/cure03.jpg",
+  cure04: "images/cures/cure04.jpg",
+  cure06: "images/cures/cure06.jpg",
+  cure07: "images/cures/cure07.jpg",
+  cure08: "images/cures/cure08.jpg",
+  cure09: "images/cures/cure09.jpg",
+  cure10: "images/cures/cure10.jpg",
+  cure11: "images/cures/cure11.jpg",
+  cure12: "images/cures/cure12.jpg",
+  cure13: "images/cures/cure13.jpg",
+  cure14: "images/cures/cure14.jpg"
+};
+
 function pickCureFamily(cycleData){
   const texture = answers.texture;
   const douleurs = answers.douleurs || [];
@@ -2454,9 +2470,11 @@ function applyCureVariantToUI(variant){
   const photoWrap = document.getElementById("cure-photo-wrap");
   photoWrap.style.display = "none";
   photoToggle.classList.remove("expanded");
-  if(variant.photo){
+  document.getElementById("cure-photo-toggle-label").textContent = "Voir le résultat avant/après";
+  const localPhoto = CURE_PHOTOS[window.__mainCureFamily];
+  if(localPhoto){
     photoToggle.style.display = "flex";
-    document.getElementById("cure-photo-img").src = variant.photo;
+    document.getElementById("cure-photo-img").src = localPhoto;
   } else {
     photoToggle.style.display = "none";
   }
