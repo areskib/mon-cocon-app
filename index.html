@@ -2843,24 +2843,68 @@ function getTodayMenu(data){
   return { menu: templates[0], phaseLabel: null, phaseEmoji: null };
 }
 
+function buildMonthCalendarHtml(data){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = (firstDay.getDay() + 6) % 7; // lundi=0
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const dayNames = ["L","M","M","J","V","S","D"];
+
+  let cellsHtml = "";
+  dayNames.forEach(d=>{
+    cellsHtml += `<div class="cal-day pad" style="font-weight:700; color:var(--taupe);">${d}</div>`;
+  });
+  for(let i=0;i<startWeekday;i++) cellsHtml += `<div class="cal-day pad"></div>`;
+
+  const hasCycle = !!(data.hasCycle && data.lastPeriod);
+  const lastPeriod = hasCycle ? new Date(data.lastPeriod + "T00:00:00") : null;
+  const clsMap = { menstruelle:"m", folliculaire:"f", ovulatoire:"o", luteale:"l" };
+
+  for(let d=1; d<=daysInMonth; d++){
+    const date = new Date(year, month, d);
+    let cls = "cal-day";
+    if(hasCycle){
+      const diff = daysBetween(lastPeriod, date);
+      const dayInCycle = (diff % data.cycleLength + data.cycleLength) % data.cycleLength + 1;
+      const phaseKey = getPhaseForDay(dayInCycle, data.cycleLength, data.periodLength);
+      cls += " " + clsMap[phaseKey];
+    } else {
+      cls += " f";
+    }
+    if(date.getTime() === today.getTime()) cls += " today";
+    cellsHtml += `<div class="${cls}">${d}</div>`;
+  }
+
+  let legend = "";
+  if(hasCycle){
+    legend = `<div class="cal-legend" style="margin-top:14px;">
+      <span><span class="dot" style="background:#F1C9CC;"></span> Règles</span>
+      <span><span class="dot" style="background:#F2E4C4;"></span> Folliculaire</span>
+      <span><span class="dot" style="background:#F6D896;"></span> Ovulation</span>
+      <span><span class="dot" style="background:#E8DFC6;"></span> Lutéale</span>
+    </div>`;
+  }
+
+  return `<div class="cal-grid" style="margin-top:10px;">${cellsHtml}</div>${legend}`;
+}
+
 function renderTodayPlanCard(data){
   const card = document.getElementById("today-plan-card");
   if(!card) return;
-  if(!data || (!data.hasCycle && (data.goalObjectif === undefined && data.objectif === undefined))){
-    card.innerHTML = `<div class="note-box">Ton planning apparaîtra ici dès que ton profil est complet.</div>`;
+  if(!data){
+    card.innerHTML = `<div class="note-box">Ton calendrier apparaîtra ici dès que ton profil est complet.</div>`;
     return;
   }
-  const { menu, phaseLabel, phaseEmoji } = getTodayMenu(data);
+  const monthLabel = new Date().toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
   card.innerHTML = `
-    <div class="day-card today">
+    <div class="day-card">
       <div class="day-card-head">
-        <span class="day-name">Aujourd'hui</span>
-        ${phaseLabel ? `<span class="day-phase">${phaseEmoji} ${phaseLabel.replace('Phase ','')}</span>` : ""}
+        <span class="day-name">📅 ${monthLabelCap}</span>
       </div>
-      <div class="meal-row"><span class="meal-label">Petit-déj</span><span>${menu.petit_dej}</span></div>
-      <div class="meal-row"><span class="meal-label">Déjeuner</span><span>${menu.dejeuner}</span></div>
-      <div class="meal-row"><span class="meal-label">Dîner</span><span>${menu.diner}</span></div>
-      <div class="meal-row"><span class="meal-label">Collation</span><span>${menu.collation}</span></div>
+      ${buildMonthCalendarHtml(data)}
     </div>`;
 }
 
@@ -2908,8 +2952,8 @@ function renderDailyChecklist(){
 
   const items = [
     { key:"water", icon:"💧", label:"J'ai bu toutes les heures", sub:"8 à 10 verres d'eau dans la journée" },
-    { key:"sport", icon:"🏋️", label:"J'ai fait ma séance de sport", sub:"Voir la séance du jour", link:true },
-    { key:"diet", icon:"🥗", label:"Je me suis nourrie avec douceur", sub:"En suivant mon programme, à mon rythme" },
+    { key:"sport", icon:"🏋️", label:"J'ai fait ma séance de sport", sub:"", linkTab:"training", linkLabel:"→ Séance du jour" },
+    { key:"diet", icon:"🥗", label:"Je me suis nourrie avec douceur", sub:"", linkTab:"cycle", linkLabel:"→ Plat du jour" },
     { key:"cure", icon:"💊", label:"J'ai pris ma cure", sub: posology ? posology : "Retrouve le détail dans tes produits" }
   ];
 
@@ -2919,7 +2963,7 @@ function renderDailyChecklist(){
       <div class="checklist-icon">${it.icon}</div>
       <div class="checklist-text">
         <div class="checklist-label">${it.label}</div>
-        <div class="checklist-sub">${it.sub}${it.link ? ' <span class="checklist-link" onclick="event.stopPropagation(); switchTab(\'training\');">→ Sport</span>' : ''}</div>
+        <div class="checklist-sub">${it.sub}${it.linkTab ? `<span class="checklist-link" onclick="event.stopPropagation(); switchTab('${it.linkTab}');">${it.linkLabel}</span>` : ''}</div>
       </div>
     </div>
   `).join("");
