@@ -504,6 +504,34 @@
   #cure-photo-chevron{ transition: transform .25s ease; display:inline-block; }
   .cure-photo-toggle.expanded #cure-photo-chevron{ transform: rotate(180deg); }
 
+  .checklist-item{
+    display:flex; align-items:center; gap:14px;
+    background: var(--neu-base); border-radius:20px; padding:16px;
+    margin-bottom:12px; box-shadow: var(--shadow-sm);
+    cursor:pointer; transition: box-shadow .2s ease, transform .15s ease;
+    user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  .checklist-item:active{ transform: scale(.98); }
+  .checklist-item.done{ box-shadow: var(--shadow-inset); }
+  .checklist-check{
+    flex-shrink:0; width:28px; height:28px; border-radius:50%;
+    border: 2px solid var(--gold-deep); background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:700; color:var(--white);
+    transition: all .2s ease;
+  }
+  .checklist-item.done .checklist-check{
+    background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+    border-color: transparent;
+    box-shadow: 0 3px 8px -1px rgba(201,169,110,0.5);
+  }
+  .checklist-icon{ font-size:23px; flex-shrink:0; line-height:1; }
+  .checklist-text{ flex:1; min-width:0; }
+  .checklist-label{ font-family:'Poppins'; font-weight:700; font-size:14px; color:var(--brown); transition: opacity .2s ease; }
+  .checklist-item.done .checklist-label{ text-decoration: line-through; opacity:.55; }
+  .checklist-sub{ font-size:12px; color:var(--taupe); margin-top:3px; line-height:1.45; }
+  .checklist-link{ color:var(--gold-deep); font-weight:700; text-decoration:underline; }
+
   .next-periods{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
   .next-period-row{ display:flex; justify-content:space-between; background: var(--neu-base); border-radius:14px; padding:12px 16px; font-size:13.5px; border:none; box-shadow: var(--shadow-sm); }
   .next-period-row b{ color: var(--brown); }
@@ -917,9 +945,17 @@
           <h2 id="res-started-cure-title" style="margin:0; font-size:20px;"></h2>
         </div>
 
-        <div class="result-block" style="margin-top:20px;">
-          <h3 style="font-size:14px;">🌿 Envie d'aller plus loin ?</h3>
-          <div class="cure-mini-tiles" id="res-other-cures"></div>
+        <div class="result-block" style="margin-top:22px;">
+          <h3 style="font-size:14px;">📆 Ton planning du jour</h3>
+          <div id="today-plan-card"></div>
+        </div>
+
+        <div class="result-block" style="margin-top:22px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <h3 style="font-size:14px; margin:0;">✅ Ma to-do du jour</h3>
+            <span id="checklist-progress" class="tag" style="margin:0;"></span>
+          </div>
+          <div id="daily-checklist"></div>
         </div>
       </div>
 
@@ -2775,6 +2811,128 @@ function toggleCurePhoto(){
   label.textContent = isHidden ? "Masquer le résultat avant/après" : "Voir le résultat avant/après";
 }
 
+// Produits & posologie par cure et par pack (fournis par Areski)
+const CURE_PRODUCTS = {
+  cure01: { starter:"Carboniix + AbVantage", standard:"Carboniix + AbVantage → Culturiix + AbVantage", premium:"Carboniix + AbVantage · Culturiix + AbVantage · Giving Greens + AbVantage" },
+  cure02: { starter:"Carboniix + AbVantage", standard:"Carboniix + AbVantage → Gouttes Nuit + AbVantage", premium:"Carboniix + AbVantage · Gouttes Nuit + AbVantage · Vináli + AbVantage" },
+  cure03: { starter:"AbVantage", standard:"AbVantage + Max2O", premium:"AbVantage + Vináli + Max2O" },
+  cure04: { starter:"Carboniix + AbVantage + Rejuveniix (1 matin)", standard:"Carboniix + AbVantage + Rejuveniix → Culturiix + AbVantage + Rejuveniix (matin+midi)", premium:"Carboniix+AbVantage+Rejuveniix · Culturiix+AbVantage+Rejuveniix (matin+midi) · Giving Greens+AbVantage+Rejuveniix (matin+midi)" },
+  cure06: { starter:"PureNourish + Giving Greens", standard:"PureNourish + Giving Greens → Optimal-V + AbVantage + PureNourish", premium:"PureNourish + Giving Greens · Optimal-V + AbVantage + PureNourish (mois 2 et 3)" },
+  cure07: { starter:"PureNourish + Optimal-V + Max2O", standard:"PureNourish + Optimal-V → Vináli + PureNourish + Max2O", premium:"PureNourish + Optimal-V · Vináli + PureNourish · Magnical-D + PureNourish + Max2O" },
+  cure08: { starter:"Rejuveniix (1 matin) + AbVantage", standard:"Rejuveniix + AbVantage → Rejuveniix (matin+midi) + AbVantage + Magnical-D", premium:"Rejuveniix+AbVantage (mois 1) · Rejuveniix (matin+midi)+AbVantage+Magnical-D (mois 2-3)" },
+  cure09: { starter:"Vináli + Omega-Q", standard:"Vináli + Omega-Q → Moa + Omega-Q", premium:"Vináli + Omega-Q · Moa + Omega-Q · Vináli + Moa" },
+  cure10: { starter:"Vináli", premium:"Vináli (mois 1) → Vináli + Biopro-Q (mois 2-3)" },
+  cure11: { starter:"Vináli", standard:"Vináli (8 sem.)", premium:"Vináli (12 sem.)" },
+  cure12: { starter:"Vináli + AbVantage", standard:"Vináli + AbVantage → Gouttes Jour + Gouttes Nuit", premium:"Vináli + AbVantage · Gouttes Jour + Gouttes Nuit · Vináli + Gouttes Nuit" },
+  cure13: { starter:"AbVantage", standard:"AbVantage → AbVantage + Omega-Q", premium:"AbVantage · AbVantage + Omega-Q · AbVantage + Omega-Q + Giving Greens" },
+  cure14: { starter:"EverGlow", standard:"EverGlow (8 sem.)", premium:"EverGlow + Optimal-V" }
+};
+
+function getTodayMenu(data){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const objectifIdx = data.goalObjectif !== undefined ? data.goalObjectif : (data.objectif || 0);
+  if(data.hasCycle && data.lastPeriod){
+    const lastPeriod = new Date(data.lastPeriod + "T00:00:00");
+    const diff = daysBetween(lastPeriod, today);
+    const dayInCycle = (diff % data.cycleLength + data.cycleLength) % data.cycleLength + 1;
+    const phaseKey = getPhaseForDay(dayInCycle, data.cycleLength, data.periodLength);
+    const templates = MENUS[phaseKey];
+    return { menu: templates[0], phaseLabel: PHASES[phaseKey].label, phaseEmoji: PHASES[phaseKey].emoji };
+  }
+  const templates = GENERAL_PROFILE[objectifIdx].menus;
+  return { menu: templates[0], phaseLabel: null, phaseEmoji: null };
+}
+
+function renderTodayPlanCard(data){
+  const card = document.getElementById("today-plan-card");
+  if(!card) return;
+  if(!data || (!data.hasCycle && (data.goalObjectif === undefined && data.objectif === undefined))){
+    card.innerHTML = `<div class="note-box">Ton planning apparaîtra ici dès que ton profil est complet.</div>`;
+    return;
+  }
+  const { menu, phaseLabel, phaseEmoji } = getTodayMenu(data);
+  card.innerHTML = `
+    <div class="day-card today">
+      <div class="day-card-head">
+        <span class="day-name">Aujourd'hui</span>
+        ${phaseLabel ? `<span class="day-phase">${phaseEmoji} ${phaseLabel.replace('Phase ','')}</span>` : ""}
+      </div>
+      <div class="meal-row"><span class="meal-label">Petit-déj</span><span>${menu.petit_dej}</span></div>
+      <div class="meal-row"><span class="meal-label">Déjeuner</span><span>${menu.dejeuner}</span></div>
+      <div class="meal-row"><span class="meal-label">Dîner</span><span>${menu.diner}</span></div>
+      <div class="meal-row"><span class="meal-label">Collation</span><span>${menu.collation}</span></div>
+    </div>`;
+}
+
+/* ============================================================
+   TO-DO DU JOUR (persistée en local, remise à zéro chaque jour)
+   ============================================================ */
+function todayKey(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function loadDailyChecklist(){
+  try{
+    const raw = localStorage.getItem("moncocon_checklist_" + todayKey());
+    return raw ? JSON.parse(raw) : { water:false, sport:false, diet:false, cure:false };
+  }catch(e){ return { water:false, sport:false, diet:false, cure:false }; }
+}
+
+function saveDailyChecklist(state){
+  try{ localStorage.setItem("moncocon_checklist_" + todayKey(), JSON.stringify(state)); }catch(e){}
+}
+
+function toggleChecklistItem(key){
+  const state = loadDailyChecklist();
+  state[key] = !state[key];
+  saveDailyChecklist(state);
+  renderDailyChecklist();
+}
+
+function getCurePosologyText(){
+  const family = window.__mainCureFamily;
+  const packWeeksMap = { starter:4, standard:8, premium:12 };
+  const weeksToPack = { 4:"starter", 8:"standard", 12:"premium" };
+  const pack = weeksToPack[window.__startedCureDuration || 12] || "premium";
+  if(!family || !CURE_PRODUCTS[family]) return null;
+  return CURE_PRODUCTS[family][pack] || CURE_PRODUCTS[family].premium || CURE_PRODUCTS[family].starter || null;
+}
+
+function renderDailyChecklist(){
+  const wrap = document.getElementById("daily-checklist");
+  const progressEl = document.getElementById("checklist-progress");
+  if(!wrap) return;
+  const state = loadDailyChecklist();
+  const posology = getCurePosologyText();
+
+  const items = [
+    { key:"water", icon:"💧", label:"J'ai bu toutes les heures", sub:"8 à 10 verres d'eau dans la journée" },
+    { key:"sport", icon:"🏋️", label:"J'ai fait ma séance de sport", sub:"Voir la séance du jour", link:true },
+    { key:"diet", icon:"🥗", label:"Je me suis nourrie avec douceur", sub:"En suivant mon programme, à mon rythme" },
+    { key:"cure", icon:"💊", label:"J'ai pris ma cure", sub: posology ? posology : "Retrouve le détail dans tes produits" }
+  ];
+
+  wrap.innerHTML = items.map(it => `
+    <div class="checklist-item ${state[it.key] ? 'done' : ''}" onclick="toggleChecklistItem('${it.key}')">
+      <div class="checklist-check">${state[it.key] ? '✓' : ''}</div>
+      <div class="checklist-icon">${it.icon}</div>
+      <div class="checklist-text">
+        <div class="checklist-label">${it.label}</div>
+        <div class="checklist-sub">${it.sub}${it.link ? ' <span class="checklist-link" onclick="event.stopPropagation(); switchTab(\'training\');">→ Sport</span>' : ''}</div>
+      </div>
+    </div>
+  `).join("");
+
+  const doneCount = items.filter(it => state[it.key]).length;
+  if(progressEl) progressEl.textContent = `${doneCount}/${items.length} aujourd'hui`;
+}
+
+function renderCureStartedDaily(cycleData){
+  renderTodayPlanCard(cycleData);
+  renderDailyChecklist();
+}
+
 function renderCureSection(){
   const family = window.__mainCureFamily;
   const data = window.__curesData || {};
@@ -2788,7 +2946,7 @@ function renderCureSection(){
     document.getElementById("res-no-cure-note").style.display = "block";
     document.getElementById("res-already-started-row").style.display = "none";
     document.getElementById("res-started-cure-title").textContent = "Ton programme";
-    document.getElementById("res-other-cures").innerHTML = "";
+    renderCureStartedDaily(cycleData);
     return;
   }
 
@@ -2818,18 +2976,7 @@ function renderCureSection(){
     compBlock.style.display = "none";
   }
 
-  // "Envie d'aller plus loin ?" (visible une fois la cure démarrée) : liste complète des autres familles
-  const seenFamilies = new Set();
-  const otherHtml = Object.keys(data)
-    .filter(k => {
-      const fam = k.replace(/_(starter|standard|premium)$/, "");
-      if(fam === family || seenFamilies.has(fam)) return false;
-      seenFamilies.add(fam);
-      return true;
-    })
-    .map(k => `<a href="${data[k].lien}" target="_blank" rel="noopener"><span>${data[k].problematique}</span><span class="mini-tile-arrow">→</span></a>`)
-    .join("");
-  document.getElementById("res-other-cures").innerHTML = otherHtml;
+  renderCureStartedDaily(cycleData);
 }
 
 /* ============================================================
@@ -2893,6 +3040,7 @@ async function checkCureProgress(){
       const json = await res.json();
       if(json.started){
         cureStarted = true;
+        window.__startedCureDuration = json.duration || 12;
       }
     }
   }catch(e){
@@ -2926,6 +3074,7 @@ async function markCureStarted(){
     return;
   }
   cureStarted = true;
+  window.__startedCureDuration = packWeeksMap[selectedPack] || 12;
   applyCureStartedUI();
   alert("Bravo, ta cure est officiellement lancée ! 🌿 Retrouve ton évolution dans l'onglet \"Mon Évolution\".");
  }catch(e){
@@ -2939,6 +3088,7 @@ function applyCureStartedUI(){
   const startedBlock = document.getElementById("res-started-block");
   if(notStartedBlock) notStartedBlock.style.display = cureStarted ? "none" : "block";
   if(startedBlock) startedBlock.style.display = cureStarted ? "block" : "none";
+  if(cureStarted) renderCureStartedDaily(loadCycleData() || {});
 
   const btn = document.getElementById("btn-cure-started");
   if(btn){
