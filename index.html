@@ -719,6 +719,10 @@
           <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="••••••••">
         </div>
         <p id="login-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:8px 0 0;"></p>
+        <p id="login-info" style="display:none; color:#4a7a5a; font-size:13.5px; margin:8px 0 0;"></p>
+        <div class="link-row" style="margin-top:10px; margin-bottom:0;">
+          <button type="button" onclick="forgotPassword()">Mot de passe oublié ?</button>
+        </div>
         <div class="nav-row" style="margin-top:16px;">
           <button type="button" class="btn btn-ghost" onclick="backToWelcomeFromLogin()">←</button>
           <button type="submit" class="btn btn-primary" id="login-submit-btn">Me connecter</button>
@@ -1191,13 +1195,25 @@
 
   <!-- VIDÉO DE PRÉSENTATION -->
   <!-- FÉLICITATIONS (juste après le questionnaire, avant la vidéo) -->
-  <div class="card" id="screen-congrats" style="display:none;" onclick="advanceFromCongrats()">
+  <div class="card" id="screen-congrats" style="display:none;">
     <div class="hero">
       <div class="big-emoji">🥳</div>
-      <h1 id="congrats-title" style="font-size:26px;"></h1>
-      <p id="congrats-text" style="font-family:'Lora'; font-style:italic; font-size:15px; color:var(--brown); line-height:1.6; margin-top:10px; text-align:center;"></p>
+      <h1 id="congrats-title" style="font-size:24px;"></h1>
+      <div id="congrats-text" style="font-family:'Lora'; font-size:15px; color:var(--brown); line-height:1.7; text-align:left; margin-top:14px;"></div>
     </div>
-    <p style="text-align:center; color:var(--gold-deep); font-family:'Poppins'; font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; margin-top:30px;">Touche l'écran pour continuer</p>
+
+    <div style="margin-top:18px;">
+      <div class="field">
+        <label for="congrats-password">Crée ton mot de passe</label>
+        <input type="password" id="congrats-password" autocomplete="new-password" placeholder="••••••••">
+      </div>
+      <div class="field">
+        <label for="congrats-password-confirm">Confirme ton mot de passe</label>
+        <input type="password" id="congrats-password-confirm" autocomplete="new-password" placeholder="••••••••">
+      </div>
+      <p id="congrats-password-error" style="display:none; color:#8a3b34; font-size:13px; margin:0 0 10px;"></p>
+      <button class="btn btn-primary btn-full" id="congrats-submit-btn" onclick="submitCongratsPassword()">Créer mon compte et continuer →</button>
+    </div>
   </div>
 
   <div class="card" id="screen-video" style="display:none; padding:14px;">
@@ -1864,17 +1880,65 @@ function openStormFromMenu(){
    FÉLICITATIONS (post-questionnaire, avant la vidéo)
    ============================================================ */
 let congratsCallback = null;
+let congratsEmail = "";
 
-function showCongratsScreen(firstname, onContinue){
+function showCongratsScreen(firstname, email, onContinue){
   congratsCallback = onContinue || null;
+  congratsEmail = email || "";
   const name = firstname ? firstname : "";
   document.getElementById("congrats-title").textContent = `Félicitations ${name} 🥳`;
-  document.getElementById("congrats-text").textContent =
-    "Bienvenue dans ton parcours personnalisé de 12 semaines 🌿 ! Tu viens de franchir la première étape ! Tu n'as pas besoin d'être parfaite, tu dois simplement avancer, un pas après l'autre.";
+  document.getElementById("congrats-text").innerHTML =
+    "<p>Bienvenue dans ton parcours personnalisé de 12 semaines 🌿</p>" +
+    "<p>Tu viens de franchir la première étape ! Tu n'as pas besoin d'être parfaite, tu dois simplement avancer, un pas après l'autre.</p>" +
+    "<p>Pour terminer, crée le mot de passe de ton espace personnel juste en dessous.</p>";
+  document.getElementById("congrats-password").value = "";
+  document.getElementById("congrats-password-confirm").value = "";
+  document.getElementById("congrats-password-error").style.display = "none";
   document.getElementById("screen-congrats").style.display = "block";
 }
 
-function advanceFromCongrats(){
+async function submitCongratsPassword(){
+  const errorEl = document.getElementById("congrats-password-error");
+  const pass = document.getElementById("congrats-password").value;
+  const confirm = document.getElementById("congrats-password-confirm").value;
+  errorEl.style.display = "none";
+
+  if(!pass || pass.length < 6){
+    errorEl.textContent = "Ton mot de passe doit contenir au moins 6 caractères.";
+    errorEl.style.display = "block";
+    return;
+  }
+  if(pass !== confirm){
+    errorEl.textContent = "Les deux mots de passe ne correspondent pas.";
+    errorEl.style.display = "block";
+    return;
+  }
+  if(!supabaseClient || !congratsEmail){
+    errorEl.textContent = "Une erreur est survenue, réessaie dans un instant.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("congrats-submit-btn");
+  const originalLabel = btn.textContent;
+  btn.textContent = "Création du compte...";
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.auth.signUp({ email: congratsEmail, password: pass });
+
+  btn.textContent = originalLabel;
+  btn.disabled = false;
+
+  if(error){
+    if(error.message && error.message.toLowerCase().includes("already")){
+      errorEl.textContent = "Un compte existe déjà avec cet email. Essaie de te connecter plutôt.";
+    } else {
+      errorEl.textContent = "Une erreur est survenue lors de la création de ton compte. Réessaie 🌿";
+    }
+    errorEl.style.display = "block";
+    return;
+  }
+
   document.getElementById("screen-congrats").style.display = "none";
   const cb = congratsCallback;
   congratsCallback = null;
@@ -3031,7 +3095,7 @@ function saveProfileAndShowResult(){
   } else {
     // Première inscription : webhook → Google Sheet + création de compte + email d'identifiants
     sendResponsesToWebhook(firstname, email, data);
-    showCongratsScreen(firstname, function(){
+    showCongratsScreen(firstname, email, function(){
       showPresentationVideo(function(){ showResult(); });
     });
   }
