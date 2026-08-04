@@ -855,7 +855,7 @@
           <h1 style="margin:0;">Ton programme est <em>prêt</em></h1>
         </div>
 
-        <div class="cure-hero-card" style="text-align:center; margin-top:22px;">
+        <div class="cure-hero-card" id="res-cure-hero" style="text-align:center; margin-top:22px;">
           <div class="tag" style="margin-bottom:8px;">Ta cure recommandée</div>
           <h2 id="res-cure-title" style="margin:0; font-size:21px;"></h2>
         </div>
@@ -871,11 +871,20 @@
           </div>
         </div>
 
+        <div id="res-complementary-block" style="display:none; margin-top:16px;">
+          <div class="tag" style="margin-bottom:8px;">Tu peux aussi ajouter</div>
+          <div class="cure-mini-tiles" id="res-complementary-cures"></div>
+        </div>
+
+        <div id="res-no-cure-note" style="display:none; margin-top:22px;">
+          <div class="note-box">Pas de cure précise à te proposer pour l'instant sur la base de tes réponses — Lindsay pourra t'orienter directement lors de votre échange. 🌿</div>
+        </div>
+
         <div class="nav-row" style="margin-top:22px;">
           <button class="btn btn-primary btn-full" onclick="contactAdvisorFromMenu()">📅 Prendre rdv avec ma conseillère</button>
         </div>
 
-        <div class="link-row" style="margin-top:6px;">
+        <div class="link-row" id="res-already-started-row" style="margin-top:6px;">
           <button onclick="markCureStarted()" id="btn-cure-started">✅ J'ai déjà commencé ma cure</button>
         </div>
       </div>
@@ -2589,7 +2598,28 @@ function pickCureFamily(cycleData){
 
   if(hasDouleurArt) return "cure13";
   if(hasCheveux && problematique.length === 1) return "cure14";
+  if(answers.objectif === 2) return null; // objectif "corps en général" + aucun signal précis -> RDV seul, pas de cure poussée
   return "cure01";
+}
+
+// Cures complémentaires : autres signaux déclenchés, en plus de la cure principale (max 2)
+function pickComplementaryCures(primaryFamily, cycleData){
+  const douleurs = answers.douleurs || [];
+  const problematique = answers.problematique || [];
+  const hasLipoedeme = douleurs.includes(5);
+  const hasDouleurArt = douleurs.includes(1) || douleurs.includes(2);
+  const hasCheveux = problematique.includes(4);
+  const isMenopause = (cycleData && cycleData.cycleStatus) === "menopause";
+  const postpartumOld = answers.postpartum === 2;
+
+  const candidates = [];
+  if(hasLipoedeme && primaryFamily !== "cure12") candidates.push("cure12");
+  if(hasDouleurArt && primaryFamily !== "cure13") candidates.push("cure13");
+  if(hasCheveux && primaryFamily !== "cure14") candidates.push("cure14");
+  if(isMenopause && primaryFamily !== "cure02") candidates.push("cure02");
+  if(postpartumOld && primaryFamily !== "cure07") candidates.push("cure07");
+
+  return [...new Set(candidates)].slice(0, 2);
 }
 
 /* ============================================================
@@ -2675,13 +2705,23 @@ function toggleCurePhoto(){
 function renderCureSection(){
   const family = window.__mainCureFamily;
   const data = window.__curesData || {};
+  const cycleData = loadCycleData() || {};
 
   if(!family){
-    // cas particulier (ex: post-accouchement trop récent) : pas de cure recommandée
-    document.getElementById("res-cure-title").textContent = "Pas encore de cure adaptée pour l'instant — prends rdv avec Lindsay";
+    // cas particulier : post-partum trop récent, ou aucun signal précis (objectif "corps en général")
+    document.getElementById("res-cure-hero").style.display = "none";
     document.getElementById("cure-feedback-card").style.display = "none";
+    document.getElementById("res-complementary-block").style.display = "none";
+    document.getElementById("res-no-cure-note").style.display = "block";
+    document.getElementById("res-already-started-row").style.display = "none";
+    document.getElementById("res-started-cure-title").textContent = "Ton programme";
+    document.getElementById("res-other-cures").innerHTML = "";
     return;
   }
+
+  document.getElementById("res-cure-hero").style.display = "block";
+  document.getElementById("res-no-cure-note").style.display = "none";
+  document.getElementById("res-already-started-row").style.display = "block";
 
   // on prend la variante Premium comme référence (sinon la 1ère dispo) pour le nom/témoignage/photo
   const variant = data[family + "_premium"] || data[family + "_standard"] || data[family + "_starter"];
@@ -2691,7 +2731,21 @@ function renderCureSection(){
   document.getElementById("res-started-cure-title").textContent = variant.problematique;
   applyCureVariantToUI(variant);
 
-  // autres cures pour "Envie d'aller plus loin ?"
+  // cures complémentaires (max 2, affichage compact)
+  const complementaryFamilies = pickComplementaryCures(family, cycleData);
+  const compBlock = document.getElementById("res-complementary-block");
+  if(complementaryFamilies.length){
+    compBlock.style.display = "block";
+    document.getElementById("res-complementary-cures").innerHTML = complementaryFamilies.map(fam=>{
+      const v = data[fam + "_premium"] || data[fam + "_standard"] || data[fam + "_starter"];
+      if(!v) return "";
+      return `<a href="${v.lien}" target="_blank" rel="noopener"><span>${v.problematique}</span><span class="mini-tile-arrow">→</span></a>`;
+    }).join("");
+  } else {
+    compBlock.style.display = "none";
+  }
+
+  // "Envie d'aller plus loin ?" (visible une fois la cure démarrée) : liste complète des autres familles
   const seenFamilies = new Set();
   const otherHtml = Object.keys(data)
     .filter(k => {
