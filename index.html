@@ -499,11 +499,13 @@
 
   .welcome-logo{ margin-bottom:34px; }
   .welcome-logo-emoji{
-    width:76px; height:76px; margin:0 auto 16px; border-radius:50%;
+    width:88px; height:88px; margin:0 auto 16px; border-radius:50%;
     background: var(--neu-base); box-shadow: var(--shadow);
-    display:flex; align-items:center; justify-content:center; font-size:34px;
+    display:flex; align-items:center; justify-content:center;
     animation: logoPulse 3.2s ease-in-out infinite;
+    padding:14px;
   }
+  .welcome-logo-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
   @keyframes logoPulse{
     0%,100%{ box-shadow: var(--shadow); }
     50%{ box-shadow: 6px 6px 14px var(--neu-shadow-d), -6px -6px 14px var(--neu-shadow-l); }
@@ -542,11 +544,13 @@
   /* ÉCRAN DE RETOUR */
   #screen-welcome-back{ text-align:center; padding:70px 24px; }
   .welcome-back-emoji{
-    width:70px; height:70px; margin:0 auto 22px; border-radius:50%;
+    width:82px; height:82px; margin:0 auto 22px; border-radius:50%;
     background: var(--neu-base); box-shadow: var(--shadow);
-    display:flex; align-items:center; justify-content:center; font-size:30px;
+    display:flex; align-items:center; justify-content:center;
     animation: welcomeBackIn .7s cubic-bezier(.2,.8,.2,1);
+    padding:13px;
   }
+  .welcome-back-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
   .welcome-back-title{
     font-family:'Lora'; font-weight:500; font-size:23px; line-height:1.4; color:var(--brown);
     animation: welcomeBackIn .8s cubic-bezier(.2,.8,.2,1) .1s backwards;
@@ -636,7 +640,7 @@
 
     <div class="card" id="screen-choice">
       <div class="welcome-logo">
-        <div class="welcome-logo-emoji">🌿</div>
+        <div class="welcome-logo-emoji"><img src="images/logo.png" alt="Mon Cocon"></div>
         <div class="welcome-wordmark">Mon <em>Cocon</em></div>
       </div>
 
@@ -654,7 +658,7 @@
     <!-- ÉCRAN DE RETOUR (accueil chaleureux au réveil de session) -->
     <div class="card" id="screen-welcome-back" style="display:none;">
       <div class="welcome-back-inner">
-        <div class="welcome-back-emoji">🌿</div>
+        <div class="welcome-back-emoji"><img src="images/logo.png" alt="Mon Cocon"></div>
         <h1 class="welcome-back-title">Contente de te revoir<br><em id="welcome-back-name"></em></h1>
       </div>
     </div>
@@ -678,7 +682,7 @@
     <!-- CONNEXION -->
     <div class="card" id="screen-login" style="display:none;">
       <div class="hero">
-        <div class="welcome-logo-emoji" style="margin:0 auto 18px;">🌿</div>
+        <div class="welcome-logo-emoji" style="margin:0 auto 18px;"><img src="images/logo.png" alt="Mon Cocon"></div>
         <div class="subtitle">Ton espace personnel</div>
         <h1>Fière de <em>te revoir</em></h1>
         <p>Connecte-toi pour retrouver ton programme personnalisé.</p>
@@ -816,34 +820,14 @@
     <div class="card" id="screen-result" style="display:none;">
 
       <div id="res-not-started-block">
-        <div class="cure-hero-card">
-          <div class="tag" style="margin-bottom:8px;">⭐ Recommandée pour toi</div>
-          <h2 id="res-cure-title" style="margin:0 0 8px; font-size:20px;"></h2>
-          <p id="res-cure-desc" style="font-size:14px; line-height:1.6; color:var(--brown); margin:0; display:none;"></p>
+        <div class="hero" style="text-align:center; padding-bottom:0;">
+          <div class="subtitle">Félicitations</div>
+          <h1 style="margin:0;">Ton programme est <em>prêt</em></h1>
         </div>
 
-        <div class="duration-tiles" id="duration-tiles">
-          <button class="duration-tile" data-pack="starter" onclick="selectCurePack('starter')">
-            <span class="duration-num">4</span><span class="duration-label">semaines</span>
-            <span class="duration-price" id="price-starter"></span>
-          </button>
-          <button class="duration-tile" data-pack="standard" onclick="selectCurePack('standard')">
-            <span class="duration-num">8</span><span class="duration-label">semaines</span>
-            <span class="duration-price" id="price-standard"></span>
-          </button>
-          <button class="duration-tile active" data-pack="premium" onclick="selectCurePack('premium')">
-            <span class="duration-badge">Recommandée</span>
-            <span class="duration-num">12</span><span class="duration-label">semaines</span>
-            <span class="duration-price" id="price-premium"></span>
-          </button>
-        </div>
-
-        <div class="nav-row" style="margin-top:18px;">
-          <a class="btn btn-primary btn-full" id="btn-start-program" href="#" target="_blank" rel="noopener" style="text-align:center; text-decoration:none; display:block;">Démarrer mon programme</a>
-        </div>
-
-        <div class="nav-row">
-          <button class="btn btn-full btn-cure-started" id="btn-cure-started" onclick="markCureStarted()">✅ J'ai commencé ma cure</button>
+        <div class="cure-hero-card" style="text-align:center; margin-top:22px;">
+          <div class="tag" style="margin-bottom:8px;">Ta cure recommandée</div>
+          <h2 id="res-cure-title" style="margin:0; font-size:21px;"></h2>
         </div>
 
         <div class="cure-feedback-card" id="cure-feedback-card" style="display:none;">
@@ -855,6 +839,14 @@
           <div class="cure-photo-wrap" id="cure-photo-wrap" style="display:none;">
             <img id="cure-photo-img" alt="Avant / après" style="width:100%; border-radius:14px; display:block; margin-top:10px;">
           </div>
+        </div>
+
+        <div class="nav-row" style="margin-top:22px;">
+          <button class="btn btn-primary btn-full" onclick="contactAdvisorFromMenu()">📅 Prendre rdv avec ma conseillère</button>
+        </div>
+
+        <div class="link-row" style="margin-top:6px;">
+          <button onclick="markCureStarted()" id="btn-cure-started">✅ J'ai déjà commencé ma cure</button>
         </div>
       </div>
 
@@ -2438,22 +2430,7 @@ function extractFeedback(raw){
 
 let selectedPack = "premium";
 
-function selectCurePack(pack){
-  const family = window.__mainCureFamily;
-  const data = window.__curesData || {};
-  const variant = data[family + "_" + pack];
-  if(!variant) return; // pack indisponible pour cette cure
-  selectedPack = pack;
-  document.querySelectorAll("#duration-tiles .duration-tile").forEach(t=>{
-    t.classList.toggle("active", t.dataset.pack === pack);
-  });
-  applyCureVariantToUI(variant);
-}
-
 function applyCureVariantToUI(variant){
-  const linkBtn = document.getElementById("btn-start-program");
-  if(linkBtn) linkBtn.href = variant.lien || "#";
-
   const fb = extractFeedback(variant.feedback);
   const card = document.getElementById("cure-feedback-card");
   if(fb.text){
@@ -2496,35 +2473,18 @@ function renderCureSection(){
 
   if(!family){
     // cas particulier (ex: post-accouchement trop récent) : pas de cure recommandée
-    document.getElementById("res-cure-title").textContent = "Pas encore de cure adaptée pour l'instant";
-    document.getElementById("res-cure-desc").style.display = "block";
-    document.getElementById("res-cure-desc").textContent = "Vu ton accouchement très récent, on préfère attendre un peu avant de te recommander une cure. Prends rendez-vous avec Lindsay pour en discuter avec elle.";
-    document.getElementById("duration-tiles").style.display = "none";
-    document.getElementById("btn-start-program").style.display = "none";
+    document.getElementById("res-cure-title").textContent = "Pas encore de cure adaptée pour l'instant — prends rdv avec Lindsay";
+    document.getElementById("cure-feedback-card").style.display = "none";
     return;
   }
 
-  const packs = ["starter","premium","standard"];
-  packs.forEach(pack=>{
-    const variant = data[family + "_" + pack];
-    const tile = document.querySelector(`#duration-tiles .duration-tile[data-pack="${pack}"]`);
-    const priceEl = document.getElementById("price-" + pack);
-    if(variant){
-      tile.style.display = "flex";
-      tile.disabled = false;
-      priceEl.textContent = variant.prix || "";
-      if(variant.problematique){
-        document.getElementById("res-cure-title").textContent = variant.problematique;
-        document.getElementById("res-started-cure-title").textContent = variant.problematique;
-      }
-    } else {
-      tile.style.display = "none";
-    }
-  });
+  // on prend la variante Premium comme référence (sinon la 1ère dispo) pour le nom/témoignage/photo
+  const variant = data[family + "_premium"] || data[family + "_standard"] || data[family + "_starter"];
+  if(!variant) return;
 
-  // pack par défaut : Premium si dispo, sinon le premier pack disponible
-  let defaultPack = data[family + "_premium"] ? "premium" : (data[family + "_starter"] ? "starter" : "standard");
-  selectCurePack(defaultPack);
+  document.getElementById("res-cure-title").textContent = variant.problematique;
+  document.getElementById("res-started-cure-title").textContent = variant.problematique;
+  applyCureVariantToUI(variant);
 
   // autres cures pour "Envie d'aller plus loin ?"
   const seenFamilies = new Set();
