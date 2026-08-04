@@ -721,7 +721,7 @@
         <p id="login-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:8px 0 0;"></p>
         <p id="login-info" style="display:none; color:#4a7a5a; font-size:13.5px; margin:8px 0 0;"></p>
         <div class="link-row" style="margin-top:10px; margin-bottom:0;">
-          <button type="button" onclick="forgotPassword()">Mot de passe oublié ?</button>
+          <button type="button" onclick="openForgotPasswordScreen()">Mot de passe oublié ?</button>
         </div>
         <div class="nav-row" style="margin-top:16px;">
           <button type="button" class="btn btn-ghost" onclick="backToWelcomeFromLogin()">←</button>
@@ -729,6 +729,28 @@
         </div>
         <div class="link-row" style="margin-top:14px;">
           <button type="button" onclick="window.open('https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT', '_blank')">En cas de difficulté à te connecter, contacte le support</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- MOT DE PASSE OUBLIÉ : écran dédié -->
+    <div class="card" id="screen-forgot-password" style="display:none;">
+      <div class="hero">
+        <div class="big-emoji">📩</div>
+        <div class="subtitle">Mot de passe oublié</div>
+        <h1>On va <em>t'aider</em></h1>
+        <p>Entre l'email de ton compte, on t'envoie un lien pour choisir un nouveau mot de passe.</p>
+      </div>
+      <form id="forgot-password-form" autocomplete="on" onsubmit="event.preventDefault(); submitForgotPassword();">
+        <div class="field">
+          <label for="forgot-email">Email</label>
+          <input type="email" id="forgot-email" name="email" autocomplete="username" placeholder="ton@email.com">
+        </div>
+        <p id="forgot-password-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:8px 0 0;"></p>
+        <p id="forgot-password-info" style="display:none; color:#4a7a5a; font-size:13.5px; margin:8px 0 0;"></p>
+        <div class="nav-row" style="margin-top:16px;">
+          <button type="button" class="btn btn-ghost" onclick="closeForgotPasswordScreen()">←</button>
+          <button type="submit" class="btn btn-primary" id="forgot-password-submit-btn">Envoyer la demande</button>
         </div>
       </form>
     </div>
@@ -1386,23 +1408,46 @@ async function attemptLogin(){
 }
 
 // ── Mot de passe oublié ──
-async function forgotPassword(){
-  const errorEl = document.getElementById("login-error");
-  const infoEl = document.getElementById("login-info");
+function openForgotPasswordScreen(){
+  document.getElementById("login-error").style.display = "none";
+  document.getElementById("login-info").style.display = "none";
+  document.getElementById("forgot-password-error").style.display = "none";
+  document.getElementById("forgot-password-info").style.display = "none";
+  document.getElementById("forgot-email").value = document.getElementById("login-email").value.trim();
+  document.getElementById("screen-login").style.display = "none";
+  document.getElementById("screen-forgot-password").style.display = "block";
+}
+
+function closeForgotPasswordScreen(){
+  document.getElementById("screen-forgot-password").style.display = "none";
+  document.getElementById("screen-login").style.display = "block";
+}
+
+async function submitForgotPassword(){
+  const errorEl = document.getElementById("forgot-password-error");
+  const infoEl = document.getElementById("forgot-password-info");
   errorEl.style.display = "none";
   infoEl.style.display = "none";
 
-  const email = document.getElementById("login-email").value.trim();
+  const email = document.getElementById("forgot-email").value.trim();
   if(!email){
-    errorEl.textContent = "Entre d'abord ton email ci-dessus, puis clique sur ce lien.";
+    errorEl.textContent = "Merci de renseigner ton email.";
     errorEl.style.display = "block";
     return;
   }
   if(!supabaseClient) return;
 
+  const btn = document.getElementById("forgot-password-submit-btn");
+  const originalLabel = btn.textContent;
+  btn.textContent = "Envoi...";
+  btn.disabled = true;
+
   await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin
   });
+
+  btn.textContent = originalLabel;
+  btn.disabled = false;
 
   infoEl.textContent = "Email envoyé 🌿 Vérifie ta boîte mail pour choisir un nouveau mot de passe.";
   infoEl.style.display = "block";
@@ -1429,6 +1474,7 @@ if(supabaseClient){
       document.getElementById("screen-splash").style.display = "none";
       document.getElementById("screen-choice").style.display = "none";
       document.getElementById("screen-login").style.display = "none";
+      document.getElementById("screen-forgot-password").style.display = "none";
       const fab = document.getElementById("sos-fab");
       if(fab) fab.style.display = "none";
       document.getElementById("screen-reset-password").style.display = "block";
