@@ -2609,7 +2609,8 @@ const CURE_PHOTOS = {
 };
 
 function pickCureFamily(cycleData){
-  const texture = answers.texture;
+  const texture = answers.texture; // 0=dur, 1=pinçable, 2=capitonnée, 3=jambes lourdes, 4=aucune
+  const objectif = answers.objectif; // 0=Minceur&Silhouette, 1=Énergie&Vitalité, 2=Me sentir bien, 3=Détox&Drainage, 4=Équilibre hormonal, 5=Peau&Éclat
   const douleurs = answers.douleurs || [];
   const ressenti = answers.ressenti || [];
   const problematique = answers.problematique || [];
@@ -2623,28 +2624,50 @@ function pickCureFamily(cycleData){
   const sedentaire = answers.activite === 0;
   const postpartumOld = answers.postpartum === 2;
   const postpartumRecent = answers.postpartum === 1;
-  const silhouette = answers.objectif === 0;
 
+  // Priorités absolues de sécurité/pertinence médicale, au-dessus de tout objectif
   if(postpartumRecent) return null;
   if(hasLipoedeme) return "cure12";
-
-  if(texture === 0){
-    if(hasCrohn) return "cure03";
-    if(isMenopause) return "cure02";
-    if(sommeilFatigue) return "cure04";
-    return "cure01";
-  }
-  if(texture === 1){
-    if(postpartumOld) return "cure07";
-    if(stressEleve && sedentaire) return "cure08";
-    return "cure06";
-  }
-  if(texture === 2) return "cure09";
-  if(texture === 3) return silhouette ? "cure10" : "cure11";
-
   if(hasDouleurArt) return "cure13";
-  if(hasCheveux && problematique.length === 1) return "cure14";
-  if(answers.objectif === 2) return null; // objectif "corps en général" + aucun signal précis -> RDV seul, pas de cure poussée
+
+  // L'objectif principal (Q1) est désormais le vrai driver de la cure
+  switch(objectif){
+    case 0: // Minceur & Silhouette
+      if(texture === 0){
+        if(hasCrohn) return "cure03";
+        if(isMenopause) return "cure02";
+        if(sommeilFatigue) return "cure04";
+        return "cure01";
+      }
+      if(texture === 1){
+        if(postpartumOld) return "cure07";
+        if(stressEleve && sedentaire) return "cure08";
+        return "cure06";
+      }
+      if(texture === 3) return "cure10";
+      return "cure01";
+
+    case 1: // Énergie & Vitalité — ne jamais attribuer cure04 par défaut, vérifier la texture
+      if(texture === 0) return "cure04";
+      if(texture === 1) return "cure08";
+      return null; // aucune texture cochée -> RDV conseillé
+
+    case 2: // Me sentir bien dans mon corps — trop généraliste, aucune cure dédiée
+      return null;
+
+    case 3: // Détox & Drainage
+      return "cure11";
+
+    case 4: // Équilibre hormonal
+      if(isMenopause) return "cure02";
+      return null; // pas de cure hormonale dédiée sans ménopause confirmée -> RDV
+
+    case 5: // Peau & Éclat
+      if(texture === 2) return "cure09"; // + EverGlow (cure14) ajouté en complémentaire
+      if(hasCheveux) return "cure14"; // EverGlow, chute de cheveux déjà incluse
+      return "cure14"; // EverGlow recommandé directement si aucune texture cochée
+  }
+
   return "cure01";
 }
 
@@ -2659,6 +2682,10 @@ function pickComplementaryCures(primaryFamily, cycleData){
   const postpartumOld = answers.postpartum === 2;
 
   const candidates = [];
+  // Cas spécial : Peau & Éclat + texture capitonnée -> cure09 + EverGlow (cure14) toujours ensemble
+  if(answers.objectif === 5 && answers.texture === 2 && primaryFamily === "cure09"){
+    candidates.push("cure14");
+  }
   if(hasLipoedeme && primaryFamily !== "cure12") candidates.push("cure12");
   if(hasDouleurArt && primaryFamily !== "cure13") candidates.push("cure13");
   if(hasCheveux && primaryFamily !== "cure14") candidates.push("cure14");
@@ -3200,6 +3227,17 @@ function loadCycleData(){
   }catch(e){ return null; }
 }
 
+function normalizeHeightCm(raw){
+  let h = parseFloat(raw);
+  if(!h || isNaN(h)) return { value: null, error: null };
+  // Saisie évidente en mètres (ex: "1.6" ou "1,60") -> conversion automatique en cm
+  if(h > 0 && h < 3) h = h * 100;
+  if(h < 100 || h > 230){
+    return { value: null, error: "Merci d'indiquer ta taille en centimètres (ex : 165)." };
+  }
+  return { value: Math.round(h), error: null };
+}
+
 function saveProfileAndShowResult(){
   const firstname = document.getElementById("input-firstname").value.trim();
   const email = document.getElementById("input-email").value.trim();
@@ -3209,7 +3247,13 @@ function saveProfileAndShowResult(){
   const hasCycle = cycleStatusValue === "yes";
   const age = parseInt(document.getElementById("input-age").value) || null;
   const weight = parseFloat(document.getElementById("input-weight").value) || null;
-  const height = parseFloat(document.getElementById("input-height").value) || null;
+  const heightRaw = document.getElementById("input-height").value;
+  const heightCheck = normalizeHeightCm(heightRaw);
+  if(heightCheck.error){
+    alert(heightCheck.error);
+    return;
+  }
+  const height = heightCheck.value;
 
   // niveau d'activité réutilisé depuis la question du Bilan (Débutante/Intermédiaire/Active)
   const activityMap = [1.2, 1.375, 1.55];
@@ -3372,7 +3416,10 @@ function backToQuizFromProfile(){
 // Estimation Mifflin-St Jeor (femme) : BMR = 10*poids + 6.25*taille - 5*âge - 161
 function computeCalorieNeeds(data, modifier){
   if(!data.age || !data.weight || !data.height) return null;
-  const bmr = 10*data.weight + 6.25*data.height - 5*data.age - 161;
+  // Filet de sécurité pour les profils déjà enregistrés avec une taille en mètres (ex: 1.6 au lieu de 160)
+  let heightCm = data.height;
+  if(heightCm > 0 && heightCm < 3) heightCm = heightCm * 100;
+  const bmr = 10*data.weight + 6.25*heightCm - 5*data.age - 161;
   const tdee = bmr * (data.activityFactor || 1.375);
   const adjusted = tdee * (1 + modifier);
   const low = Math.round((adjusted*0.93)/10)*10;
