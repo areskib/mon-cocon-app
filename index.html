@@ -420,6 +420,31 @@
   .storm-dot{ width:7px; height:7px; border-radius:50%; background:var(--neu-shadow-d); }
   .storm-dot.active{ background:var(--gold-deep); width:20px; border-radius:99px; transition:all .2s ease; }
 
+  #sos-fab{
+    position:fixed; right:16px; bottom:90px; z-index:150;
+    background: linear-gradient(145deg, #4C342E, #3a2721); color: var(--gold);
+    border:none; border-radius:99px; padding:14px 20px;
+    display:flex; align-items:center; gap:7px;
+    font-family:'Poppins'; font-weight:700; font-size:13.5px;
+    box-shadow: 6px 6px 14px var(--neu-shadow-d), -6px -6px 14px var(--neu-shadow-l);
+    cursor:pointer; transition: transform .15s ease;
+  }
+  #sos-fab:active{ transform: scale(.95); }
+
+  .sos-carousel{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:14px;
+    padding-bottom:6px; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .sos-carousel::-webkit-scrollbar{ display:none; }
+  .sos-tip-card{
+    flex:0 0 100%; scroll-snap-align:center;
+    background:var(--neu-base); border-radius:22px; padding:30px 24px;
+    box-shadow:var(--shadow-sm); min-height:170px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .sos-tip-card p{ font-family:'Lora'; font-style:italic; font-size:15.5px; line-height:1.6; color:var(--brown); margin:0; }
+
   .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:6px; margin: 14px 0 20px; }
   .cal-day{
     aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center;
@@ -882,7 +907,7 @@
       <div class="link-row storm-cta-row">
         <button onclick="handleFourthNavClick()" id="res-boost-cta">✨ Découvre tes contenus Boost</button>
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
-        <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
+        <button onclick="openStormFromMenu()">🍫 Un coup de mou ? SOS Fringale</button>
       </div>
     </div>
   </div>
@@ -951,12 +976,12 @@
         <p style="font-size:13px; color:var(--taupe); margin-top:-4px;" id="agenda-subtitle">Menus indicatifs, ajustés selon la phase de ton cycle chaque jour.</p>
         <div id="weekly-agenda"></div>
         <div class="nav-row" style="margin-top:14px;">
-          <button class="btn btn-primary btn-full" onclick="generateShoppingListPdf()">🛒 Obtenir ma liste de courses</button>
+          <button class="btn btn-primary btn-full" onclick="generateShoppingListPdf()">🛒 Télécharger mon menu & ma liste de courses</button>
         </div>
       </div>
 
       <div class="link-row storm-cta-row">
-        <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Découvre "Tempête émotionnelle"</button>
+        <button onclick="openStormFromMenu()">🍫 Un coup de mou ? Découvre "SOS Fringale"</button>
         <button onclick="handleFourthNavClick()">✨ Va voir tes contenus Boost</button>
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
       </div>
@@ -991,7 +1016,7 @@
     <div class="link-row storm-cta-row">
       <button onclick="handleFourthNavClick()">✨ Besoin d'un coup de Boost ?</button>
       <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
-      <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
+      <button onclick="openStormFromMenu()">🍫 Un coup de mou ? SOS Fringale</button>
     </div>
   </div>
 
@@ -1040,7 +1065,7 @@
 
       <div class="link-row storm-cta-row">
         <button onclick="contactAdvisorFromMenu()">📅 Prendre mon rdv de suivi hebdo</button>
-        <button onclick="openStormFromMenu()">🌊 Un coup de mou ? Tempête émotionnelle</button>
+        <button onclick="openStormFromMenu()">🍫 Un coup de mou ? SOS Fringale</button>
       </div>
     </div>
   </div>
@@ -1127,22 +1152,41 @@
   </div>
 
   <!-- TEMPÊTE ÉMOTIONNELLE -->
-  <div class="card" id="screen-storm" style="display:none;">
-    <button onclick="closeStormScreen()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
-    <div class="hero" style="margin-bottom:10px;">
-      <div class="big-emoji">🌊</div>
-      <div class="subtitle">Ça arrive à tout le monde</div>
-      <h1 style="font-size:24px;">Tempête <em>émotionnelle</em></h1>
+  <div class="card" id="screen-sos-intro" style="display:none;">
+    <div class="hero" style="text-align:center; padding-bottom:6px;">
+      <div class="welcome-logo-emoji" style="margin:0 auto 16px;"><img src="images/logo.png" alt="Mon Cocon"></div>
+      <h1 style="font-size:21px;">Tu as appuyé sur <em>SOS Fringale</em> — bravo 🌿</h1>
+      <p style="font-size:14.5px; line-height:1.65; text-align:left;">Manger, c'est vital, et il n'y a rien de mal à avoir envie de sucre. Ce bouton existe pour une seule raison : te donner 2 minutes avant de répondre à l'envie, le temps de comprendre d'où elle vient. Parfois elle passe, parfois elle reste — dans les deux cas, tu as le choix, pas la culpabilité.</p>
     </div>
-
-    <div class="storm-card" id="storm-card" onclick="nextStormTip()">
-      <div class="storm-emoji" id="storm-emoji"></div>
-      <div class="storm-text" id="storm-text"></div>
-      <div class="storm-hint">Touche l'écran pour continuer →</div>
+    <div class="nav-row" style="margin-top:8px;">
+      <button class="btn btn-primary btn-full" onclick="goToSosCause()">Continuer</button>
     </div>
-
-    <div class="storm-dots" id="storm-dots"></div>
+    <div class="link-row">
+      <button onclick="closeSosFlow()">Fermer</button>
+    </div>
   </div>
+
+  <div class="card" id="screen-sos-cause" style="display:none;">
+    <button onclick="closeSosFlow()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div class="hero" style="margin-bottom:6px;">
+      <h1 style="font-size:21px;">D'où vient cette <em>envie</em> ?</h1>
+    </div>
+    <div id="sos-cause-options"></div>
+  </div>
+
+  <div class="card" id="screen-sos-tips" style="display:none;">
+    <button onclick="closeSosFlow()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div class="hero" style="margin-bottom:14px;">
+      <h1 style="font-size:20px;" id="sos-tips-title"></h1>
+    </div>
+    <div class="sos-carousel" id="sos-carousel"></div>
+    <div class="storm-dots" id="sos-tips-dots"></div>
+    <div class="link-row" style="margin-top:18px;">
+      <button onclick="closeSosFlow()">C'est bon, je me sens mieux 🌿</button>
+    </div>
+  </div>
+
+  <button id="sos-fab" onclick="openSosFlow()" style="display:none;">🍫 SOS Fringale</button>
 
   <!-- VIDÉO DE PRÉSENTATION -->
   <!-- FÉLICITATIONS (juste après le questionnaire, avant la vidéo) -->
@@ -1175,7 +1219,7 @@
     <button onclick="contactAdvisorFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg></span><span>Mon rdv de suivi hebdo</span></button>
     <button id="menu-tracker-item" onclick="openTrackerFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9C12 9 8 9 8 5C8 5 12 3 12 9M12 9C12 9 16 9 16 5C16 5 12 3 12 9M6 14c0 3.5 2.5 6 6 6s6-2.5 6-6c0-2-1.5-3.5-3-4"/></svg></span><span>Mon Évolution</span></button>
     <button onclick="openCuresFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><span>Découvrir les cures</span></button>
-    <button onclick="openStormFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></span><span>Tempête émotionnelle</span></button>
+    <button onclick="openStormFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></span><span>SOS Fringale</span></button>
   </div>
   <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
 </div>
@@ -1446,6 +1490,8 @@ function showAppHeader(){
 
 function hideAppHeader(){
   document.getElementById("app-header").style.display = "none";
+  const fab = document.getElementById("sos-fab");
+  if(fab) fab.style.display = "none";
 }
 
 /* ============================================================
@@ -1471,11 +1517,12 @@ function openTrackerFromMenu(){
   hideAllTopScreens();
   document.getElementById("screen-tracker").style.display = "block";
   loadTrackerData();
+  updateSosFabVisibility();
 }
 
 function hideAllTopScreens(){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  ["screen-result","screen-tracker","screen-tracker-form","screen-storm","screen-video","screen-congrats"].forEach(id=>{
+  ["screen-result","screen-tracker","screen-tracker-form","screen-sos-intro","screen-sos-cause","screen-sos-tips","screen-video","screen-congrats"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.display = "none";
   });
@@ -1485,6 +1532,7 @@ function showBilanHome(){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-bilan").classList.add("active");
   document.getElementById("screen-result").style.display = "block";
+  updateSosFabVisibility();
 }
 
 function closeTrackerScreen(){
@@ -1720,61 +1768,92 @@ async function submitTrackerForm(){
 /* ============================================================
    TEMPÊTE ÉMOTIONNELLE
    ============================================================ */
-const STORM_TIPS_POOL = [
-  { emoji:"💧", text:"Bois un grand verre d'eau, lentement." },
-  { emoji:"🧘‍♀️", text:"Prends 5 minutes de pause pour calmer tes pensées." },
-  { emoji:"🍫", text:"Prends un carré de chocolat noir ou un fruit." },
-  { emoji:"🏋️‍♀️", text:"Fais quelques squats pour activer ton corps." },
-  { emoji:"🌸", text:"Respire profondément. Cette tempête va passer, et tu es plus forte qu'elle." },
-  { emoji:"🚶‍♀️", text:"Sors marcher 5 minutes, même juste autour du pâté de maisons." },
-  { emoji:"📝", text:"Note ce que tu ressens sur un bout de papier, sans te juger." },
-  { emoji:"🎵", text:"Mets une musique qui te fait du bien et laisse-toi porter." },
-  { emoji:"🤲", text:"Pose une main sur ton cœur et rappelle-toi : tu fais de ton mieux." },
-  { emoji:"🛁", text:"Offre-toi une douche ou un bain chaud, juste pour toi." },
-  { emoji:"📵", text:"Éloigne-toi de ton téléphone 5 minutes, le monde attendra." },
-  { emoji:"🌿", text:"Étire doucement ton corps : épaules, nuque, dos." }
+const SOS_CAUSES = [
+  { key:"fatigue", emoji:"😴", label:"Fatigue" },
+  { key:"hormones", emoji:"🌙", label:"Hormones" },
+  { key:"emotions", emoji:"💭", label:"Émotions" },
+  { key:"faim", emoji:"🍽️", label:"Vraie faim" }
 ];
-let stormSequence = [];
-let stormIndex = 0;
 
-function shuffleArray(arr){
-  const a = [...arr];
-  for(let i=a.length-1; i>0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
+const SOS_TIPS = {
+  fatigue: [
+    "Bois un grand verre d'eau, ou un Max2O si tu en as — la fatigue ressemble souvent à une petite déshydratation.",
+    "Ferme les yeux 5 minutes, même assise.",
+    "Sors 2 minutes prendre l'air et la lumière naturelle.",
+    "Si la faim est réelle, une poignée d'amandes ou un fruit avant toute chose."
+  ],
+  hormones: [
+    "Ce que tu ressens est hormonal, pas un manque de volonté.",
+    "Un carré de chocolat noir (70% ou plus) satisfait sans emballement brutal.",
+    "Une tisane chaude (camomille, verveine) — le geste compte autant que le goût.",
+    "Respire profondément une minute : le stress hormonal amplifie toujours l'envie."
+  ],
+  emotions: [
+    "Avant de manger, nomme ce que tu ressens là, maintenant.",
+    "Bouge 2 minutes — marche, étire-toi, secoue-toi — le corps a parfois besoin de bouger l'émotion, pas de la nourrir.",
+    "Appelle ou écris à quelqu'un, même 2 lignes.",
+    "Demande-toi : si ce n'était pas de la nourriture, de quoi j'aurais besoin là, tout de suite ?"
+  ],
+  faim: [
+    "C'est normal et sain d'avoir faim — ce n'est jamais un problème à résoudre.",
+    "Voici une option rapide et équilibrée : porridge gourmand, quiche express...",
+    "Manger quand on a faim n'est jamais quelque chose à culpabiliser."
+  ]
+};
+
+const SOS_TITLES = { fatigue:"😴 Fatigue", hormones:"🌙 Hormones", emotions:"💭 Émotions", faim:"🍽️ Vraie faim" };
+
+function updateSosFabVisibility(){
+  const fab = document.getElementById("sos-fab");
+  if(!fab) return;
+  const bilanActive = document.getElementById("view-bilan").classList.contains("active") && document.getElementById("screen-result").style.display === "block";
+  const cycleActive = document.getElementById("view-cycle").classList.contains("active");
+  const trackerActive = document.getElementById("screen-tracker").style.display === "block";
+  fab.style.display = (bilanActive || cycleActive || trackerActive) ? "flex" : "none";
+}
+
+function openSosFlow(){
+  hideAllTopScreens();
+  document.getElementById("screen-sos-intro").style.display = "block";
+  updateSosFabVisibility();
+}
+
+function goToSosCause(){
+  document.getElementById("screen-sos-intro").style.display = "none";
+  document.getElementById("screen-sos-cause").style.display = "block";
+  document.getElementById("sos-cause-options").innerHTML = SOS_CAUSES.map(c=>
+    `<button class="option" style="width:100%; text-align:left; border:none; cursor:pointer;" onclick="selectSosCause('${c.key}')">
+      <div class="emoji">${c.emoji}</div><div class="txt"><strong>${c.label}</strong></div>
+    </button>`
+  ).join("");
+}
+
+function selectSosCause(key){
+  document.getElementById("screen-sos-cause").style.display = "none";
+  document.getElementById("screen-sos-tips").style.display = "block";
+  const tips = SOS_TIPS[key] || [];
+  document.getElementById("sos-tips-title").textContent = SOS_TITLES[key] || "";
+  const carousel = document.getElementById("sos-carousel");
+  carousel.innerHTML = tips.map(t=>`<div class="sos-tip-card"><p>${t}</p></div>`).join("");
+  document.getElementById("sos-tips-dots").innerHTML = tips.map((_,i)=>`<span class="storm-dot${i===0 ? ' active':''}"></span>`).join("");
+  carousel.scrollLeft = 0;
+  carousel.onscroll = ()=>{
+    const idx = Math.round(carousel.scrollLeft / Math.max(carousel.clientWidth,1));
+    document.querySelectorAll("#sos-tips-dots .storm-dot").forEach((d,i)=>d.classList.toggle("active", i===idx));
+  };
+}
+
+function closeSosFlow(){
+  document.getElementById("screen-sos-intro").style.display = "none";
+  document.getElementById("screen-sos-cause").style.display = "none";
+  document.getElementById("screen-sos-tips").style.display = "none";
+  showBilanHome();
+  updateSosFabVisibility();
 }
 
 function openStormFromMenu(){
   closeMenu();
-  hideAllTopScreens();
-  document.getElementById("screen-storm").style.display = "block";
-  stormSequence = shuffleArray(STORM_TIPS_POOL).slice(0, 5);
-  stormIndex = 0;
-  renderStormStep();
-}
-
-function renderStormStep(){
-  const tip = stormSequence[stormIndex];
-  document.getElementById("storm-emoji").textContent = tip.emoji;
-  document.getElementById("storm-text").textContent = tip.text;
-  document.getElementById("storm-dots").innerHTML = stormSequence
-    .map((_,i)=>`<span class="storm-dot${i===stormIndex ? ' active' : ''}"></span>`)
-    .join("");
-}
-
-function nextStormTip(){
-  stormIndex++;
-  if(stormIndex >= stormSequence.length){
-    closeStormScreen();
-    return;
-  }
-  renderStormStep();
-}
-
-function closeStormScreen(){
-  showBilanHome();
+  openSosFlow();
 }
 
 /* ============================================================
@@ -2152,6 +2231,7 @@ function switchTab(tab){
   if(tab==="cycle") renderCycleTab();
   if(tab==="training") renderTrainingProgram();
   if(tab==="boost") renderBoostTab();
+  updateSosFabVisibility();
 }
 
 function toggleCycleFields(){
@@ -2300,6 +2380,7 @@ function showResult(){
   document.getElementById("screen-profile").style.display="none";
   document.getElementById("screen-result").style.display="block";
   showAppHeader();
+  updateSosFabVisibility();
 
   const cycleData = loadCycleData() || {};
   window.__mainCureFamily = pickCureFamily(cycleData);
@@ -2653,6 +2734,7 @@ function handleFourthNavClick(){
     hideAllTopScreens();
     document.getElementById("screen-tracker").style.display = "block";
     loadTrackerData();
+    updateSosFabVisibility();
   }else{
     switchTab("boost");
   }
@@ -3151,6 +3233,41 @@ function extractShoppingItems(weekMenus){
   return Array.from(seen.values()).sort((a,b)=>a.localeCompare(b, 'fr'));
 }
 
+const MON_COCON_LOGO_B64 = "data:image/jpeg;base64,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";
+// Couleurs de marque (RGB) pour le PDF
+const PDF_BROWN = [76, 52, 46];
+const PDF_GOLD = [201, 169, 110];
+const PDF_IVOIRE = [244, 228, 226];
+const PDF_TAUPE = [141, 111, 62];
+
+function pdfAddBrandHeader(doc, subtitle){
+  const pageW = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...PDF_BROWN);
+  doc.rect(0, 0, pageW, 32, "F");
+  try{ doc.addImage(MON_COCON_LOGO_B64, "JPEG", 14, 6, 20, 20); }catch(e){}
+  doc.setTextColor(...PDF_GOLD);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Mon Cocon", 40, 15);
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.text(subtitle, 40, 23);
+  doc.setTextColor(...PDF_BROWN);
+}
+
+function pdfAddFooter(doc){
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  doc.setDrawColor(...PDF_GOLD);
+  doc.setLineWidth(0.4);
+  doc.line(14, pageH - 14, pageW - 14, pageH - 14);
+  doc.setTextColor(...PDF_TAUPE);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8.5);
+  doc.text("Mon Cocon — Construis ta liberté 🌿", 14, pageH - 9);
+}
+
 function generateShoppingListPdf(){
   if(!currentWeekMenus.length){
     alert("Ton agenda alimentaire n'est pas encore chargé, réessaie dans un instant 🌿");
@@ -3163,28 +3280,35 @@ function generateShoppingListPdf(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const marginX = 15;
-  let y = 20;
+  const pageW = doc.internal.pageSize.getWidth();
+  let y = 45;
+
+  pdfAddBrandHeader(doc, "Tes recettes de la semaine");
+  pdfAddFooter(doc);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.text("Mon Cocon", marginX, y);
-  y += 7;
-  doc.setFontSize(12);
-  doc.text("Recettes de la semaine & liste de courses", marginX, y);
-  y += 12;
-
   doc.setFontSize(13);
-  doc.text("Tes recettes de la semaine", marginX, y);
-  y += 8;
+  doc.setTextColor(...PDF_BROWN);
+  doc.text("🍽️ Menu de la semaine", marginX, y);
+  y += 9;
 
   currentWeekMenus.forEach(day=>{
-    if(y > 265){ doc.addPage(); y = 20; }
+    if(y > 255){
+      doc.addPage();
+      pdfAddBrandHeader(doc, "Tes recettes de la semaine (suite)");
+      pdfAddFooter(doc);
+      y = 45;
+    }
+    doc.setFillColor(...PDF_IVOIRE);
+    doc.roundedRect(marginX, y - 5, pageW - marginX*2, 6, 1.5, 1.5, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text(day.label, marginX, y);
-    y += 6;
+    doc.setTextColor(...PDF_BROWN);
+    doc.text(day.label, marginX + 2, y);
+    y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
+    doc.setTextColor(60,50,45);
     const lines = [
       "Petit-déj : " + (day.menu.petit_dej || ""),
       "Déjeuner : " + (day.menu.dejeuner || ""),
@@ -3192,27 +3316,44 @@ function generateShoppingListPdf(){
       "Collation : " + (day.menu.collation || "")
     ];
     lines.forEach(line=>{
-      doc.splitTextToSize(line, 178).forEach(w=>{
-        if(y > 270){ doc.addPage(); y = 20; }
-        doc.text(w, marginX + 2, y);
+      doc.splitTextToSize(line, 175).forEach(w=>{
+        if(y > 265){
+          doc.addPage();
+          pdfAddBrandHeader(doc, "Tes recettes de la semaine (suite)");
+          pdfAddFooter(doc);
+          y = 45;
+        }
+        doc.text(w, marginX + 3, y);
         y += 5;
       });
     });
-    y += 3;
+    y += 4;
   });
 
   doc.addPage();
-  y = 20;
+  pdfAddBrandHeader(doc, "Ta liste de courses");
+  pdfAddFooter(doc);
+  y = 48;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Ta liste de courses", marginX, y);
-  y += 9;
+  doc.setFontSize(13);
+  doc.setTextColor(...PDF_BROWN);
+  doc.text("🛒 À acheter cette semaine", marginX, y);
+  y += 10;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
+  doc.setFontSize(11);
   extractShoppingItems(currentWeekMenus).forEach(item=>{
-    if(y > 275){ doc.addPage(); y = 20; }
-    doc.text("☐ " + item, marginX, y);
-    y += 7;
+    if(y > 270){
+      doc.addPage();
+      pdfAddBrandHeader(doc, "Ta liste de courses (suite)");
+      pdfAddFooter(doc);
+      y = 48;
+    }
+    doc.setDrawColor(...PDF_GOLD);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(marginX, y - 4.2, 5, 5, 1, 1, "S");
+    doc.setTextColor(60,50,45);
+    doc.text(item, marginX + 9, y);
+    y += 8.5;
   });
 
   doc.save("mon-cocon-liste-de-courses.pdf");
