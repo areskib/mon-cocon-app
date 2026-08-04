@@ -2293,6 +2293,16 @@ function switchTab(tab){
   document.getElementById("view-cycle").classList.toggle("active", tab==="cycle");
   document.getElementById("view-training").classList.toggle("active", tab==="training");
   document.getElementById("view-boost").classList.toggle("active", tab==="boost");
+
+  // Referme systématiquement les écrans superposés (Mon Évolution, SOS Fringale...) au changement d'onglet
+  ["screen-tracker","screen-tracker-form","screen-sos-intro","screen-sos-cause","screen-sos-tips"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = "none";
+  });
+  if(tab==="bilan"){
+    document.getElementById("screen-result").style.display = "block";
+  }
+
   if(tab==="cycle") renderCycleTab();
   if(tab==="training") renderTrainingProgram();
   if(tab==="boost") renderBoostTab();
@@ -3431,10 +3441,6 @@ function appendDayCard(wrap, d, isToday, badgeHtml, menu, objectifIdx){
   });
   const div = document.createElement("div");
   div.className = "day-card" + (isToday ? " today" : "");
-  const sessions = getSessionsForWeekday(objectifIdx, d.getDay());
-  const sportRow = sessions.length
-    ? `<div class="meal-row" style="margin-top:4px;"><span class="meal-label">🏋️ Sport</span><span>${sessions.join(" + ")}</span></div>`
-    : "";
   div.innerHTML = `
     <div class="day-card-head">
       <span class="day-name">${isToday ? "Aujourd'hui" : DAY_NAMES_FULL[d.getDay()]} · ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
@@ -3444,7 +3450,6 @@ function appendDayCard(wrap, d, isToday, badgeHtml, menu, objectifIdx){
     <div class="meal-row"><span class="meal-label">Déjeuner</span><span>${menu.dejeuner}</span></div>
     <div class="meal-row"><span class="meal-label">Dîner</span><span>${menu.diner}</span></div>
     <div class="meal-row"><span class="meal-label">Collation</span><span>${menu.collation}</span></div>
-    ${sportRow}
   `;
   wrap.appendChild(div);
 }
