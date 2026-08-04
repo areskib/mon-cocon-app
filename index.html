@@ -743,6 +743,11 @@
       <div class="field">
         <label>Nouveau mot de passe</label>
         <input type="password" id="reset-new-password" autocomplete="new-password" placeholder="••••••••">
+        <span style="font-size:11.5px; color:var(--taupe); display:block; margin-top:5px;">8 caractères min., avec 1 majuscule, 1 chiffre et 1 caractère spécial</span>
+      </div>
+      <div class="field">
+        <label>Confirme ton nouveau mot de passe</label>
+        <input type="password" id="reset-new-password-confirm" autocomplete="new-password" placeholder="••••••••">
       </div>
       <p id="reset-password-msg" style="display:none; font-size:13.5px; margin:4px 0 0;"></p>
       <div class="nav-row" style="margin-top:16px;">
@@ -1206,6 +1211,7 @@
       <div class="field">
         <label for="congrats-password">Crée ton mot de passe</label>
         <input type="password" id="congrats-password" autocomplete="new-password" placeholder="••••••••">
+        <span style="font-size:11.5px; color:var(--taupe); display:block; margin-top:5px;">8 caractères min., avec 1 majuscule, 1 chiffre et 1 caractère spécial</span>
       </div>
       <div class="field">
         <label for="congrats-password-confirm">Confirme ton mot de passe</label>
@@ -1393,13 +1399,29 @@ async function forgotPassword(){
   infoEl.style.display = "block";
 }
 
+// Règles de robustesse du mot de passe : 8+ caractères, 1 majuscule, 1 chiffre, 1 caractère spécial
+function validatePasswordStrength(pass){
+  if(!pass || pass.length < 8) return "Ton mot de passe doit contenir au moins 8 caractères.";
+  if(!/[A-Z]/.test(pass)) return "Ton mot de passe doit contenir au moins une majuscule.";
+  if(!/[0-9]/.test(pass)) return "Ton mot de passe doit contenir au moins un chiffre.";
+  if(!/[^A-Za-z0-9]/.test(pass)) return "Ton mot de passe doit contenir au moins un caractère spécial.";
+  return null;
+}
+
 // Écoute l'événement Supabase déclenché quand la personne clique sur le lien reçu par email
 if(supabaseClient){
   supabaseClient.auth.onAuthStateChange((event) => {
     if(event === "PASSWORD_RECOVERY"){
+      // Sécurité : on masque absolument tout le reste de l'app, aucun accès tant que le
+      // nouveau mot de passe n'est pas défini — le lien de récupération authentifie
+      // techniquement la session, mais ça ne doit jamais donner accès à l'app.
+      hideAppHeader();
+      hideAllTopScreens();
       document.getElementById("screen-splash").style.display = "none";
       document.getElementById("screen-choice").style.display = "none";
       document.getElementById("screen-login").style.display = "none";
+      const fab = document.getElementById("sos-fab");
+      if(fab) fab.style.display = "none";
       document.getElementById("screen-reset-password").style.display = "block";
     }
   });
@@ -1408,10 +1430,18 @@ if(supabaseClient){
 async function submitNewPasswordFromRecovery(){
   const msgEl = document.getElementById("reset-password-msg");
   const newPass = document.getElementById("reset-new-password").value;
+  const confirmPass = document.getElementById("reset-new-password-confirm").value;
 
-  if(!newPass || newPass.length < 6){
+  const strengthError = validatePasswordStrength(newPass);
+  if(strengthError){
     msgEl.style.color = "#8a3b34";
-    msgEl.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    msgEl.textContent = strengthError;
+    msgEl.style.display = "block";
+    return;
+  }
+  if(newPass !== confirmPass){
+    msgEl.style.color = "#8a3b34";
+    msgEl.textContent = "Les deux mots de passe ne correspondent pas.";
     msgEl.style.display = "block";
     return;
   }
@@ -1426,13 +1456,23 @@ async function submitNewPasswordFromRecovery(){
   }
 
   msgEl.style.color = "#4a7a5a";
-  msgEl.textContent = "Mot de passe mis à jour ! Redirection...";
+  msgEl.textContent = "Mot de passe mis à jour ! Reconnecte-toi avec ton nouveau mot de passe.";
   msgEl.style.display = "block";
 
-  setTimeout(() => {
+  // On se déconnecte systématiquement : la session de récupération ne doit jamais
+  // servir de session d'accès normale, on force une vraie reconnexion.
+  setTimeout(async () => {
+    await supabaseClient.auth.signOut();
     document.getElementById("screen-reset-password").style.display = "none";
-    checkExistingSession();
-  }, 1500);
+    document.getElementById("reset-new-password").value = "";
+    document.getElementById("login-email").value = "";
+    document.getElementById("login-password").value = "";
+    document.getElementById("screen-choice").style.display = "none";
+    document.getElementById("screen-login").style.display = "block";
+    const infoEl = document.getElementById("login-info");
+    infoEl.textContent = "Ton mot de passe a bien été mis à jour 🌿 Connecte-toi avec ton nouveau mot de passe.";
+    infoEl.style.display = "block";
+  }, 1800);
 }
 
 // ── Compte : infos, changement de mot de passe, déconnexion ──
@@ -1452,9 +1492,10 @@ async function changePassword(){
 
   msgEl.style.display = "none";
 
-  if(!newPass || newPass.length < 6){
+  const strengthError = validatePasswordStrength(newPass);
+  if(strengthError){
     msgEl.style.color = "#8a3b34";
-    msgEl.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    msgEl.textContent = strengthError;
     msgEl.style.display = "block";
     return;
   }
@@ -1903,8 +1944,14 @@ async function submitCongratsPassword(){
   const confirm = document.getElementById("congrats-password-confirm").value;
   errorEl.style.display = "none";
 
-  if(!pass || pass.length < 6){
-    errorEl.textContent = "Ton mot de passe doit contenir au moins 6 caractères.";
+  if(!pass){
+    errorEl.textContent = "Merci de créer un mot de passe.";
+    errorEl.style.display = "block";
+    return;
+  }
+  const strengthError = validatePasswordStrength(pass);
+  if(strengthError){
+    errorEl.textContent = strengthError;
     errorEl.style.display = "block";
     return;
   }
@@ -2131,11 +2178,17 @@ function dismissInstallBanner(){
   localStorage.setItem("moncocon_install_dismissed", "1");
 }
 
+function isPasswordRecoveryUrl(){
+  return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   initWelcomeMessages();
   const inShowcase = initShowcaseModeIfNeeded();
   if(!inShowcase){
-    checkExistingSession();
+    if(!isPasswordRecoveryUrl()){
+      checkExistingSession();
+    }
     if(isIos() && !isInStandaloneMode()){
       setTimeout(() => showInstallBanner("ios"), 3500);
     }
