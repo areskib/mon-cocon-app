@@ -1008,6 +1008,7 @@
 
     <div class="card" style="margin-top:16px;">
       <h3 id="training-title" style="margin-top:0; font-size:17px;"></h3>
+      <div id="training-level-info"></div>
       <div id="training-week-info"></div>
       <p id="training-intro" style="color:var(--taupe); font-size:13.5px; line-height:1.6;"></p>
       <div id="training-sessions"></div>
@@ -3528,65 +3529,121 @@ function renderCalendar(lastPeriod, cycleLength, periodLength, today){
    ENTRAÎNEMENTS — programmes par objectif (liens YouTube à ajouter par Lindsay)
    ============================================================ */
 // ⚠️ Remplace chaque videoUrl "#" par le lien YouTube réel correspondant.
+// Vidéos adaptées par type de séance et par niveau (débutante/intermédiaire/active)
+// Toutes réalisables à domicile, sans équipement.
+const LEVEL_VIDEOS = {
+  cardio: {
+    0: { url:"https://www.youtube.com/watch?v=uIHctGdvt-s", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=M8OP9w8_eHY", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=a0tWooNKstc", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  gainage: {
+    0: { url:"https://www.youtube.com/watch?v=K4f4MoEeJyM", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=bs-jO-MbRNg", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  renforcement: {
+    0: { url:"https://www.youtube.com/watch?v=5C8Ew76sxVY", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=60_4pQS7yvU", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=bpj-jgfuMBc", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  pilates: {
+    0: { url:"https://www.youtube.com/watch?v=aBrjkhvCunE", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=mm8GBCegtCg", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=PbvjbzU9nRE", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  yoga: {
+    0: { url:"https://www.youtube.com/watch?v=G3Mb6N02Zkk", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=k7V7Ua2HjEw", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=ci5d7veXQ3w", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  hiit: {
+    0: { url:"https://www.youtube.com/watch?v=5C8Ew76sxVY", label:"Voir la vidéo (niveau débutante)" },
+    1: { url:"https://www.youtube.com/watch?v=BpcugHvOv5I", label:"Voir la vidéo (niveau intermédiaire)" },
+    2: { url:"https://www.youtube.com/watch?v=QnGQbFk_MRk", label:"Voir la vidéo (niveau confirmée)" }
+  },
+  marche: {
+    0: { url:"https://www.youtube.com/watch?v=wA-AsKHlBYI", label:"Voir la vidéo" },
+    1: { url:"https://www.youtube.com/watch?v=wA-AsKHlBYI", label:"Voir la vidéo" },
+    2: { url:"https://www.youtube.com/watch?v=wA-AsKHlBYI", label:"Voir la vidéo" }
+  },
+  etirements: {
+    0: { url:"https://www.youtube.com/watch?v=Wx9sivbUgDw", label:"Voir la vidéo" },
+    1: { url:"https://www.youtube.com/watch?v=EcYpNIol2Ws", label:"Voir la vidéo" },
+    2: { url:"https://www.youtube.com/watch?v=ScBJJc_CNI4", label:"Voir la vidéo" }
+  },
+  jambes: {
+    0: { url:"https://www.youtube.com/watch?v=1J1FgBGGCFI", label:"Voir la vidéo" },
+    1: { url:"https://www.youtube.com/watch?v=1J1FgBGGCFI", label:"Voir la vidéo" },
+    2: { url:"https://www.youtube.com/watch?v=1J1FgBGGCFI", label:"Voir la vidéo" }
+  },
+  reveil: {
+    0: { url:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", label:"Voir la vidéo" },
+    1: { url:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", label:"Voir la vidéo" },
+    2: { url:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", label:"Voir la vidéo" }
+  }
+};
+const LEVEL_LABELS = ["Débutante", "Intermédiaire", "Active"];
+
 const TRAININGS = {
   0: { // Minceur & Silhouette
     title: "Programme Minceur & Silhouette",
     intro: "Un mix cardio + renforcement pour affiner la silhouette durablement, à ton rythme (7, 10 ou 15 min selon ton temps disponible).",
     sessions: [
-      { title:"Cardio brûle-graisse", duration:"10 min", focus:"Full body, intensité modérée à soutenue", howTo:"Enchaîne jumping jacks, montées de genoux et talons-fesses par intervalles de 30 sec, sans t'arrêter.", problematiques:[5,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M8OP9w8_eHY", defaultDays:[1,4] },
-      { title:"Gainage & ventre plat", duration:"7 min", focus:"Sangle abdominale, posture", howTo:"Planche sur les avant-bras, dos plat, nombril rentré, respiration régulière — tiens la position par séries de 20-30 sec.", problematiques:[5,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[2,5] },
-      { title:"Renforcement jambes & fessiers", duration:"15 min", focus:"Tonification bas du corps", howTo:"Squats lents (descente 3 sec), fentes avant alternées, pont fessier — genoux alignés avec les pieds.", problematiques:[0,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=FxW7VihuGLM", defaultDays:[3] },
-      { title:"HIIT léger", duration:"10 min", focus:"Full body, alternance effort/repos", howTo:"20 sec d'effort intense (mountain climbers, squat jumps) / 10 sec de repos, sur 8 cycles.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=BpcugHvOv5I", defaultDays:[6] }
+      { title:"Cardio brûle-graisse", type:"cardio", duration:"10 min", focus:"Full body, intensité modérée à soutenue", howTo:"Enchaîne jumping jacks, montées de genoux et talons-fesses par intervalles de 30 sec, sans t'arrêter.", problematiques:[5,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M8OP9w8_eHY", defaultDays:[1,4] },
+      { title:"Gainage & ventre plat", type:"gainage", duration:"7 min", focus:"Sangle abdominale, posture", howTo:"Planche sur les avant-bras, dos plat, nombril rentré, respiration régulière — tiens la position par séries de 20-30 sec.", problematiques:[5,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[2,5] },
+      { title:"Renforcement jambes & fessiers", type:"renforcement", duration:"15 min", focus:"Tonification bas du corps", howTo:"Squats lents (descente 3 sec), fentes avant alternées, pont fessier — genoux alignés avec les pieds.", problematiques:[0,1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=FxW7VihuGLM", defaultDays:[3] },
+      { title:"HIIT léger", type:"hiit", duration:"10 min", focus:"Full body, alternance effort/repos", howTo:"20 sec d'effort intense (mountain climbers, squat jumps) / 10 sec de repos, sur 8 cycles.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=BpcugHvOv5I", defaultDays:[6] }
     ]
   },
   1: { // Énergie & Vitalité
     title:"Programme Énergie & Vitalité",
     intro:"Des séances courtes et dynamiques pour se réveiller le corps et l'esprit, sans épuiser.",
     sessions: [
-      { title:"Réveil musculaire du matin", duration:"7 min", focus:"Mobilité, réveil en douceur", howTo:"Rotations d'épaules, cercles de bassin, étirements des bras vers le ciel — mouvements amples et lents.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", defaultDays:[1,2,3,4,5] },
-      { title:"Cardio dynamisant", duration:"10 min", focus:"Booster d'énergie, rythme cardiaque", howTo:"Montées de genoux rythmées, alternées avec des pas chassés, sur une musique entraînante.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M0UXxzLJD5c", defaultDays:[2,5] },
-      { title:"Stretching énergisant", duration:"10 min", focus:"Étirements actifs, respiration", howTo:"Étirement chat-vache, torsion douce du buste assise, respiration profonde entre chaque mouvement.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=EcYpNIol2Ws", defaultDays:[4] },
-      { title:"Renforcement léger full body", duration:"15 min", focus:"Tonus général", howTo:"Fentes, pompes sur les genoux, gainage — 3 séries de 12 répétitions, récupération 30 sec.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[6] }
+      { title:"Réveil musculaire du matin", type:"reveil", duration:"7 min", focus:"Mobilité, réveil en douceur", howTo:"Rotations d'épaules, cercles de bassin, étirements des bras vers le ciel — mouvements amples et lents.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=P_nY8BV5ThQ", defaultDays:[1,2,3,4,5] },
+      { title:"Cardio dynamisant", type:"cardio", duration:"10 min", focus:"Booster d'énergie, rythme cardiaque", howTo:"Montées de genoux rythmées, alternées avec des pas chassés, sur une musique entraînante.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=M0UXxzLJD5c", defaultDays:[2,5] },
+      { title:"Stretching énergisant", type:"etirements", duration:"10 min", focus:"Étirements actifs, respiration", howTo:"Étirement chat-vache, torsion douce du buste assise, respiration profonde entre chaque mouvement.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=EcYpNIol2Ws", defaultDays:[4] },
+      { title:"Renforcement léger full body", type:"renforcement", duration:"15 min", focus:"Tonus général", howTo:"Fentes, pompes sur les genoux, gainage — 3 séries de 12 répétitions, récupération 30 sec.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[6] }
     ]
   },
   2: { // Me sentir bien dans mon corps
     title:"Programme Bien-être corporel",
     intro:"Des séances centrées sur le plaisir de bouger et la reconnexion à ton corps, sans pression de performance.",
     sessions: [
-      { title:"Yoga doux", duration:"15 min", focus:"Souplesse, ancrage, respiration", howTo:"Posture de l'enfant, chien tête en bas, torsion douce assise — reste 5 respirations sur chaque posture.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=k7V7Ua2HjEw", defaultDays:[1,4] },
-      { title:"Pilates tonique", duration:"10 min", focus:"Renforcement profond, posture", howTo:"The hundred, roulé du dos, extension dorsale — mouvements lents, contrôlés, en expirant à l'effort.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=mm8GBCegtCg", defaultDays:[2,5] },
-      { title:"Mobilité & étirements", duration:"7 min", focus:"Détente articulaire", howTo:"Rotations de chevilles, poignets, cou — mouvements très lents, sans forcer.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Wx9sivbUgDw", defaultDays:[3] },
-      { title:"Full body en douceur", duration:"15 min", focus:"Tonus général sans impact", howTo:"Squat léger, fente statique, gainage genoux au sol — sans impact, à ton rythme.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=fdFiD9jMya4", defaultDays:[6] }
+      { title:"Yoga doux", type:"yoga", duration:"15 min", focus:"Souplesse, ancrage, respiration", howTo:"Posture de l'enfant, chien tête en bas, torsion douce assise — reste 5 respirations sur chaque posture.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=k7V7Ua2HjEw", defaultDays:[1,4] },
+      { title:"Pilates tonique", type:"pilates", duration:"10 min", focus:"Renforcement profond, posture", howTo:"The hundred, roulé du dos, extension dorsale — mouvements lents, contrôlés, en expirant à l'effort.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=mm8GBCegtCg", defaultDays:[2,5] },
+      { title:"Mobilité & étirements", type:"etirements", duration:"7 min", focus:"Détente articulaire", howTo:"Rotations de chevilles, poignets, cou — mouvements très lents, sans forcer.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Wx9sivbUgDw", defaultDays:[3] },
+      { title:"Full body en douceur", type:"renforcement", duration:"15 min", focus:"Tonus général sans impact", howTo:"Squat léger, fente statique, gainage genoux au sol — sans impact, à ton rythme.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=fdFiD9jMya4", defaultDays:[6] }
     ]
   },
   3: { // Détox & Drainage
     title:"Programme Détox & Drainage",
     intro:"Des mouvements doux qui stimulent la circulation et le drainage naturel, sans agresser le corps.",
     sessions: [
-      { title:"Marche active", duration:"15 min", focus:"Circulation, drainage doux", howTo:"Pas dynamique, bras qui bougent naturellement, respiration ample — en extérieur si possible.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[1,3,5] },
-      { title:"Jambes légères", duration:"10 min", focus:"Drainage jambes lourdes", howTo:"Allongée, jambes surélevées contre un mur, mouvement de pédalage lent pendant 2-3 minutes.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=1J1FgBGGCFI", defaultDays:[2] },
-      { title:"Étirements drainants", duration:"7 min", focus:"Circulation lymphatique", howTo:"Étirement des mollets contre un mur, auto-massage doux des jambes de bas en haut.", problematiques:[1,4], videoLabel:"Voir la vidéo (5 min, la plus proche de 7 min)", videoUrl:"https://www.youtube.com/watch?v=ZOHnQtYvGIY", defaultDays:[4] },
-      { title:"Cardio léger", duration:"10 min", focus:"Stimulation douce", howTo:"Marche sur place rythmée, montées de genoux légères, sans à-coups.", problematiques:[1,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Itcu_SL_j1M", defaultDays:[6] }
+      { title:"Marche active", type:"marche", duration:"15 min", focus:"Circulation, drainage doux", howTo:"Pas dynamique, bras qui bougent naturellement, respiration ample — en extérieur si possible.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[1,3,5] },
+      { title:"Jambes légères", type:"jambes", duration:"10 min", focus:"Drainage jambes lourdes", howTo:"Allongée, jambes surélevées contre un mur, mouvement de pédalage lent pendant 2-3 minutes.", problematiques:[1], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=1J1FgBGGCFI", defaultDays:[2] },
+      { title:"Étirements drainants", type:"etirements", duration:"7 min", focus:"Circulation lymphatique", howTo:"Étirement des mollets contre un mur, auto-massage doux des jambes de bas en haut.", problematiques:[1,4], videoLabel:"Voir la vidéo (5 min, la plus proche de 7 min)", videoUrl:"https://www.youtube.com/watch?v=ZOHnQtYvGIY", defaultDays:[4] },
+      { title:"Cardio léger", type:"cardio", duration:"10 min", focus:"Stimulation douce", howTo:"Marche sur place rythmée, montées de genoux légères, sans à-coups.", problematiques:[1,4], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Itcu_SL_j1M", defaultDays:[6] }
     ]
   },
   4: { // Équilibre hormonal
     title:"Programme Équilibre hormonal",
     intro:"Un renforcement modéré et régulier, pensé pour soutenir le métabolisme sans surmener le corps.",
     sessions: [
-      { title:"Renforcement musculaire modéré", duration:"15 min", focus:"Densité osseuse, tonus", howTo:"Squats, soulevé de terre à mains libres, pompes sur les genoux — 3 séries de 10-12 répétitions.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[1,4] },
-      { title:"Marche rapide", duration:"15 min", focus:"Cardio doux, gestion du stress", howTo:"Marche à allure soutenue mais confortable, en pleine conscience de ta respiration.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[2,5] },
-      { title:"Yoga hormonal", duration:"10 min", focus:"Équilibre, respiration", howTo:"Posture du papillon, torsion douce, respiration abdominale profonde.", problematiques:[], videoLabel:"Voir la vidéo (durée approximative)", videoUrl:"https://www.youtube.com/watch?v=ci5d7veXQ3w", defaultDays:[3] },
-      { title:"Gainage doux", duration:"7 min", focus:"Sangle abdominale sans impact", howTo:"Planche genoux au sol, 3 séries de 20 sec, respiration continue.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[6] }
+      { title:"Renforcement musculaire modéré", type:"renforcement", duration:"15 min", focus:"Densité osseuse, tonus", howTo:"Squats, soulevé de terre à mains libres, pompes sur les genoux — 3 séries de 10-12 répétitions.", problematiques:[3], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[1,4] },
+      { title:"Marche rapide", type:"marche", duration:"15 min", focus:"Cardio doux, gestion du stress", howTo:"Marche à allure soutenue mais confortable, en pleine conscience de ta respiration.", problematiques:[], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=wA-AsKHlBYI", defaultDays:[2,5] },
+      { title:"Yoga hormonal", type:"yoga", duration:"10 min", focus:"Équilibre, respiration", howTo:"Posture du papillon, torsion douce, respiration abdominale profonde.", problematiques:[], videoLabel:"Voir la vidéo (durée approximative)", videoUrl:"https://www.youtube.com/watch?v=ci5d7veXQ3w", defaultDays:[3] },
+      { title:"Gainage doux", type:"gainage", duration:"7 min", focus:"Sangle abdominale sans impact", howTo:"Planche genoux au sol, 3 séries de 20 sec, respiration continue.", problematiques:[5], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=INZ0ZaYnGRg", defaultDays:[6] }
     ]
   },
   5: { // Peau & Éclat
     title:"Programme Peau & Éclat",
     intro:"Des séances qui stimulent la circulation sanguine pour un teint et une peau plus éclatants.",
     sessions: [
-      { title:"Cardio léger circulatoire", duration:"10 min", focus:"Oxygénation, éclat de peau", howTo:"Talons-fesses et montées de genoux légères en continu pendant 10 minutes.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Ln3LyfX9m1I", defaultDays:[1,4] },
-      { title:"Renforcement full body", duration:"15 min", focus:"Tonus général", howTo:"Fentes latérales, squats, gainage — 3 séries de 12 répétitions.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[2,5] },
-      { title:"Étirements & respiration anti-stress", duration:"7 min", focus:"Gestion du stress, cortisol", howTo:"Assise en tailleur, main sur le ventre, respiration profonde 4 sec inspir / 6 sec expir.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=ScBJJc_CNI4", defaultDays:[3] },
-      { title:"Mobilité douce", duration:"10 min", focus:"Détente, circulation", howTo:"Cercles de bras amples, rotations du buste, mouvements lents et fluides.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=-nd6lsbF42Y", defaultDays:[6] }
+      { title:"Cardio léger circulatoire", type:"cardio", duration:"10 min", focus:"Oxygénation, éclat de peau", howTo:"Talons-fesses et montées de genoux légères en continu pendant 10 minutes.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=Ln3LyfX9m1I", defaultDays:[1,4] },
+      { title:"Renforcement full body", type:"renforcement", duration:"15 min", focus:"Tonus général", howTo:"Fentes latérales, squats, gainage — 3 séries de 12 répétitions.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=60_4pQS7yvU", defaultDays:[2,5] },
+      { title:"Étirements & respiration anti-stress", type:"etirements", duration:"7 min", focus:"Gestion du stress, cortisol", howTo:"Assise en tailleur, main sur le ventre, respiration profonde 4 sec inspir / 6 sec expir.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=ScBJJc_CNI4", defaultDays:[3] },
+      { title:"Mobilité douce", type:"etirements", duration:"10 min", focus:"Détente, circulation", howTo:"Cercles de bras amples, rotations du buste, mouvements lents et fluides.", problematiques:[2], videoLabel:"Voir la vidéo", videoUrl:"https://www.youtube.com/watch?v=-nd6lsbF42Y", defaultDays:[6] }
     ]
   }
 };
@@ -3741,9 +3798,15 @@ function renderTrainingProgram(){
   const program = TRAININGS[objectifIdx];
   const profileData = loadCycleData();
   const clientProblematiques = profileData ? (profileData.problematique || []) : [];
+  const activityLevel = (profileData && profileData.activite !== undefined && profileData.activite !== null) ? profileData.activite : 1;
 
   document.getElementById("training-title").textContent = program.title;
   document.getElementById("training-intro").textContent = program.intro;
+
+  const levelWrap = document.getElementById("training-level-info");
+  if(levelWrap){
+    levelWrap.innerHTML = `<div class="kcal-modifier">🎚️ Séances adaptées à ton niveau : ${LEVEL_LABELS[activityLevel]}</div>`;
+  }
 
   // semaine actuelle sur 12
   const weekWrap = document.getElementById("training-week-info");
@@ -3760,9 +3823,12 @@ function renderTrainingProgram(){
   }
 
   document.getElementById("training-sessions").innerHTML = program.sessions.map((s,idx)=>{
-    const hasLink = s.videoUrl && s.videoUrl !== "#";
+    const levelVideo = LEVEL_VIDEOS[s.type] ? LEVEL_VIDEOS[s.type][activityLevel] : null;
+    const effectiveUrl = levelVideo ? levelVideo.url : s.videoUrl;
+    const effectiveLabel = levelVideo ? levelVideo.label : s.videoLabel;
+    const hasLink = effectiveUrl && effectiveUrl !== "#";
     const linkHtml = hasLink
-      ? `<a href="${s.videoUrl}" target="_blank" rel="noopener" style="color:var(--taupe); font-size:12.5px; font-weight:600; text-decoration:underline;">▶ ${s.videoLabel}</a>`
+      ? `<a href="${effectiveUrl}" target="_blank" rel="noopener" style="color:var(--taupe); font-size:12.5px; font-weight:600; text-decoration:underline;">▶ ${effectiveLabel}</a>`
       : `<span style="color:#B5535B; font-size:12px; font-weight:600;">🔗 Lien vidéo à ajouter</span>`;
 
     const isRecommended = s.problematiques.some(p => clientProblematiques.includes(p));
