@@ -499,16 +499,14 @@
 
   .welcome-logo{ margin-bottom:34px; }
   .welcome-logo-emoji{
-    width:88px; height:88px; margin:0 auto 16px; border-radius:50%;
-    background: var(--neu-base); box-shadow: var(--shadow);
+    width:88px; height:88px; margin:0 auto 16px;
     display:flex; align-items:center; justify-content:center;
     animation: logoPulse 3.2s ease-in-out infinite;
-    padding:14px;
   }
-  .welcome-logo-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
+  .welcome-logo-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:22%; }
   @keyframes logoPulse{
-    0%,100%{ box-shadow: var(--shadow); }
-    50%{ box-shadow: 6px 6px 14px var(--neu-shadow-d), -6px -6px 14px var(--neu-shadow-l); }
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.04); }
   }
   .welcome-wordmark{ font-family:'Lora'; font-weight:600; font-size:24px; letter-spacing:.02em; color:var(--brown); }
   .welcome-wordmark em{
@@ -544,13 +542,11 @@
   /* ÉCRAN DE RETOUR */
   #screen-welcome-back{ text-align:center; padding:70px 24px; }
   .welcome-back-emoji{
-    width:82px; height:82px; margin:0 auto 22px; border-radius:50%;
-    background: var(--neu-base); box-shadow: var(--shadow);
+    width:82px; height:82px; margin:0 auto 22px;
     display:flex; align-items:center; justify-content:center;
     animation: welcomeBackIn .7s cubic-bezier(.2,.8,.2,1);
-    padding:13px;
   }
-  .welcome-back-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:50%; }
+  .welcome-back-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:22%; }
   .welcome-back-title{
     font-family:'Lora'; font-weight:500; font-size:23px; line-height:1.4; color:var(--brown);
     animation: welcomeBackIn .8s cubic-bezier(.2,.8,.2,1) .1s backwards;
