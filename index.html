@@ -675,6 +675,10 @@
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg></span>
       <span>Boost</span>
     </button>
+    <button class="bottom-nav-item" data-tab="admin" id="nav-admin-btn" onclick="switchTab('admin')" style="display:none;">
+      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span>Clientes</span>
+    </button>
     <button class="bottom-nav-item" id="menu-toggle-btn" onclick="openMenu()" aria-label="Menu">
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>
       <span>Menu</span>
@@ -1160,6 +1164,11 @@
       <p>⚖️ Le poids n'est qu'un nombre sur la balance. L'important, c'est de te sentir mieux dans ton corps, semaine après semaine. Ce suivi est là pour t'accompagner avec douceur, pas pour te juger 🌸</p>
     </div>
 
+    <div id="advisor-notes-block" style="display:none; margin-bottom:20px;">
+      <h3 style="font-size:14px; margin-bottom:10px;">💬 Notes de ta conseillère</h3>
+      <div id="advisor-notes-list"></div>
+    </div>
+
     <div class="segmented" id="tracker-metric-toggle">
       <button class="active" data-metric="weight" onclick="setTrackerMetric('weight')">⚖️ Poids</button>
       <button data-metric="measurements" onclick="setTrackerMetric('measurements')">📏 Mensurations</button>
@@ -1263,6 +1272,34 @@
     </div>
   </div>
 
+  <div class="card" id="screen-admin-clients" style="display:none;">
+    <div class="hero" style="padding-bottom:6px;">
+      <div class="subtitle">Espace conseillère</div>
+      <h1 style="font-size:22px;">Tes <em>clientes</em></h1>
+    </div>
+
+    <div id="admin-clients-list"><div class="note-box">Chargement...</div></div>
+
+    <div class="result-block" style="margin-top:26px;">
+      <h3 style="font-size:15px;">📝 Compte-rendu de rdv hebdo</h3>
+      <div class="field">
+        <label for="admin-note-email">Email de la cliente</label>
+        <input type="email" id="admin-note-email" placeholder="cliente@email.com">
+      </div>
+      <div class="field">
+        <label for="admin-note-text">Compte-rendu</label>
+        <textarea id="admin-note-text" rows="4" placeholder="Ce que tu veux qu'elle retrouve dans son suivi..." style="width:100%; padding:14px 16px; border-radius:16px; border:none; font-family:'Poppins'; font-size:14px; color:var(--brown); background:var(--neu-base); box-shadow: var(--shadow-inset); resize:vertical;"></textarea>
+      </div>
+      <div class="field">
+        <label for="admin-note-rdv">Date du prochain rdv (optionnel)</label>
+        <input type="date" id="admin-note-rdv">
+      </div>
+      <p id="admin-note-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:0 0 10px;"></p>
+      <p id="admin-note-success" style="display:none; color:#4a7a5a; font-size:13.5px; margin:0 0 10px;"></p>
+      <button class="btn btn-primary btn-full" onclick="submitAdvisorNote()">Enregistrer le compte-rendu</button>
+    </div>
+  </div>
+
   <button id="sos-fab" onclick="openSosFlow()" style="display:none;">🍫 SOS Fringale</button>
 
   <!-- VIDÉO DE PRÉSENTATION -->
@@ -1310,6 +1347,7 @@
     <button id="menu-tracker-item" onclick="openTrackerFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9C12 9 8 9 8 5C8 5 12 3 12 9M12 9C12 9 16 9 16 5C16 5 12 3 12 9M6 14c0 3.5 2.5 6 6 6s6-2.5 6-6c0-2-1.5-3.5-3-4"/></svg></span><span>Mon Évolution</span></button>
     <button onclick="openCuresFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><span>Découvrir les cures</span></button>
     <button onclick="openStormFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></span><span>SOS Fringale</span></button>
+    <button onclick="toggleAdminMode()" id="admin-mode-toggle-row" style="display:none;"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span id="admin-mode-toggle-label">Mode admin</span></button>
   </div>
   <button class="drawer-logout" onclick="logout()">Se déconnecter</button>
 </div>
@@ -1424,6 +1462,7 @@ async function attemptLogin(){
   }
 
   const userId = authData.user.id;
+  checkAdminStatus(authData.user.email);
   const { data: rows, error: fetchError } = await supabaseClient
     .from("quiz_results")
     .select("raw_data")
@@ -1688,9 +1727,41 @@ function closeTrackerScreen(){
   showBilanHome();
 }
 
+async function loadAdvisorNotesForClient(){
+  const block = document.getElementById("advisor-notes-block");
+  const list = document.getElementById("advisor-notes-list");
+  if(!block || !list || !supabaseClient) return;
+  try{
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if(!userData || !userData.user){ block.style.display = "none"; return; }
+    const { data, error } = await supabaseClient
+      .from("advisor_notes")
+      .select("note, next_rdv_date, created_at")
+      .eq("client_user_id", userData.user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if(error || !data || !data.length){ block.style.display = "none"; return; }
+    block.style.display = "block";
+    list.innerHTML = data.map(n=>{
+      const date = new Date(n.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
+      const rdvLine = n.next_rdv_date
+        ? `<div style="margin-top:6px; font-weight:700; color:var(--gold-deep); font-size:12.5px;">📅 Prochain rdv : ${new Date(n.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</div>`
+        : "";
+      return `<div class="reco-card">
+        <div class="reco-title">${date}</div>
+        ${n.note ? `<div class="reco-desc">${n.note}</div>` : ""}
+        ${rdvLine}
+      </div>`;
+    }).join("");
+  }catch(e){
+    block.style.display = "none";
+  }
+}
+
 async function loadTrackerData(){
   trackerData = [];
   trackerLoadError = null;
+  loadAdvisorNotesForClient();
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
@@ -2168,6 +2239,7 @@ async function checkExistingSession(){
   if(rows && rows.length > 0){
     document.getElementById("screen-splash").style.display = "none";
     document.getElementById("screen-choice").style.display = "none";
+    checkAdminStatus(sessionData.session.user.email);
     restoreSessionFromRawData(rows[0].raw_data);
   }
 }
@@ -2443,14 +2515,139 @@ function switchTab(tab){
     const el = document.getElementById(id);
     if(el) el.style.display = "none";
   });
-  if(tab==="bilan"){
-    document.getElementById("screen-result").style.display = "block";
-  }
+  document.getElementById("screen-result").style.display = tab==="bilan" ? "block" : "none";
+  document.getElementById("screen-admin-clients").style.display = tab==="admin" ? "block" : "none";
 
   if(tab==="cycle") renderCycleTab();
   if(tab==="training") renderTrainingProgram();
   if(tab==="boost") renderBoostTab();
+  if(tab==="admin") loadAdminClientsList();
   updateSosFabVisibility();
+}
+
+/* ============================================================
+   MODE ADMIN (Lindsay + Areski uniquement)
+   ============================================================ */
+const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+let adminModeActive = false;
+
+function checkAdminStatus(email){
+  window.__isAdminUser = !!(email && ADMIN_EMAILS.includes(email.toLowerCase()));
+  const toggleRow = document.getElementById("admin-mode-toggle-row");
+  if(toggleRow) toggleRow.style.display = window.__isAdminUser ? "flex" : "none";
+}
+
+function toggleAdminMode(){
+  adminModeActive = !adminModeActive;
+  const label = document.getElementById("admin-mode-toggle-label");
+  if(label) label.textContent = adminModeActive ? "Retour à mon espace" : "Mode admin";
+
+  const normalTabs = ["bilan","cycle","training","boost"];
+  document.querySelectorAll(".bottom-nav-item").forEach(btn=>{
+    const t = btn.dataset.tab;
+    if(t === "admin"){
+      btn.style.display = adminModeActive ? "flex" : "none";
+    } else if(normalTabs.includes(t)){
+      btn.style.display = adminModeActive ? "none" : "flex";
+    }
+  });
+
+  closeMenu();
+  if(adminModeActive){
+    switchTab("admin");
+  } else {
+    switchTab("bilan");
+  }
+}
+
+async function loadAdminClientsList(){
+  const wrap = document.getElementById("admin-clients-list");
+  if(!wrap) return;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+  if(!token){
+    wrap.innerHTML = `<div class="note-box">Session expirée, reconnecte-toi.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="note-box">Chargement...</div>`;
+  try{
+    const res = await fetch("/.netlify/functions/admin-clients-list", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const json = await res.json();
+    if(!res.ok){
+      wrap.innerHTML = `<div class="note-box">${json.error || "Erreur de chargement."}</div>`;
+      return;
+    }
+    if(!json.clients.length){
+      wrap.innerHTML = `<div class="note-box">Aucune cliente pour l'instant.</div>`;
+      return;
+    }
+    wrap.innerHTML = json.clients.map(c=>{
+      const cureLabel = c.cure_started
+        ? `${c.cure_family || "cure en cours"} · Semaine ${c.week_number}/${c.cure_duration_weeks}`
+        : "Cure non démarrée";
+      const rdvLabel = c.next_rdv_date
+        ? `📅 Prochain rdv : ${new Date(c.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}`
+        : "📅 Pas de rdv fixé";
+      return `<div class="day-card">
+        <div class="day-card-head">
+          <span class="day-name">${c.firstname || c.email}</span>
+          ${c.age ? `<span class="day-phase">${c.age} ans</span>` : ""}
+        </div>
+        <div class="meal-row"><span class="meal-label">Email</span><span>${c.email}</span></div>
+        <div class="meal-row"><span class="meal-label">Cure</span><span>${cureLabel}</span></div>
+        <div class="meal-row"><span class="meal-label">RDV</span><span>${rdvLabel}</span></div>
+      </div>`;
+    }).join("");
+  }catch(e){
+    wrap.innerHTML = `<div class="note-box">Erreur de chargement, réessaie.</div>`;
+  }
+}
+
+async function submitAdvisorNote(){
+  const errorEl = document.getElementById("admin-note-error");
+  const successEl = document.getElementById("admin-note-success");
+  errorEl.style.display = "none";
+  successEl.style.display = "none";
+
+  const clientEmail = document.getElementById("admin-note-email").value.trim();
+  const note = document.getElementById("admin-note-text").value.trim();
+  const nextRdvDate = document.getElementById("admin-note-rdv").value || null;
+
+  if(!clientEmail){
+    errorEl.textContent = "Merci de renseigner l'email de la cliente.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+  if(!token){
+    errorEl.textContent = "Session expirée, reconnecte-toi.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const res = await fetch("/.netlify/functions/admin-add-note", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ clientEmail, note, nextRdvDate })
+  });
+  const json = await res.json();
+
+  if(!res.ok){
+    errorEl.textContent = json.error || "Une erreur est survenue.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  successEl.textContent = "Compte-rendu enregistré 🌿";
+  successEl.style.display = "block";
+  document.getElementById("admin-note-email").value = "";
+  document.getElementById("admin-note-text").value = "";
+  document.getElementById("admin-note-rdv").value = "";
+  loadAdminClientsList();
 }
 
 function toggleCycleFields(){
@@ -3108,7 +3305,8 @@ async function markCureStarted(){
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
     body: JSON.stringify({
       duration: packWeeksMap[selectedPack] || 12,
-      objectif_idx: answers.objectif
+      objectif_idx: answers.objectif,
+      cure_family: window.__mainCureFamily || null
     })
   });
   const json = await res.json();
@@ -3453,7 +3651,7 @@ function saveProfileAndShowResult(){
   const activityMap = [1.2, 1.375, 1.55];
   const activityFactor = activityMap[answers.activite !== undefined ? answers.activite : 1];
 
-  let data = { hasCycle, cycleStatus: cycleStatusValue, age, weight, height, activityFactor };
+  let data = { hasCycle, cycleStatus: cycleStatusValue, age, weight, height, activityFactor, firstname };
   data.objectif = answers.objectif;
   data.zones = answers.zones || [];
   data.douleurs = answers.douleurs || [];

@@ -40,6 +40,7 @@ exports.handler = async function (event) {
 
   const duration = parseInt(body.duration, 10) || 12;
   const objectifIdx = Number.isInteger(body.objectif_idx) ? body.objectif_idx : null;
+  const cureFamily = typeof body.cure_family === "string" ? body.cure_family : null;
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/cure_progress?on_conflict=user_id`, {
     method: "POST",
@@ -52,7 +53,8 @@ exports.handler = async function (event) {
     body: JSON.stringify({
       user_id: user.id,
       cure_duration_weeks: duration,
-      objectif_idx: objectifIdx
+      objectif_idx: objectifIdx,
+      cure_family: cureFamily
     })
   });
 
