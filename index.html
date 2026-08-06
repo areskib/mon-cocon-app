@@ -2380,6 +2380,12 @@ async function checkExistingSession(){
   const { data: sessionData } = await supabaseClient.auth.getSession();
   if(!sessionData || !sessionData.session) return;
 
+  // Dès qu'une session valide est trouvée, on masque l'accueil immédiatement —
+  // avant même d'avoir fini de charger le profil — pour ne jamais laisser les
+  // deux écrans visibles en même temps le temps que les appels réseau se terminent.
+  document.getElementById("screen-splash").style.display = "none";
+  document.getElementById("screen-choice").style.display = "none";
+
   const userId = sessionData.session.user.id;
   const { data: rows } = await supabaseClient
     .from("quiz_results")
@@ -2389,8 +2395,6 @@ async function checkExistingSession(){
     .limit(1);
 
   if(rows && rows.length > 0){
-    document.getElementById("screen-splash").style.display = "none";
-    document.getElementById("screen-choice").style.display = "none";
     checkAdminStatus(sessionData.session.user.email);
     restoreSessionFromRawData(rows[0].raw_data);
   }
@@ -2509,8 +2513,9 @@ window.addEventListener("DOMContentLoaded", () => {
       if(!isPasswordRecoveryUrl() && !window.__passwordRecoveryHandled){
         checkExistingSession();
       }
-      // Filet de sécurité : si rien n'est visible après tout ça (cas limite), on
-      // n'affiche jamais un écran vide — on retombe sur l'accueil.
+      // Filet de sécurité : si rien n'est visible après un délai généreux (cas limite
+      // uniquement — les appels réseau normaux prennent quelques centaines de ms max),
+      // on n'affiche jamais un écran vide, on retombe sur l'accueil.
       setTimeout(() => {
         const anyVisible = ["screen-choice","screen-login","screen-result","screen-reset-password","screen-forgot-password"]
           .some(id => {
@@ -2520,7 +2525,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if(!anyVisible){
           document.getElementById("screen-choice").style.display = "block";
         }
-      }, 1200);
+      }, 4500);
     }, 350);
     if(isIos() && !isInStandaloneMode()){
       setTimeout(() => showInstallBanner("ios"), 3500);
