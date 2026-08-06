@@ -679,6 +679,10 @@
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
       <span>Clientes</span>
     </button>
+    <button class="bottom-nav-item" data-tab="admin-report" id="nav-admin-report-btn" onclick="switchTab('admin-report')" style="display:none;">
+      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <span>Compte-rendu</span>
+    </button>
     <button class="bottom-nav-item" id="menu-toggle-btn" onclick="openMenu()" aria-label="Menu">
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>
       <span>Menu</span>
@@ -1175,10 +1179,16 @@
     </div>
 
     <div class="measure-pills" id="tracker-measure-pills" style="display:none;">
-      <button class="active" data-m="waist" onclick="setTrackerSubMetric('waist')">Tour de taille</button>
-      <button data-m="hip" onclick="setTrackerSubMetric('hip')">Tour de hanches</button>
-      <button data-m="arm" onclick="setTrackerSubMetric('arm')">Tour de bras</button>
-      <button data-m="thigh" onclick="setTrackerSubMetric('thigh')">Tour de cuisses</button>
+      <button class="active" data-m="ventre_nombril" onclick="setTrackerSubMetric('ventre_nombril')">Ventre (nombril)</button>
+      <button data-m="taille" onclick="setTrackerSubMetric('taille')">Taille</button>
+      <button data-m="hanches" onclick="setTrackerSubMetric('hanches')">Hanches</button>
+      <button data-m="poitrine" onclick="setTrackerSubMetric('poitrine')">Poitrine</button>
+      <button data-m="cuisse_droite" onclick="setTrackerSubMetric('cuisse_droite')">Cuisse droite</button>
+      <button data-m="cuisse_gauche" onclick="setTrackerSubMetric('cuisse_gauche')">Cuisse gauche</button>
+      <button data-m="mollet_droit" onclick="setTrackerSubMetric('mollet_droit')">Mollet droit</button>
+      <button data-m="mollet_gauche" onclick="setTrackerSubMetric('mollet_gauche')">Mollet gauche</button>
+      <button data-m="bras_droit" onclick="setTrackerSubMetric('bras_droit')">Bras droit</button>
+      <button data-m="bras_gauche" onclick="setTrackerSubMetric('bras_gauche')">Bras gauche</button>
     </div>
 
     <div class="segmented" id="tracker-view-toggle">
@@ -1206,28 +1216,52 @@
     </div>
 
     <div class="field">
-      <label>Numéro de semaine de la cure (1 à 12)</label>
-      <input type="number" id="tracker-week-number" min="1" max="12" placeholder="Ex : 1">
+      <label>Numéro de semaine de la cure</label>
+      <input type="number" id="tracker-week-number" min="1" max="24" placeholder="Ex : 1">
     </div>
     <div class="field">
       <label>Poids (kg)</label>
       <input type="number" step="0.1" id="tracker-weight" placeholder="Ex : 62.5">
     </div>
     <div class="field">
-      <label>Tour de taille (cm)</label>
-      <input type="number" step="0.1" id="tracker-waist" placeholder="Ex : 74">
+      <label>Ventre (nombril, cm)</label>
+      <input type="number" step="0.1" id="tracker-ventre_nombril" placeholder="Ex : 82">
     </div>
     <div class="field">
-      <label>Tour de hanches (cm)</label>
-      <input type="number" step="0.1" id="tracker-hip" placeholder="Ex : 96">
+      <label>Taille (cm)</label>
+      <input type="number" step="0.1" id="tracker-taille" placeholder="Ex : 74">
     </div>
     <div class="field">
-      <label>Tour de bras (cm)</label>
-      <input type="number" step="0.1" id="tracker-arm" placeholder="Ex : 27">
+      <label>Hanches (cm)</label>
+      <input type="number" step="0.1" id="tracker-hanches" placeholder="Ex : 96">
     </div>
     <div class="field">
-      <label>Tour de cuisses (cm)</label>
-      <input type="number" step="0.1" id="tracker-thigh" placeholder="Ex : 54">
+      <label>Poitrine (cm)</label>
+      <input type="number" step="0.1" id="tracker-poitrine" placeholder="Ex : 90">
+    </div>
+    <div class="field">
+      <label>Cuisse droite (cm)</label>
+      <input type="number" step="0.1" id="tracker-cuisse_droite" placeholder="Ex : 54">
+    </div>
+    <div class="field">
+      <label>Cuisse gauche (cm)</label>
+      <input type="number" step="0.1" id="tracker-cuisse_gauche" placeholder="Ex : 54">
+    </div>
+    <div class="field">
+      <label>Mollet droit (cm)</label>
+      <input type="number" step="0.1" id="tracker-mollet_droit" placeholder="Ex : 36">
+    </div>
+    <div class="field">
+      <label>Mollet gauche (cm)</label>
+      <input type="number" step="0.1" id="tracker-mollet_gauche" placeholder="Ex : 36">
+    </div>
+    <div class="field">
+      <label>Bras droit (cm)</label>
+      <input type="number" step="0.1" id="tracker-bras_droit" placeholder="Ex : 27">
+    </div>
+    <div class="field">
+      <label>Bras gauche (cm)</label>
+      <input type="number" step="0.1" id="tracker-bras_gauche" placeholder="Ex : 27">
     </div>
 
     <p id="tracker-form-msg" style="display:none; font-size:13.5px; margin:4px 0 14px;"></p>
@@ -1279,25 +1313,82 @@
     </div>
 
     <div id="admin-clients-list"><div class="note-box">Chargement...</div></div>
+  </div>
 
-    <div class="result-block" style="margin-top:26px;">
-      <h3 style="font-size:15px;">📝 Compte-rendu de rdv hebdo</h3>
-      <div class="field">
-        <label for="admin-note-email">Email de la cliente</label>
-        <input type="email" id="admin-note-email" placeholder="cliente@email.com">
-      </div>
-      <div class="field">
-        <label for="admin-note-text">Compte-rendu</label>
-        <textarea id="admin-note-text" rows="4" placeholder="Ce que tu veux qu'elle retrouve dans son suivi..." style="width:100%; padding:14px 16px; border-radius:16px; border:none; font-family:'Poppins'; font-size:14px; color:var(--brown); background:var(--neu-base); box-shadow: var(--shadow-inset); resize:vertical;"></textarea>
-      </div>
-      <div class="field">
-        <label for="admin-note-rdv">Date du prochain rdv (optionnel)</label>
-        <input type="date" id="admin-note-rdv">
-      </div>
-      <p id="admin-note-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:0 0 10px;"></p>
-      <p id="admin-note-success" style="display:none; color:#4a7a5a; font-size:13.5px; margin:0 0 10px;"></p>
-      <button class="btn btn-primary btn-full" onclick="submitAdvisorNote()">Enregistrer le compte-rendu</button>
+  <div class="card" id="screen-admin-client-detail" style="display:none;">
+    <button onclick="closeAdminClientDetail()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div id="admin-client-detail-content"></div>
+  </div>
+
+  <div class="card" id="screen-admin-report" style="display:none;">
+    <div class="hero" style="padding-bottom:6px;">
+      <div class="subtitle">Espace conseillère</div>
+      <h1 style="font-size:22px;">📝 Compte-rendu de <em>rdv</em></h1>
     </div>
+
+    <div class="field">
+      <label for="admin-report-email">Email de la cliente</label>
+      <input type="email" id="admin-report-email" placeholder="cliente@email.com">
+    </div>
+    <div class="field">
+      <label for="admin-report-week">N° de semaine</label>
+      <input type="number" min="1" max="24" id="admin-report-week" placeholder="Ex : 4">
+    </div>
+    <div class="field">
+      <label for="admin-report-weight">Poids (kg)</label>
+      <input type="number" step="0.1" id="admin-report-weight" placeholder="Ex : 62.5">
+    </div>
+    <div class="field">
+      <label for="admin-report-ventre_nombril">Ventre (nombril, cm)</label>
+      <input type="number" step="0.1" id="admin-report-ventre_nombril" placeholder="Ex : 82">
+    </div>
+    <div class="field">
+      <label for="admin-report-taille">Taille (cm)</label>
+      <input type="number" step="0.1" id="admin-report-taille" placeholder="Ex : 74">
+    </div>
+    <div class="field">
+      <label for="admin-report-hanches">Hanches (cm)</label>
+      <input type="number" step="0.1" id="admin-report-hanches" placeholder="Ex : 96">
+    </div>
+    <div class="field">
+      <label for="admin-report-poitrine">Poitrine (cm)</label>
+      <input type="number" step="0.1" id="admin-report-poitrine" placeholder="Ex : 90">
+    </div>
+    <div class="field">
+      <label for="admin-report-cuisse_droite">Cuisse droite (cm)</label>
+      <input type="number" step="0.1" id="admin-report-cuisse_droite" placeholder="Ex : 54">
+    </div>
+    <div class="field">
+      <label for="admin-report-cuisse_gauche">Cuisse gauche (cm)</label>
+      <input type="number" step="0.1" id="admin-report-cuisse_gauche" placeholder="Ex : 54">
+    </div>
+    <div class="field">
+      <label for="admin-report-mollet_droit">Mollet droit (cm)</label>
+      <input type="number" step="0.1" id="admin-report-mollet_droit" placeholder="Ex : 36">
+    </div>
+    <div class="field">
+      <label for="admin-report-mollet_gauche">Mollet gauche (cm)</label>
+      <input type="number" step="0.1" id="admin-report-mollet_gauche" placeholder="Ex : 36">
+    </div>
+    <div class="field">
+      <label for="admin-report-bras_droit">Bras droit (cm)</label>
+      <input type="number" step="0.1" id="admin-report-bras_droit" placeholder="Ex : 27">
+    </div>
+    <div class="field">
+      <label for="admin-report-bras_gauche">Bras gauche (cm)</label>
+      <input type="number" step="0.1" id="admin-report-bras_gauche" placeholder="Ex : 27">
+    </div>
+    <div class="field">
+      <label for="admin-report-ressenti">Ressenti global</label>
+      <textarea id="admin-report-ressenti" rows="4" placeholder="Ce que tu veux qu'elle retrouve dans son suivi..." style="width:100%; padding:14px 16px; border-radius:16px; border:none; font-family:'Poppins'; font-size:14px; color:var(--brown); background:var(--neu-base); box-shadow: var(--shadow-inset); resize:vertical;"></textarea>
+    </div>
+    <div class="field">
+      <label for="admin-report-rdv">Date du prochain rdv (optionnel)</label>
+      <input type="date" id="admin-report-rdv">
+    </div>
+    <p id="admin-report-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:0 0 10px;"></p>
+    <p id="admin-report-success" style="display:none; color:#4a7a5a; font-size:13.5px; margin:0 0 10px;"></p>
+    <button class="btn btn-primary btn-full" onclick="submitAdvisorReport()">Enregistrer le compte-rendu</button>
   </div>
 
   <button id="sos-fab" onclick="openSosFlow()" style="display:none;">🍫 SOS Fringale</button>
@@ -1688,16 +1779,22 @@ function hideAppHeader(){
 let trackerData = [];
 let currentWeekMenus = [];
 let trackerMetric = "weight";      // "weight" | "measurements"
-let trackerSubMetric = "waist";    // "waist" | "hip" | "arm" | "thigh"
+let trackerSubMetric = "ventre_nombril";
 let trackerView = "weekly";        // "weekly" | "monthly"
 let trackerLoadError = null;
 
 const TRACKER_LABELS = {
   weight: "Poids (kg)",
-  waist: "Tour de taille (cm)",
-  hip: "Tour de hanches (cm)",
-  arm: "Tour de bras (cm)",
-  thigh: "Tour de cuisses (cm)"
+  ventre_nombril: "Ventre - nombril (cm)",
+  taille: "Taille (cm)",
+  hanches: "Hanches (cm)",
+  poitrine: "Poitrine (cm)",
+  cuisse_droite: "Cuisse droite (cm)",
+  cuisse_gauche: "Cuisse gauche (cm)",
+  mollet_droit: "Mollet droit (cm)",
+  mollet_gauche: "Mollet gauche (cm)",
+  bras_droit: "Bras droit (cm)",
+  bras_gauche: "Bras gauche (cm)"
 };
 
 function openTrackerFromMenu(){
@@ -1889,10 +1986,16 @@ function renderTrackerWeekList(){
   if(trackerData.length === 0){ list.innerHTML = ""; return; }
   const statDefs = [
     { key:"weight", label:"Poids", unit:"kg" },
-    { key:"waist", label:"Taille", unit:"cm" },
-    { key:"hip", label:"Hanches", unit:"cm" },
-    { key:"arm", label:"Bras", unit:"cm" },
-    { key:"thigh", label:"Cuisses", unit:"cm" }
+    { key:"ventre_nombril", label:"Ventre", unit:"cm" },
+    { key:"taille", label:"Taille", unit:"cm" },
+    { key:"hanches", label:"Hanches", unit:"cm" },
+    { key:"poitrine", label:"Poitrine", unit:"cm" },
+    { key:"cuisse_droite", label:"Cuisse D.", unit:"cm" },
+    { key:"cuisse_gauche", label:"Cuisse G.", unit:"cm" },
+    { key:"mollet_droit", label:"Mollet D.", unit:"cm" },
+    { key:"mollet_gauche", label:"Mollet G.", unit:"cm" },
+    { key:"bras_droit", label:"Bras D.", unit:"cm" },
+    { key:"bras_gauche", label:"Bras G.", unit:"cm" }
   ];
   const cards = [...trackerData].sort((a,b)=>b.week_number-a.week_number).map(row=>{
     const stats = statDefs
@@ -1908,15 +2011,17 @@ function renderTrackerWeekList(){
   list.innerHTML = cards;
 }
 
+const TRACKER_FORM_FIELDS = ["week-number","weight","ventre_nombril","taille","hanches","poitrine","cuisse_droite","cuisse_gauche","mollet_droit","mollet_gauche","bras_droit","bras_gauche"];
+
 function openTrackerForm(){
   document.getElementById("screen-tracker").style.display = "none";
   document.getElementById("screen-tracker-form").style.display = "block";
   document.getElementById("tracker-form-msg").style.display = "none";
-  ["tracker-week-number","tracker-weight","tracker-waist","tracker-hip","tracker-arm","tracker-thigh"].forEach(id=>{
-    document.getElementById(id).value = "";
+  TRACKER_FORM_FIELDS.forEach(key=>{
+    document.getElementById("tracker-" + key).value = "";
   });
   const maxWeek = trackerData.reduce((m,r)=>Math.max(m, r.week_number), 0);
-  document.getElementById("tracker-week-number").value = Math.min(maxWeek+1, 12);
+  document.getElementById("tracker-week-number").value = maxWeek+1;
 }
 
 function closeTrackerForm(){
@@ -1933,8 +2038,8 @@ async function submitTrackerForm(){
   };
 
   const weekNumber = parseInt(document.getElementById("tracker-week-number").value, 10);
-  if(!weekNumber || weekNumber<1 || weekNumber>12){
-    showMsg("Merci d'indiquer un numéro de semaine entre 1 et 12.", true);
+  if(!weekNumber || weekNumber<1 || weekNumber>24){
+    showMsg("Merci d'indiquer un numéro de semaine valide.", true);
     return;
   }
 
@@ -1963,10 +2068,16 @@ async function submitTrackerForm(){
       body: JSON.stringify({
         week_number: weekNumber,
         weight: val("tracker-weight"),
-        waist: val("tracker-waist"),
-        hip: val("tracker-hip"),
-        arm: val("tracker-arm"),
-        thigh: val("tracker-thigh")
+        ventre_nombril: val("tracker-ventre_nombril"),
+        taille: val("tracker-taille"),
+        hanches: val("tracker-hanches"),
+        poitrine: val("tracker-poitrine"),
+        cuisse_droite: val("tracker-cuisse_droite"),
+        cuisse_gauche: val("tracker-cuisse_gauche"),
+        mollet_droit: val("tracker-mollet_droit"),
+        mollet_gauche: val("tracker-mollet_gauche"),
+        bras_droit: val("tracker-bras_droit"),
+        bras_gauche: val("tracker-bras_gauche")
       })
     });
     json = await res.json();
@@ -2517,6 +2628,8 @@ function switchTab(tab){
   });
   document.getElementById("screen-result").style.display = tab==="bilan" ? "block" : "none";
   document.getElementById("screen-admin-clients").style.display = tab==="admin" ? "block" : "none";
+  document.getElementById("screen-admin-client-detail").style.display = "none";
+  document.getElementById("screen-admin-report").style.display = tab==="admin-report" ? "block" : "none";
 
   if(tab==="cycle") renderCycleTab();
   if(tab==="training") renderTrainingProgram();
@@ -2543,9 +2656,10 @@ function toggleAdminMode(){
   if(label) label.textContent = adminModeActive ? "Retour à mon espace" : "Mode admin";
 
   const normalTabs = ["bilan","cycle","training","boost"];
+  const adminTabs = ["admin","admin-report"];
   document.querySelectorAll(".bottom-nav-item").forEach(btn=>{
     const t = btn.dataset.tab;
-    if(t === "admin"){
+    if(adminTabs.includes(t)){
       btn.style.display = adminModeActive ? "flex" : "none";
     } else if(normalTabs.includes(t)){
       btn.style.display = adminModeActive ? "none" : "flex";
@@ -2559,6 +2673,8 @@ function toggleAdminMode(){
     switchTab("bilan");
   }
 }
+
+let adminClientsData = [];
 
 async function loadAdminClientsList(){
   const wrap = document.getElementById("admin-clients-list");
@@ -2579,25 +2695,18 @@ async function loadAdminClientsList(){
       wrap.innerHTML = `<div class="note-box">${json.error || "Erreur de chargement."}</div>`;
       return;
     }
-    if(!json.clients.length){
+    adminClientsData = json.clients || [];
+    if(!adminClientsData.length){
       wrap.innerHTML = `<div class="note-box">Aucune cliente pour l'instant.</div>`;
       return;
     }
-    wrap.innerHTML = json.clients.map(c=>{
-      const cureLabel = c.cure_started
-        ? `${c.cure_family || "cure en cours"} · Semaine ${c.week_number}/${c.cure_duration_weeks}`
-        : "Cure non démarrée";
-      const rdvLabel = c.next_rdv_date
-        ? `📅 Prochain rdv : ${new Date(c.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}`
-        : "📅 Pas de rdv fixé";
-      return `<div class="day-card">
+    wrap.innerHTML = adminClientsData.map((c,i)=>{
+      const cureLabel = c.cure_started ? (c.cure_name || "Cure en cours") : "Cure non démarrée";
+      return `<div class="day-card" style="cursor:pointer;" onclick="showAdminClientDetail(${i})">
         <div class="day-card-head">
           <span class="day-name">${c.firstname || c.email}</span>
-          ${c.age ? `<span class="day-phase">${c.age} ans</span>` : ""}
         </div>
-        <div class="meal-row"><span class="meal-label">Email</span><span>${c.email}</span></div>
         <div class="meal-row"><span class="meal-label">Cure</span><span>${cureLabel}</span></div>
-        <div class="meal-row"><span class="meal-label">RDV</span><span>${rdvLabel}</span></div>
       </div>`;
     }).join("");
   }catch(e){
@@ -2605,18 +2714,69 @@ async function loadAdminClientsList(){
   }
 }
 
-async function submitAdvisorNote(){
-  const errorEl = document.getElementById("admin-note-error");
-  const successEl = document.getElementById("admin-note-success");
+function showAdminClientDetail(index){
+  const c = adminClientsData[index];
+  if(!c) return;
+  const content = document.getElementById("admin-client-detail-content");
+  const inscriptionDate = new Date(c.bilan_date).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
+  const lastRdv = c.last_rdv_date
+    ? new Date(c.last_rdv_date).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
+    : "Aucun compte-rendu pour l'instant";
+  const nextRdv = c.next_rdv_date
+    ? new Date(c.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
+    : "Pas de rdv fixé";
+  content.innerHTML = `
+    <div class="cure-hero-card" style="text-align:center; margin-bottom:20px;">
+      <h2 style="margin:0; font-size:21px;">${c.firstname || c.email}</h2>
+    </div>
+    <div class="result-block">
+      <div class="meal-row"><span class="meal-label">Email</span><span>${c.email}</span></div>
+      <div class="meal-row"><span class="meal-label">Date d'inscription</span><span>${inscriptionDate}</span></div>
+      <div class="meal-row"><span class="meal-label">Cure</span><span>${c.cure_started ? (c.cure_name || "—") : "Non démarrée"}</span></div>
+      <div class="meal-row"><span class="meal-label">Dernier rdv</span><span>${lastRdv}</span></div>
+      <div class="meal-row"><span class="meal-label">Prochain rdv</span><span>${nextRdv}</span></div>
+    </div>
+    <div class="nav-row" style="margin-top:20px;">
+      <button class="btn btn-primary btn-full" onclick="goToReportForClient('${c.email}')">📝 Rédiger un compte-rendu</button>
+    </div>
+  `;
+  document.getElementById("screen-admin-clients").style.display = "none";
+  document.getElementById("screen-admin-client-detail").style.display = "block";
+}
+
+function closeAdminClientDetail(){
+  document.getElementById("screen-admin-client-detail").style.display = "none";
+  document.getElementById("screen-admin-clients").style.display = "block";
+}
+
+function goToReportForClient(email){
+  document.querySelectorAll(".bottom-nav-item").forEach(b=>b.classList.toggle("active", b.dataset.tab==="admin-report"));
+  document.getElementById("screen-admin-client-detail").style.display = "none";
+  document.getElementById("screen-admin-clients").style.display = "none";
+  document.getElementById("screen-admin-report").style.display = "block";
+  document.getElementById("admin-report-email").value = email;
+}
+
+const ADMIN_REPORT_MEASURE_FIELDS = ["weight","ventre_nombril","taille","hanches","poitrine","cuisse_droite","cuisse_gauche","mollet_droit","mollet_gauche","bras_droit","bras_gauche"];
+
+async function submitAdvisorReport(){
+  const errorEl = document.getElementById("admin-report-error");
+  const successEl = document.getElementById("admin-report-success");
   errorEl.style.display = "none";
   successEl.style.display = "none";
 
-  const clientEmail = document.getElementById("admin-note-email").value.trim();
-  const note = document.getElementById("admin-note-text").value.trim();
-  const nextRdvDate = document.getElementById("admin-note-rdv").value || null;
+  const clientEmail = document.getElementById("admin-report-email").value.trim();
+  const weekNumber = parseInt(document.getElementById("admin-report-week").value, 10);
+  const ressenti = document.getElementById("admin-report-ressenti").value.trim();
+  const nextRdvDate = document.getElementById("admin-report-rdv").value || null;
 
   if(!clientEmail){
     errorEl.textContent = "Merci de renseigner l'email de la cliente.";
+    errorEl.style.display = "block";
+    return;
+  }
+  if(!weekNumber || weekNumber < 1 || weekNumber > 24){
+    errorEl.textContent = "Merci de renseigner un numéro de semaine valide.";
     errorEl.style.display = "block";
     return;
   }
@@ -2629,25 +2789,39 @@ async function submitAdvisorNote(){
     return;
   }
 
-  const res = await fetch("/.netlify/functions/admin-add-note", {
+  const measurePayload = { clientEmail, week_number: weekNumber, ressenti_global: ressenti || null };
+  ADMIN_REPORT_MEASURE_FIELDS.forEach(key=>{
+    const v = document.getElementById("admin-report-" + key).value;
+    measurePayload[key] = v === "" ? null : parseFloat(v);
+  });
+
+  const trackingRes = await fetch("/.netlify/functions/admin-add-tracking", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({ clientEmail, note, nextRdvDate })
+    body: JSON.stringify(measurePayload)
   });
-  const json = await res.json();
-
-  if(!res.ok){
-    errorEl.textContent = json.error || "Une erreur est survenue.";
+  const trackingJson = await trackingRes.json();
+  if(!trackingRes.ok){
+    errorEl.textContent = trackingJson.error || "Une erreur est survenue.";
     errorEl.style.display = "block";
     return;
   }
 
+  // Note + prochain rdv, pour l'historique "dernier rdv" et l'affichage côté cliente
+  if(ressenti || nextRdvDate){
+    await fetch("/.netlify/functions/admin-add-note", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ clientEmail, note: ressenti, nextRdvDate })
+    });
+  }
+
   successEl.textContent = "Compte-rendu enregistré 🌿";
   successEl.style.display = "block";
-  document.getElementById("admin-note-email").value = "";
-  document.getElementById("admin-note-text").value = "";
-  document.getElementById("admin-note-rdv").value = "";
-  loadAdminClientsList();
+  document.getElementById("admin-report-week").value = "";
+  ADMIN_REPORT_MEASURE_FIELDS.forEach(key=>{ document.getElementById("admin-report-" + key).value = ""; });
+  document.getElementById("admin-report-ressenti").value = "";
+  document.getElementById("admin-report-rdv").value = "";
 }
 
 function toggleCycleFields(){

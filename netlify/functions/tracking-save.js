@@ -76,10 +76,16 @@ exports.handler = async function (event) {
 
   const encryptedData = encrypt({
     weight: body.weight ?? null,
-    waist: body.waist ?? null,
-    hip: body.hip ?? null,
-    arm: body.arm ?? null,
-    thigh: body.thigh ?? null
+    ventre_nombril: body.ventre_nombril ?? null,
+    taille: body.taille ?? null,
+    hanches: body.hanches ?? null,
+    poitrine: body.poitrine ?? null,
+    cuisse_droite: body.cuisse_droite ?? null,
+    cuisse_gauche: body.cuisse_gauche ?? null,
+    mollet_droit: body.mollet_droit ?? null,
+    mollet_gauche: body.mollet_gauche ?? null,
+    bras_droit: body.bras_droit ?? null,
+    bras_gauche: body.bras_gauche ?? null
   });
 
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/body_tracking`, {
