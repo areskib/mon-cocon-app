@@ -1640,12 +1640,19 @@ async function submitForgotPassword(){
   btn.textContent = "Envoi...";
   btn.disabled = true;
 
-  await supabaseClient.auth.resetPasswordForEmail(email, {
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin
   });
 
   btn.textContent = originalLabel;
   btn.disabled = false;
+
+  if(error){
+    console.error("Erreur resetPasswordForEmail:", error);
+    errorEl.textContent = "Erreur : " + (error.message || "une erreur est survenue, réessaie.");
+    errorEl.style.display = "block";
+    return;
+  }
 
   infoEl.textContent = "Email envoyé 🌿 Vérifie ta boîte mail pour choisir un nouveau mot de passe.";
   infoEl.style.display = "block";
