@@ -1668,9 +1668,11 @@ function validatePasswordStrength(pass){
 }
 
 // Écoute l'événement Supabase déclenché quand la personne clique sur le lien reçu par email
+window.__passwordRecoveryHandled = false;
 if(supabaseClient){
   supabaseClient.auth.onAuthStateChange((event) => {
     if(event === "PASSWORD_RECOVERY"){
+      window.__passwordRecoveryHandled = true;
       // Sécurité : on masque absolument tout le reste de l'app, aucun accès tant que le
       // nouveau mot de passe n'est pas défini — le lien de récupération authentifie
       // techniquement la session, mais ça ne doit jamais donner accès à l'app.
@@ -2499,9 +2501,27 @@ window.addEventListener("DOMContentLoaded", () => {
   initWelcomeMessages();
   const inShowcase = initShowcaseModeIfNeeded();
   if(!inShowcase){
-    if(!isPasswordRecoveryUrl()){
-      checkExistingSession();
-    }
+    // Léger délai : le hash d'un lien de récupération peut déjà avoir été traité (et
+    // retiré de l'URL) par Supabase avant même ce point, donc on ne se fie pas qu'à
+    // l'URL — on laisse aussi une fenêtre à l'événement PASSWORD_RECOVERY pour se
+    // déclencher avant de restaurer une session normale.
+    setTimeout(() => {
+      if(!isPasswordRecoveryUrl() && !window.__passwordRecoveryHandled){
+        checkExistingSession();
+      }
+      // Filet de sécurité : si rien n'est visible après tout ça (cas limite), on
+      // n'affiche jamais un écran vide — on retombe sur l'accueil.
+      setTimeout(() => {
+        const anyVisible = ["screen-choice","screen-login","screen-result","screen-reset-password","screen-forgot-password"]
+          .some(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display !== "none" && el.offsetParent !== null;
+          });
+        if(!anyVisible){
+          document.getElementById("screen-choice").style.display = "block";
+        }
+      }, 1200);
+    }, 350);
     if(isIos() && !isInStandaloneMode()){
       setTimeout(() => showInstallBanner("ios"), 3500);
     }
