@@ -53,6 +53,63 @@ async function getUserFromToken(accessToken) {
   return res.json();
 }
 
+// Même logique que pickCureFamily() côté app, pour retrouver la cure recommandée
+// même quand la cliente n'a pas encore cliqué "J'ai commencé ma cure"
+function pickCureFamilyFromRawData(raw) {
+  const texture = raw.texture;
+  const objectif = raw.objectif;
+  const douleurs = raw.douleurs || [];
+  const ressenti = raw.ressenti || [];
+  const problematique = raw.problematique || [];
+  const hasLipoedeme = douleurs.includes(5);
+  const hasDouleurArt = douleurs.includes(1) || douleurs.includes(2);
+  const hasCrohn = douleurs.includes(4);
+  const hasCheveux = problematique.includes(4);
+  const isMenopause = raw.cycleStatus === "menopause";
+  const sommeilFatigue = ressenti.includes(0) || ressenti.includes(1);
+  const stressEleve = ressenti.includes(2);
+  const sedentaire = raw.activite === 0;
+  const postpartumOld = raw.postpartum === 2;
+  const postpartumRecent = raw.postpartum === 1;
+
+  if (postpartumRecent) return null;
+  if (hasLipoedeme) return "cure12";
+  if (hasDouleurArt) return "cure13";
+
+  switch (objectif) {
+    case 0:
+      if (texture === 0) {
+        if (hasCrohn) return "cure03";
+        if (isMenopause) return "cure02";
+        if (sommeilFatigue) return "cure04";
+        return "cure01";
+      }
+      if (texture === 1) {
+        if (postpartumOld) return "cure07";
+        if (stressEleve && sedentaire) return "cure08";
+        return "cure06";
+      }
+      if (texture === 3) return "cure10";
+      return "cure01";
+    case 1:
+      if (texture === 0) return "cure04";
+      if (texture === 1) return "cure08";
+      return null;
+    case 2:
+      return null;
+    case 3:
+      return "cure11";
+    case 4:
+      if (isMenopause) return "cure02";
+      return null;
+    case 5:
+      if (texture === 2) return "cure09";
+      if (hasCheveux) return "cure14";
+      return "cure14";
+  }
+  return "cure01";
+}
+
 exports.handler = async function (event) {
   if (!SERVICE_ROLE_KEY) {
     return { statusCode: 500, body: JSON.stringify({ error: "Configuration serveur incomplète." }) };
@@ -108,13 +165,15 @@ exports.handler = async function (event) {
       const days = Math.floor((now - started) / (1000 * 60 * 60 * 24));
       weekNumber = Math.min(cure.cure_duration_weeks, Math.max(1, Math.floor(days / 7) + 1));
     }
+    // famille réellement démarrée si dispo, sinon la cure recommandée recalculée à partir du bilan
+    const resolvedFamily = (cure && cure.cure_family) || pickCureFamilyFromRawData(raw);
     return {
       user_id: row.user_id,
       email: row.email,
       firstname: raw.firstname || null,
       age: raw.age || null,
-      cure_family: cure ? cure.cure_family : null,
-      cure_name: cure && cure.cure_family ? (cureNames[cure.cure_family] || cure.cure_family) : null,
+      cure_family: resolvedFamily,
+      cure_name: resolvedFamily ? (cureNames[resolvedFamily] || resolvedFamily) : null,
       cure_duration_weeks: cure ? cure.cure_duration_weeks : null,
       week_number: weekNumber,
       cure_started: !!cure,

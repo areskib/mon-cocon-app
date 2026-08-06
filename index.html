@@ -2701,7 +2701,7 @@ async function loadAdminClientsList(){
       return;
     }
     wrap.innerHTML = adminClientsData.map((c,i)=>{
-      const cureLabel = c.cure_started ? (c.cure_name || "Cure en cours") : "Cure non démarrée";
+      const cureLabel = c.cure_name ? (c.cure_started ? c.cure_name : `${c.cure_name} (non démarrée)`) : "Cure non déterminée";
       return `<div class="day-card" style="cursor:pointer;" onclick="showAdminClientDetail(${i})">
         <div class="day-card-head">
           <span class="day-name">${c.firstname || c.email}</span>
@@ -2732,7 +2732,7 @@ function showAdminClientDetail(index){
     <div class="result-block">
       <div class="meal-row"><span class="meal-label">Email</span><span>${c.email}</span></div>
       <div class="meal-row"><span class="meal-label">Date d'inscription</span><span>${inscriptionDate}</span></div>
-      <div class="meal-row"><span class="meal-label">Cure</span><span>${c.cure_started ? (c.cure_name || "—") : "Non démarrée"}</span></div>
+      <div class="meal-row"><span class="meal-label">Cure</span><span>${c.cure_name ? (c.cure_started ? c.cure_name : c.cure_name + " (non démarrée)") : "—"}</span></div>
       <div class="meal-row"><span class="meal-label">Dernier rdv</span><span>${lastRdv}</span></div>
       <div class="meal-row"><span class="meal-label">Prochain rdv</span><span>${nextRdv}</span></div>
     </div>
