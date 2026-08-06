@@ -1,4 +1,4 @@
-const CACHE_NAME = "mon-cocon-v3";
+const CACHE_NAME = "mon-cocon-v4";
 const ASSETS_TO_CACHE = [
   "/index.html",
   "/manifest.json",

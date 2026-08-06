@@ -4703,10 +4703,34 @@ function renderTrainingProgram(){
 toggleCycleFields();
 renderCycleTab();
 
-// ── PWA : enregistrement du service worker (installation + hors-ligne) ──
+// ── PWA : enregistrement du service worker + mise à jour automatique ──
+// Objectif : que chaque utilisatrice récupère toujours la dernière version
+// de l'app sans jamais avoir à désinstaller/réinstaller manuellement.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js").then((reg) => {
+      // Vérifie activement s'il existe une nouvelle version à chaque ouverture de l'app
+      reg.update().catch(() => {});
+
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            // Une nouvelle version vient d'être installée : on recharge pour l'appliquer
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Dès qu'un nouveau service worker prend le contrôle de la page, on recharge une fois
+    let alreadyRefreshed = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (alreadyRefreshed) return;
+      alreadyRefreshed = true;
+      window.location.reload();
+    });
   });
 }
 </script>
