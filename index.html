@@ -1481,7 +1481,24 @@
 <script>
 // ── Supabase (compte + espace personnel) ──
 // Capturé EN PREMIER, avant que le client Supabase ne traite (et retire) le hash de l'URL
-window.__initialUrlWasRecovery = /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+// Capturé EN PREMIER, avant que le client Supabase ne traite (et retire) le hash de l'URL.
+// On parse nous-mêmes les tokens plutôt que de compter sur la détection automatique
+// (peu fiable selon les navigateurs) — on contrôle ainsi tout le flux nous-mêmes.
+(function(){
+  const rawHash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+  const params = new URLSearchParams(rawHash);
+  window.__recoveryTokens = null;
+  window.__recoveryError = null;
+  if(params.get("type") === "recovery" && params.get("access_token") && params.get("refresh_token")){
+    window.__recoveryTokens = {
+      access_token: params.get("access_token"),
+      refresh_token: params.get("refresh_token")
+    };
+  } else if(params.get("error")){
+    window.__recoveryError = params.get("error_description") || params.get("error");
+  }
+  window.__initialUrlWasRecovery = !!(window.__recoveryTokens || window.__recoveryError);
+})();
 
 // Remplace par l'URL et la clé "anon public" de ton projet Supabase (Settings > API)
 const SUPABASE_URL = "https://gugioqxuwdktruibzisk.supabase.co";
@@ -2501,7 +2518,36 @@ function dismissInstallBanner(){
 }
 
 function isPasswordRecoveryUrl(){
-  return window.__initialUrlWasRecovery || /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+  return window.__initialUrlWasRecovery;
+}
+
+async function handleRecoveryLink(){
+  hideAppHeader();
+  hideAllTopScreens();
+  document.getElementById("screen-splash").style.display = "none";
+  document.getElementById("screen-choice").style.display = "none";
+  document.getElementById("screen-login").style.display = "none";
+  document.getElementById("screen-forgot-password").style.display = "none";
+  const fab = document.getElementById("sos-fab");
+  if(fab) fab.style.display = "none";
+
+  // Nettoie l'URL tout de suite (les tokens ne doivent pas traîner visibles/rechargeables)
+  history.replaceState(null, "", window.location.pathname);
+
+  if(window.__recoveryTokens){
+    const { error } = await supabaseClient.auth.setSession(window.__recoveryTokens);
+    if(!error){
+      window.__passwordRecoveryHandled = true;
+      document.getElementById("screen-reset-password").style.display = "block";
+      return;
+    }
+  }
+
+  // Lien invalide, déjà utilisé, ou expiré (window.__recoveryError, ou setSession en échec)
+  document.getElementById("screen-login").style.display = "block";
+  const errEl = document.getElementById("login-error");
+  errEl.textContent = "Ce lien a expiré ou a déjà été utilisé. Redemande un nouveau lien depuis \"Mot de passe oublié ?\".";
+  errEl.style.display = "block";
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -2510,24 +2556,9 @@ window.addEventListener("DOMContentLoaded", () => {
   if(!inShowcase){
     if(window.__initialUrlWasRecovery){
       // On sait avec certitude, dès le tout début (avant que Supabase ne traite le
-      // hash), qu'il s'agit d'un lien de récupération. On ne restaure JAMAIS de
-      // session normale dans ce cas — on attend uniquement l'événement
-      // PASSWORD_RECOVERY, avec un message clair si le lien s'avère invalide/expiré.
-      hideAppHeader();
-      hideAllTopScreens();
-      document.getElementById("screen-splash").style.display = "none";
-      document.getElementById("screen-choice").style.display = "none";
-      document.getElementById("screen-login").style.display = "none";
-      document.getElementById("screen-forgot-password").style.display = "none";
-      setTimeout(() => {
-        if(!window.__passwordRecoveryHandled){
-          document.getElementById("screen-choice").style.display = "none";
-          document.getElementById("screen-login").style.display = "block";
-          const errEl = document.getElementById("login-error");
-          errEl.textContent = "Ce lien a expiré ou a déjà été utilisé. Redemande un nouveau lien depuis \"Mot de passe oublié ?\".";
-          errEl.style.display = "block";
-        }
-      }, 3000);
+      // hash), qu'il s'agit d'un lien de récupération : on gère nous-mêmes
+      // l'établissement de la session, sans jamais restaurer de session normale.
+      handleRecoveryLink();
     } else {
       checkExistingSession();
     }
