@@ -2314,6 +2314,7 @@ async function submitCongratsPassword(){
   const btn = document.getElementById("congrats-submit-btn");
   const originalLabel = btn.textContent;
   congratsSubmitInFlight = true;
+  window.__criticalOpInProgress = true;
   btn.textContent = "Création du compte...";
   btn.disabled = true;
 
@@ -2331,6 +2332,7 @@ async function submitCongratsPassword(){
     btn.textContent = originalLabel;
     btn.disabled = false;
     congratsSubmitInFlight = false;
+    window.__criticalOpInProgress = false;
     errorEl.textContent = "Erreur de connexion. Vérifie ta connexion internet et réessaie 🌿";
     errorEl.style.display = "block";
     return;
@@ -2340,6 +2342,7 @@ async function submitCongratsPassword(){
   btn.textContent = originalLabel;
   btn.disabled = false;
   congratsSubmitInFlight = false;
+  window.__criticalOpInProgress = false;
 
   if(error){
     if(error.message && error.message.toLowerCase().includes("already")){
@@ -5256,6 +5259,33 @@ renderCycleTab();
 // ── PWA : enregistrement du service worker + mise à jour automatique ──
 // Objectif : que chaque utilisatrice récupère toujours la dernière version
 // de l'app sans jamais avoir à désinstaller/réinstaller manuellement.
+//
+// window.__criticalOpInProgress : drapeau global posé pendant toute création
+// de compte (voir submitCongratsPassword). Sans cette garde, un reload forcé
+// par le service worker pouvait tomber en pleine création de compte : le
+// compte était bien créé côté serveur, mais la page rechargeait avant que le
+// JS ne reçoive la confirmation, coupant l'utilisatrice en plein signup —
+// elle retentait alors et tombait sur "compte déjà existant".
+window.__criticalOpInProgress = false;
+
+function reloadWhenSafe(){
+  if(!window.__criticalOpInProgress){
+    window.location.reload();
+    return;
+  }
+  // Une opération critique est en cours : on attend qu'elle se termine
+  // avant de recharger, en revérifiant toutes les 300ms (avec un filet de
+  // sécurité à 15s pour ne jamais rester bloqué indéfiniment).
+  let waited = 0;
+  const iv = setInterval(() => {
+    waited += 300;
+    if(!window.__criticalOpInProgress || waited >= 15000){
+      clearInterval(iv);
+      window.location.reload();
+    }
+  }, 300);
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/service-worker.js").then((reg) => {
@@ -5268,7 +5298,7 @@ if ("serviceWorker" in navigator) {
         newWorker.addEventListener("statechange", () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
             // Une nouvelle version vient d'être installée : on recharge pour l'appliquer
-            window.location.reload();
+            reloadWhenSafe();
           }
         });
       });
@@ -5279,7 +5309,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (alreadyRefreshed) return;
       alreadyRefreshed = true;
-      window.location.reload();
+      reloadWhenSafe();
     });
   });
 }
