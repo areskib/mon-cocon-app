@@ -1,4 +1,4 @@
-const CACHE_NAME = "mon-cocon-v5";
+const CACHE_NAME = "mon-cocon-v6";
 const ASSETS_TO_CACHE = [
   "/index.html",
   "/manifest.json",
@@ -53,9 +53,12 @@ self.addEventListener("fetch", (event) => {
 
   // Les appels aux fonctions serveur (API) ne doivent JAMAIS être mis en cache —
   // toujours des données fraîches (liste clientes, statut de validation, suivi...).
+  // Important : on ne réécrit PAS la requête (pas de event.respondWith) — surtout
+  // pour les POST, ré-envelopper une requête dont le corps a potentiellement déjà
+  // été lu peut la faire échouer silencieusement avant même qu'elle n'atteigne le
+  // serveur. On laisse simplement le navigateur gérer ces appels nativement.
   const isApiCall = req.url.includes("/.netlify/functions/");
   if (isApiCall) {
-    event.respondWith(fetch(req, { cache: "no-store" }));
     return;
   }
 
