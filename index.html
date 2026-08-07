@@ -1049,8 +1049,8 @@
           <span><span class="dot" style="background:#E8DFC6;"></span>Lutéale</span>
         </div>
 
-        <div class="section-title">🔮 Prochaines règles estimées</div>
-        <div class="next-periods" id="next-periods"></div>
+        <div class="section-title">🩸 Tes règles</div>
+        <div id="period-tracker-card"></div>
       </div>
 
       <div class="card" style="margin-top:16px;" id="calorie-card">
@@ -2734,7 +2734,12 @@ function switchTab(tab){
   if(tab==="training") renderTrainingProgram();
   if(tab==="boost") renderBoostTab();
   if(tab==="admin") loadAdminClientsList();
-  if(tab==="admin-pending") loadAdminPendingList();
+  if(tab==="admin-pending"){
+    loadAdminPendingList();
+    startAdminPendingPolling();
+  } else {
+    stopAdminPendingPolling();
+  }
   updateSosFabVisibility();
 }
 
@@ -2968,6 +2973,25 @@ function buildCureNamesMap(){
 }
 
 let adminPendingData = [];
+
+let adminPendingPollInterval = null;
+
+function startAdminPendingPolling(){
+  if(adminPendingPollInterval) return;
+  adminPendingPollInterval = setInterval(() => {
+    // Ne recharge que si on est toujours sur cet écran (évite de rafraîchir dans le dos de Lindsay pendant qu'elle lit une fiche)
+    if(document.getElementById("screen-admin-pending").style.display !== "none"){
+      loadAdminPendingList();
+    }
+  }, 20000);
+}
+
+function stopAdminPendingPolling(){
+  if(adminPendingPollInterval){
+    clearInterval(adminPendingPollInterval);
+    adminPendingPollInterval = null;
+  }
+}
 
 async function loadAdminPendingList(){
   const wrap = document.getElementById("admin-pending-list");
@@ -3664,6 +3688,26 @@ function renderCureStartedDaily(cycleData){
   renderDailyChecklist();
 }
 
+let cureValidationPollInterval = null;
+
+function startCureValidationPolling(family){
+  if(cureValidationPollInterval) return; // déjà en cours
+  cureValidationPollInterval = setInterval(async () => {
+    const validation = await checkCureValidation(family);
+    if(validation && validation.status === "validated"){
+      stopCureValidationPolling();
+      renderCureSection(); // recharge tout, cette fois avec la cure validée
+    }
+  }, 15000); // vérifie toutes les 15 secondes tant que la cure est en attente
+}
+
+function stopCureValidationPolling(){
+  if(cureValidationPollInterval){
+    clearInterval(cureValidationPollInterval);
+    cureValidationPollInterval = null;
+  }
+}
+
 async function checkCureValidation(family){
   if(!supabaseClient) return null;
   try{
@@ -3671,14 +3715,17 @@ async function checkCureValidation(family){
     if(!userData || !userData.user) return null;
 
     // Crée (une seule fois, idempotent) la demande de validation + notifie la conseillère
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
-    if(token){
-      fetch("/.netlify/functions/submit-cure-validation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ cure_family: family })
-      }).catch(()=>{});
+    if(!window.__cureValidationSubmitted){
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+      if(token){
+        window.__cureValidationSubmitted = true;
+        fetch("/.netlify/functions/submit-cure-validation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ cure_family: family })
+        }).catch(()=>{});
+      }
     }
 
     const { data, error } = await supabaseClient
@@ -3694,13 +3741,37 @@ async function checkCureValidation(family){
 }
 
 function showCureValidationPending(){
-  document.getElementById("res-pending-validation-block").style.display = "block";
-  document.getElementById("res-not-started-block").style.display = "none";
+  window.__cureValidationStatus = "pending";
+  updateBilanVisibility();
 }
 
 function showCureValidationApproved(){
-  document.getElementById("res-pending-validation-block").style.display = "none";
-  document.getElementById("res-not-started-block").style.display = "block";
+  window.__cureValidationStatus = "validated";
+  updateBilanVisibility();
+}
+
+// Point unique de vérité pour l'affichage du Bilan : les 3 états (en attente de
+// validation / validée mais pas démarrée / démarrée) sont mutuellement exclusifs.
+function updateBilanVisibility(){
+  const pendingBlock = document.getElementById("res-pending-validation-block");
+  const notStartedBlock = document.getElementById("res-not-started-block");
+  const startedBlock = document.getElementById("res-started-block");
+  if(!pendingBlock || !notStartedBlock || !startedBlock) return;
+
+  if(cureStarted){
+    pendingBlock.style.display = "none";
+    notStartedBlock.style.display = "none";
+    startedBlock.style.display = "block";
+    renderCureStartedDaily(loadCycleData() || {});
+  } else if(window.__cureValidationStatus === "validated"){
+    pendingBlock.style.display = "none";
+    notStartedBlock.style.display = "block";
+    startedBlock.style.display = "none";
+  } else {
+    pendingBlock.style.display = "block";
+    notStartedBlock.style.display = "none";
+    startedBlock.style.display = "none";
+  }
 }
 
 async function renderCureSection(){
@@ -3710,7 +3781,8 @@ async function renderCureSection(){
 
   if(!computedFamily){
     // cas particulier : post-partum trop récent, ou aucun signal précis (objectif "corps en général")
-    showCureValidationApproved();
+    window.__cureValidationStatus = "validated";
+    updateBilanVisibility();
     document.getElementById("res-cure-hero").style.display = "none";
     document.getElementById("cure-feedback-card").style.display = "none";
     document.getElementById("res-complementary-block").style.display = "none";
@@ -3726,8 +3798,10 @@ async function renderCureSection(){
   if(!validation || validation.status !== "validated"){
     showCureValidationPending();
     renderCureStartedDaily(cycleData);
+    startCureValidationPolling(computedFamily);
     return;
   }
+  stopCureValidationPolling();
 
   // La cure validée par la conseillère fait foi (elle a pu la changer)
   const family = validation.cure_family || computedFamily;
@@ -3870,11 +3944,7 @@ async function markCureStarted(){
 }
 
 function applyCureStartedUI(){
-  const notStartedBlock = document.getElementById("res-not-started-block");
-  const startedBlock = document.getElementById("res-started-block");
-  if(notStartedBlock) notStartedBlock.style.display = cureStarted ? "none" : "block";
-  if(startedBlock) startedBlock.style.display = cureStarted ? "block" : "none";
-  if(cureStarted) renderCureStartedDaily(loadCycleData() || {});
+  updateBilanVisibility();
 
   const btn = document.getElementById("btn-cure-started");
   if(btn){
@@ -4601,6 +4671,86 @@ function getPhaseForDay(dayInCycle, cycleLength, periodLength){
   return "luteale";
 }
 
+/* ============================================================
+   SUIVI DES RÈGLES — validation manuelle façon P-Tracker
+   ============================================================ */
+async function loadLatestPeriodLog(){
+  if(!supabaseClient) return null;
+  try{
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if(!userData || !userData.user) return null;
+    const { data, error } = await supabaseClient
+      .from("period_logs")
+      .select("id, start_date, end_date")
+      .eq("user_id", userData.user.id)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if(error) return null;
+    return data;
+  }catch(e){
+    return null;
+  }
+}
+
+async function renderPeriodTrackerCard(){
+  const wrap = document.getElementById("period-tracker-card");
+  if(!wrap) return;
+  const log = await loadLatestPeriodLog();
+  window.__currentPeriodLog = log;
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  if(log && log.start_date && !log.end_date){
+    const startLabel = new Date(log.start_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
+    wrap.innerHTML = `
+      <div class="note-box" style="margin-bottom:12px;">Tes règles ont commencé le ${startLabel}.</div>
+      <div class="field">
+        <label for="period-end-input">Date de fin de tes règles</label>
+        <input type="date" id="period-end-input" value="${todayStr}" min="${log.start_date}" max="${todayStr}">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="confirmPeriodEnd()">🩸 Fin de règles</button>
+    `;
+  } else {
+    wrap.innerHTML = `
+      <div class="note-box" style="margin-bottom:12px;">🕐 Règles en attente de validation</div>
+      <div class="field">
+        <label for="period-start-input">Date de début de tes règles</label>
+        <input type="date" id="period-start-input" value="${todayStr}" max="${todayStr}">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="confirmPeriodStart()">🩸 Marquer le début de mes règles</button>
+    `;
+  }
+}
+
+async function confirmPeriodStart(){
+  const dateVal = document.getElementById("period-start-input").value;
+  if(!dateVal || !supabaseClient) return;
+  const { data: userData } = await supabaseClient.auth.getUser();
+  if(!userData || !userData.user) return;
+
+  await supabaseClient.from("period_logs").insert({ user_id: userData.user.id, start_date: dateVal });
+
+  // Cette date devient la nouvelle référence de cycle pour tous les calculs à venir
+  const cycleData = loadCycleData() || {};
+  cycleData.lastPeriod = dateVal;
+  try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(cycleData)); }catch(e){}
+  updateQuizResultsDirect(cycleData).catch(()=>{});
+
+  renderCycleTab();
+}
+
+async function confirmPeriodEnd(){
+  const dateVal = document.getElementById("period-end-input").value;
+  if(!dateVal || !window.__currentPeriodLog || !supabaseClient) return;
+
+  await supabaseClient
+    .from("period_logs")
+    .update({ end_date: dateVal })
+    .eq("id", window.__currentPeriodLog.id);
+
+  renderPeriodTrackerCard();
+}
+
 function renderCycleTab(){
   const data = loadCycleData();
   if(!data){
@@ -4646,19 +4796,7 @@ function renderCycleTab(){
     renderCalorieCard(data, PHASE_CALORIE_MODIFIER[phaseKey] || 0, "cette phase du cycle");
     renderCalendar(lastPeriod, cycleLength, periodLength, today);
     renderWeeklyAgendaCycle(lastPeriod, cycleLength, periodLength, today, data.objectif);
-
-    const nextWrap = document.getElementById("next-periods");
-    nextWrap.innerHTML = "";
-    const cyclesSinceStart = Math.floor(diff / cycleLength);
-    for(let i=0; i<3; i++){
-      const n = cyclesSinceStart + 1 + i;
-      const nextDate = new Date(lastPeriod);
-      nextDate.setDate(nextDate.getDate() + n*cycleLength);
-      const row = document.createElement("div");
-      row.className = "next-period-row";
-      row.innerHTML = `<span>Cycle ${i===0?"prochain":`+${i+1}`}</span><b>${nextDate.toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</b>`;
-      nextWrap.appendChild(row);
-    }
+    renderPeriodTrackerCard();
 
   } else {
     document.getElementById("calendar-card").style.display = "none";
