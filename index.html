@@ -2261,6 +2261,7 @@ function openStormFromMenu(){
    ============================================================ */
 let congratsCallback = null;
 let congratsEmail = "";
+let congratsSubmitInFlight = false;
 
 function showCongratsScreen(firstname, email, onContinue){
   congratsCallback = onContinue || null;
@@ -2278,6 +2279,11 @@ function showCongratsScreen(firstname, email, onContinue){
 }
 
 async function submitCongratsPassword(){
+  // Garde anti double-soumission : un clic (ou tap) en double, ou un appel
+  // relancé pendant qu'une création de compte est déjà en cours, ne doit
+  // jamais déclencher un second signUp() en parallèle.
+  if(congratsSubmitInFlight) return;
+
   const errorEl = document.getElementById("congrats-password-error");
   const pass = document.getElementById("congrats-password").value;
   const confirm = document.getElementById("congrats-password-confirm").value;
@@ -2307,13 +2313,33 @@ async function submitCongratsPassword(){
 
   const btn = document.getElementById("congrats-submit-btn");
   const originalLabel = btn.textContent;
+  congratsSubmitInFlight = true;
   btn.textContent = "Création du compte...";
   btn.disabled = true;
 
-  const { error } = await supabaseClient.auth.signUp({ email: congratsEmail, password: pass });
+  let result;
+  try{
+    // Important : le signUp() lui-même est dans un try/catch. Une erreur
+    // réseau (fetch qui échoue, timeout...) ici est une exception JS, pas
+    // un objet {error} — sans ce try/catch elle n'était jamais rattrapée,
+    // le bouton restait bloqué sur "Création du compte..." indéfiniment,
+    // et la seule issue pour l'utilisatrice était de recharger la page et
+    // retenter — alors que le compte avait potentiellement déjà été créé
+    // côté serveur lors du premier essai, d'où le faux "compte existe déjà".
+    result = await supabaseClient.auth.signUp({ email: congratsEmail, password: pass });
+  }catch(e){
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+    congratsSubmitInFlight = false;
+    errorEl.textContent = "Erreur de connexion. Vérifie ta connexion internet et réessaie 🌿";
+    errorEl.style.display = "block";
+    return;
+  }
 
+  const { error } = result;
   btn.textContent = originalLabel;
   btn.disabled = false;
+  congratsSubmitInFlight = false;
 
   if(error){
     if(error.message && error.message.toLowerCase().includes("already")){
