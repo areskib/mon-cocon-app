@@ -3715,16 +3715,25 @@ async function checkCureValidation(family){
     if(!userData || !userData.user) return null;
 
     // Crée (une seule fois, idempotent) la demande de validation + notifie la conseillère
+    // Important : on ATTEND cet appel (pas de fire-and-forget) — sur mobile, un fetch
+    // non attendu peut être interrompu si l'app passe en arrière-plan juste après.
     if(!window.__cureValidationSubmitted){
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
       if(token){
-        window.__cureValidationSubmitted = true;
-        fetch("/.netlify/functions/submit-cure-validation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-          body: JSON.stringify({ cure_family: family })
-        }).catch(()=>{});
+        try{
+          const res = await fetch("/.netlify/functions/submit-cure-validation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ cure_family: family })
+          });
+          if(res.ok){
+            window.__cureValidationSubmitted = true;
+          }
+        }catch(e){
+          console.error("Erreur création demande de validation:", e);
+          // pas de flag posé : on réessaiera au prochain appel (ex: polling)
+        }
       }
     }
 
