@@ -1498,6 +1498,13 @@
     window.__recoveryError = params.get("error_description") || params.get("error");
   }
   window.__initialUrlWasRecovery = !!(window.__recoveryTokens || window.__recoveryError);
+
+  // Nettoie systématiquement le hash dès qu'on l'a lu — un ancien lien de
+  // récupération abandonné en cours de route (onglet fermé, navigation) ne doit
+  // jamais pouvoir persister dans la barre d'adresse et se redéclencher plus tard.
+  if(window.location.hash){
+    try{ history.replaceState(null, "", window.location.pathname + window.location.search); }catch(e){}
+  }
 })();
 
 // Remplace par l'URL et la clé "anon public" de ton projet Supabase (Settings > API)
