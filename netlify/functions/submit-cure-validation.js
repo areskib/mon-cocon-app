@@ -47,6 +47,7 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: JSON.stringify({ error: "Requête invalide." }) };
   }
   const cureFamily = typeof body.cure_family === "string" ? body.cure_family : null;
+  console.log("submit-cure-validation: user_id=" + user.id + " cure_family=" + cureFamily);
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
 
@@ -56,6 +57,7 @@ exports.handler = async function (event) {
     { headers }
   );
   const existingRows = existingRes.ok ? await existingRes.json() : [];
+  console.log("submit-cure-validation: existingRes.ok=" + existingRes.ok + " existingRows.length=" + existingRows.length);
   if (existingRows.length > 0) {
     return { statusCode: 200, body: JSON.stringify({ ok: true, status: existingRows[0].status, already: true }) };
   }
@@ -65,6 +67,7 @@ exports.handler = async function (event) {
     headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify({ user_id: user.id, cure_family: cureFamily, status: "pending" })
   });
+  console.log("submit-cure-validation: insertRes.status=" + insertRes.status + " insertRes.ok=" + insertRes.ok);
 
   if (!insertRes.ok) {
     const errText = await insertRes.text();
