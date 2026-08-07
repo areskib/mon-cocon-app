@@ -4820,7 +4820,22 @@ async function confirmPeriodEnd(){
     .update({ end_date: dateVal })
     .eq("id", window.__currentPeriodLog.id);
 
+  // La vraie durée des règles (fin − début, dates réelles déclarées) remplace
+  // désormais la durée estimée du questionnaire pour tous les calculs de phase —
+  // avant ce fix, end_date était bien enregistrée mais jamais réutilisée pour
+  // affiner periodLength, donc la phase menstruelle restait basée sur l'estimation.
+  const startDate = new Date(window.__currentPeriodLog.start_date + "T00:00:00");
+  const endDate = new Date(dateVal + "T00:00:00");
+  const realPeriodLength = Math.round((endDate - startDate) / 86400000) + 1;
+  if(realPeriodLength > 0 && realPeriodLength <= 15){
+    const cycleData = loadCycleData() || {};
+    cycleData.periodLength = realPeriodLength;
+    try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(cycleData)); }catch(e){}
+    updateQuizResultsDirect(cycleData).catch(()=>{});
+  }
+
   renderPeriodTrackerCard();
+  renderCycleTab();
 }
 
 function renderCycleTab(){
