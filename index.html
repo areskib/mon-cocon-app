@@ -4351,8 +4351,13 @@ function saveProfileAndShowResult(){
     isRetakeMode = false;
     showResult();
   } else {
-    // Première inscription : webhook → Google Sheet + création de compte + email d'identifiants
-    sendResponsesToWebhook(firstname, email, data);
+    // Première inscription : le compte + quiz_results sont désormais gérés entièrement
+    // par le flux natif (signUp() + écriture directe en base). L'appel au webhook Make
+    // a été retiré : ce scénario créait le compte Supabase en parallèle (via l'API admin)
+    // pendant que l'app faisait aussi son propre signUp() — les deux se couraient après,
+    // provoquant le bug "compte déjà existant" / demandes de cure jamais envoyées. Make
+    // servait aussi à l'email de bienvenue : à reconstruire séparément (hors course avec
+    // la création de compte) si besoin.
     showCongratsScreen(firstname, email, function(){
       showPresentationVideo(function(){ showResult(); });
     });
