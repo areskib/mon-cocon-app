@@ -1480,6 +1480,9 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Supabase (compte + espace personnel) ──
+// Capturé EN PREMIER, avant que le client Supabase ne traite (et retire) le hash de l'URL
+window.__initialUrlWasRecovery = /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+
 // Remplace par l'URL et la clé "anon public" de ton projet Supabase (Settings > API)
 const SUPABASE_URL = "https://gugioqxuwdktruibzisk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
@@ -2498,35 +2501,36 @@ function dismissInstallBanner(){
 }
 
 function isPasswordRecoveryUrl(){
-  return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+  return window.__initialUrlWasRecovery || /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 }
 
 window.addEventListener("DOMContentLoaded", () => {
   initWelcomeMessages();
   const inShowcase = initShowcaseModeIfNeeded();
   if(!inShowcase){
-    // Léger délai : le hash d'un lien de récupération peut déjà avoir été traité (et
-    // retiré de l'URL) par Supabase avant même ce point, donc on ne se fie pas qu'à
-    // l'URL — on laisse aussi une fenêtre à l'événement PASSWORD_RECOVERY pour se
-    // déclencher avant de restaurer une session normale.
-    setTimeout(() => {
-      if(!isPasswordRecoveryUrl() && !window.__passwordRecoveryHandled){
-        checkExistingSession();
-      }
-      // Filet de sécurité : si rien n'est visible après un délai généreux (cas limite
-      // uniquement — les appels réseau normaux prennent quelques centaines de ms max),
-      // on n'affiche jamais un écran vide, on retombe sur l'accueil.
+    if(window.__initialUrlWasRecovery){
+      // On sait avec certitude, dès le tout début (avant que Supabase ne traite le
+      // hash), qu'il s'agit d'un lien de récupération. On ne restaure JAMAIS de
+      // session normale dans ce cas — on attend uniquement l'événement
+      // PASSWORD_RECOVERY, avec un message clair si le lien s'avère invalide/expiré.
+      hideAppHeader();
+      hideAllTopScreens();
+      document.getElementById("screen-splash").style.display = "none";
+      document.getElementById("screen-choice").style.display = "none";
+      document.getElementById("screen-login").style.display = "none";
+      document.getElementById("screen-forgot-password").style.display = "none";
       setTimeout(() => {
-        const anyVisible = ["screen-choice","screen-login","screen-result","screen-reset-password","screen-forgot-password"]
-          .some(id => {
-            const el = document.getElementById(id);
-            return el && el.style.display !== "none" && el.offsetParent !== null;
-          });
-        if(!anyVisible){
-          document.getElementById("screen-choice").style.display = "block";
+        if(!window.__passwordRecoveryHandled){
+          document.getElementById("screen-choice").style.display = "none";
+          document.getElementById("screen-login").style.display = "block";
+          const errEl = document.getElementById("login-error");
+          errEl.textContent = "Ce lien a expiré ou a déjà été utilisé. Redemande un nouveau lien depuis \"Mot de passe oublié ?\".";
+          errEl.style.display = "block";
         }
-      }, 4500);
-    }, 350);
+      }, 3000);
+    } else {
+      checkExistingSession();
+    }
     if(isIos() && !isInStandaloneMode()){
       setTimeout(() => showInstallBanner("ios"), 3500);
     }
