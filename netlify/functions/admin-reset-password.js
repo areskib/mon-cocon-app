@@ -59,5 +59,17 @@ exports.handler = async function (event) {
     return { statusCode: 500, body: JSON.stringify({ error: "Une erreur est survenue." }) };
   }
 
+  // Marque les demandes en attente de cette cliente comme résolues
+  await fetch(`${SUPABASE_URL}/rest/v1/password_reset_requests?user_id=eq.${clientUserId}&status=eq.pending`, {
+    method: "PATCH",
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({ status: "resolved" })
+  }).catch(()=>{});
+
   return { statusCode: 200, body: JSON.stringify({ ok: true }) };
 };

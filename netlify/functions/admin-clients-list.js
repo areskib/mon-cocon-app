@@ -127,10 +127,11 @@ exports.handler = async function (event) {
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
 
-  const [quizRes, cureRes, notesRes, cureNames] = await Promise.all([
+  const [quizRes, cureRes, notesRes, resetReqRes, cureNames] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/quiz_results?select=user_id,email,raw_data,created_at`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/cure_progress?select=user_id,cure_family,cure_duration_weeks,objectif_idx,started_at`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/advisor_notes?select=client_user_id,next_rdv_date,created_at&order=created_at.desc`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/password_reset_requests?select=user_id&status=eq.pending`, { headers }),
     getCureFamilyNames()
   ]);
 
@@ -141,6 +142,8 @@ exports.handler = async function (event) {
   const quizRows = await quizRes.json();
   const cureRows = cureRes.ok ? await cureRes.json() : [];
   const notesRows = notesRes.ok ? await notesRes.json() : [];
+  const resetReqRows = resetReqRes.ok ? await resetReqRes.json() : [];
+  const pendingResetUserIds = new Set(resetReqRows.map(r => r.user_id));
   const cureByUser = {};
   cureRows.forEach(c => { cureByUser[c.user_id] = c; });
   const nextRdvByUser = {};
@@ -173,6 +176,7 @@ exports.handler = async function (event) {
       firstname: raw.firstname || null,
       age: raw.age || null,
       cure_family: resolvedFamily,
+      has_pending_reset_request: pendingResetUserIds.has(row.user_id),
       cure_name: resolvedFamily ? (cureNames[resolvedFamily] || resolvedFamily) : null,
       cure_duration_weeks: cure ? cure.cure_duration_weeks : null,
       week_number: weekNumber,
