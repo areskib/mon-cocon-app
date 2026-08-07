@@ -2261,6 +2261,7 @@ function openStormFromMenu(){
    ============================================================ */
 let congratsCallback = null;
 let congratsEmail = "";
+let congratsQuizData = null;
 let congratsSubmitInFlight = false;
 
 function showCongratsScreen(firstname, email, onContinue){
@@ -2352,6 +2353,25 @@ async function submitCongratsPassword(){
     }
     errorEl.style.display = "block";
     return;
+  }
+
+  // Le compte vient d'être créé : on écrit maintenant quiz_results avec l'user_id
+  // fraîchement obtenu (repris de ce que faisait le webhook Make jusqu'ici).
+  if(congratsQuizData){
+    try{
+      const { data: userData } = await supabaseClient.auth.getUser();
+      if(userData && userData.user){
+        await supabaseClient.from("quiz_results").insert({
+          user_id: userData.user.id,
+          email: congratsEmail,
+          raw_data: JSON.stringify(congratsQuizData)
+        });
+      }
+    }catch(e){
+      console.error("Erreur écriture quiz_results:", e);
+      // Non bloquant : on n'empêche pas la suite de l'inscription pour ça
+    }
+    congratsQuizData = null;
   }
 
   document.getElementById("screen-congrats").style.display = "none";
@@ -4356,8 +4376,10 @@ function saveProfileAndShowResult(){
     // a été retiré : ce scénario créait le compte Supabase en parallèle (via l'API admin)
     // pendant que l'app faisait aussi son propre signUp() — les deux se couraient après,
     // provoquant le bug "compte déjà existant" / demandes de cure jamais envoyées. Make
-    // servait aussi à l'email de bienvenue : à reconstruire séparément (hors course avec
-    // la création de compte) si besoin.
+    // écrivait aussi quiz_results — ce rôle est repris par submitCongratsPassword() juste
+    // après la création du compte (voir congratsQuizData). Make servait enfin à l'email
+    // de bienvenue : à reconstruire séparément (hors course avec la création de compte).
+    congratsQuizData = data;
     showCongratsScreen(firstname, email, function(){
       showPresentationVideo(function(){ showResult(); });
     });
