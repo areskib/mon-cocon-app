@@ -2983,7 +2983,7 @@ function startAdminPendingPolling(){
     if(document.getElementById("screen-admin-pending").style.display !== "none"){
       loadAdminPendingList();
     }
-  }, 20000);
+  }, 60000);
 }
 
 function stopAdminPendingPolling(){
@@ -3698,7 +3698,7 @@ function startCureValidationPolling(family){
       stopCureValidationPolling();
       renderCureSection(); // recharge tout, cette fois avec la cure validée
     }
-  }, 15000); // vérifie toutes les 15 secondes tant que la cure est en attente
+  }, 60000); // vérifie toutes les 60 secondes tant que la cure est en attente
 }
 
 function stopCureValidationPolling(){
