@@ -2841,9 +2841,58 @@ function showAdminClientDetail(index){
     <div class="nav-row" style="margin-top:20px;">
       <button class="btn btn-primary btn-full" onclick="goToReportForClient('${c.email}')">📝 Rédiger un compte-rendu</button>
     </div>
+
+    <div class="result-block" style="margin-top:26px;">
+      <h3 style="font-size:14px;">🔑 Réinitialiser le mot de passe</h3>
+      <div class="field">
+        <label for="admin-reset-pw-input">Nouveau mot de passe</label>
+        <input type="text" id="admin-reset-pw-input" placeholder="Nouveau mot de passe">
+      </div>
+      <p id="admin-reset-pw-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:0 0 10px;"></p>
+      <p id="admin-reset-pw-success" style="display:none; color:#4a7a5a; font-size:13.5px; margin:0 0 10px;"></p>
+      <button class="btn btn-full" onclick="submitAdminPasswordReset('${c.user_id}')">Définir ce mot de passe</button>
+    </div>
   `;
   document.getElementById("screen-admin-clients").style.display = "none";
   document.getElementById("screen-admin-client-detail").style.display = "block";
+}
+
+async function submitAdminPasswordReset(clientUserId){
+  const errorEl = document.getElementById("admin-reset-pw-error");
+  const successEl = document.getElementById("admin-reset-pw-success");
+  errorEl.style.display = "none";
+  successEl.style.display = "none";
+
+  const newPassword = document.getElementById("admin-reset-pw-input").value;
+  if(!newPassword || newPassword.length < 6){
+    errorEl.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+  if(!token){
+    errorEl.textContent = "Session expirée, reconnecte-toi.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const res = await fetch("/.netlify/functions/admin-reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ user_id: clientUserId, new_password: newPassword })
+  });
+  const json = await res.json();
+  if(!res.ok){
+    errorEl.textContent = json.error || "Une erreur est survenue.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  successEl.textContent = "Mot de passe mis à jour 🌿 Communique-le à ta cliente.";
+  successEl.style.display = "block";
+  document.getElementById("admin-reset-pw-input").value = "";
 }
 
 function closeAdminClientDetail(){
