@@ -1312,6 +1312,10 @@
       <h1 style="font-size:22px;">Tes <em>clientes</em></h1>
     </div>
 
+    <div class="field" style="margin-bottom:14px;">
+      <input type="text" id="admin-clients-search" placeholder="🔍 Rechercher par prénom ou email..." oninput="filterAdminClientsList()" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--ivoire); font-family:'Poppins'; font-size:15px; color:var(--brown); background:var(--ivoire-2);">
+    </div>
+
     <div id="admin-clients-list"><div class="note-box">Chargement...</div></div>
   </div>
 
@@ -2819,26 +2823,47 @@ async function loadAdminClientsList(){
       return;
     }
     adminClientsData = json.clients || [];
+    const searchInput = document.getElementById("admin-clients-search");
+    if(searchInput) searchInput.value = "";
     if(!adminClientsData.length){
       wrap.innerHTML = `<div class="note-box">Aucune cliente pour l'instant.</div>`;
       return;
     }
-    wrap.innerHTML = adminClientsData.map((c,i)=>{
-      const cureLabel = c.cure_name ? (c.cure_started ? c.cure_name : `${c.cure_name} (non démarrée)`) : "Cure non déterminée";
-      const resetBadge = c.has_pending_reset_request
-        ? `<div class="meal-row"><span class="meal-label">🔑</span><span style="color:#8a3b34; font-weight:700;">Demande de réinitialisation</span></div>`
-        : "";
-      return `<div class="day-card" style="cursor:pointer;" onclick="showAdminClientDetail(${i})">
-        <div class="day-card-head">
-          <span class="day-name">${c.firstname || c.email}</span>
-        </div>
-        <div class="meal-row"><span class="meal-label">Cure</span><span>${cureLabel}</span></div>
-        ${resetBadge}
-      </div>`;
-    }).join("");
+    renderAdminClientsList(adminClientsData.map((c,i)=>({c, i})));
   }catch(e){
     wrap.innerHTML = `<div class="note-box">Erreur de chargement, réessaie.</div>`;
   }
+}
+
+function renderAdminClientsList(entries){
+  const wrap = document.getElementById("admin-clients-list");
+  if(!wrap) return;
+  if(!entries.length){
+    wrap.innerHTML = `<div class="note-box">Aucune cliente ne correspond à ta recherche.</div>`;
+    return;
+  }
+  wrap.innerHTML = entries.map(({c, i})=>{
+    const cureLabel = c.cure_name ? (c.cure_started ? c.cure_name : `${c.cure_name} (non démarrée)`) : "Cure non déterminée";
+    const resetBadge = c.has_pending_reset_request
+      ? `<div class="meal-row"><span class="meal-label">🔑</span><span style="color:#8a3b34; font-weight:700;">Demande de réinitialisation</span></div>`
+      : "";
+    return `<div class="day-card" style="cursor:pointer;" onclick="showAdminClientDetail(${i})">
+      <div class="day-card-head">
+        <span class="day-name">${c.firstname || c.email}</span>
+      </div>
+      <div class="meal-row"><span class="meal-label">Cure</span><span>${cureLabel}</span></div>
+      ${resetBadge}
+    </div>`;
+  }).join("");
+}
+
+function filterAdminClientsList(){
+  const q = (document.getElementById("admin-clients-search").value || "").trim().toLowerCase();
+  const entries = adminClientsData.map((c,i)=>({c, i}));
+  const filtered = q
+    ? entries.filter(({c}) => (c.firstname||"").toLowerCase().includes(q) || (c.email||"").toLowerCase().includes(q))
+    : entries;
+  renderAdminClientsList(filtered);
 }
 
 function showAdminClientDetail(index){
