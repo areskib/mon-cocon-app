@@ -392,9 +392,9 @@
   }
   .tracker-chart-empty{ text-align:center; padding:30px 10px; color:var(--taupe); font-size:13.5px; }
   .tracker-week-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
-  .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px 20px; padding:0 24px; }
-  .tracker-swipe-track{ display:flex; gap:12px; }
-  .tracker-swipe-track .tracker-week-card{ flex:0 0 100%; scroll-snap-align:start; cursor:pointer; }
+  .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px 20px; padding:0 24px; scroll-padding-left:24px; }
+  .tracker-swipe-track{ display:flex; gap:14px; }
+  .tracker-swipe-track .tracker-week-card{ flex:0 0 85%; scroll-snap-align:start; cursor:pointer; }
   .tracker-swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:-14px 0 18px; }
   .tracker-week-card{
     background:var(--neu-base); border-radius:18px; padding:15px 17px; box-shadow: var(--shadow-sm);
@@ -638,9 +638,9 @@
 
   .day-card{ background: var(--neu-base); border: none; border-radius:18px; padding:16px; margin-bottom:12px; box-shadow: var(--shadow-sm); }
   .day-card.today{ box-shadow: var(--shadow-inset); }
-  .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px; padding:0 24px 4px; }
-  .swipe-track{ display:flex; gap:12px; }
-  .swipe-track > *{ flex:0 0 100%; scroll-snap-align:start; margin-bottom:0; }
+  .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px; padding:0 24px 4px; scroll-padding-left:24px; }
+  .swipe-track{ display:flex; gap:14px; }
+  .swipe-track > *{ flex:0 0 85%; scroll-snap-align:start; margin-bottom:0; }
   .swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:8px 0 0; }
   .day-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .day-card-head .day-name{ font-family:'Lora'; font-weight:600; font-size:15px; }
