@@ -40,6 +40,7 @@ exports.handler = async function (event) {
   const clientEmail = (body.clientEmail || "").trim().toLowerCase();
   const note = (body.note || "").trim();
   const nextRdvDate = body.nextRdvDate || null;
+  const weekNumber = Number.isInteger(body.weekNumber) ? body.weekNumber : (parseInt(body.weekNumber, 10) || null);
 
   if (!clientEmail) {
     return { statusCode: 400, body: JSON.stringify({ error: "Email de la cliente manquant." }) };
@@ -71,6 +72,7 @@ exports.handler = async function (event) {
       client_user_id: clientUserId,
       note: note || null,
       next_rdv_date: nextRdvDate,
+      week_number: weekNumber,
       created_by: adminUser.email
     })
   });

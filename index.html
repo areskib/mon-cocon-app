@@ -392,6 +392,10 @@
   }
   .tracker-chart-empty{ text-align:center; padding:30px 10px; color:var(--taupe); font-size:13.5px; }
   .tracker-week-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -20px 20px; padding:0 20px; }
+  .tracker-swipe-track{ display:flex; gap:12px; }
+  .tracker-swipe-track .tracker-week-card{ flex:0 0 100%; scroll-snap-align:start; cursor:pointer; }
+  .tracker-swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:-14px 0 18px; }
   .tracker-week-card{
     background:var(--neu-base); border-radius:18px; padding:15px 17px; box-shadow: var(--shadow-sm);
     border: none;
@@ -634,6 +638,10 @@
 
   .day-card{ background: var(--neu-base); border: none; border-radius:18px; padding:16px; margin-bottom:12px; box-shadow: var(--shadow-sm); }
   .day-card.today{ box-shadow: var(--shadow-inset); }
+  .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -20px; padding:0 20px 4px; }
+  .swipe-track{ display:flex; gap:12px; }
+  .swipe-track > *{ flex:0 0 100%; scroll-snap-align:start; margin-bottom:0; }
+  .swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:8px 0 0; }
   .day-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .day-card-head .day-name{ font-family:'Lora'; font-weight:600; font-size:15px; }
   .day-card-head .day-phase{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 10px; border-radius:99px; color:var(--white); }
@@ -1042,15 +1050,18 @@
       <div class="card" id="calendar-card">
         <h3 style="margin-top:0; font-size:15px;">📅 Ce mois-ci</h3>
         <div class="cal-grid" id="cal-grid"></div>
-        <div class="cal-legend">
+        <div class="cal-legend" id="cal-legend">
           <span><span class="dot" style="background:#F1C9CC;"></span>Règles</span>
           <span><span class="dot" style="background:#F2E4C4;"></span>Folliculaire</span>
           <span><span class="dot" style="background:#F6D896;"></span>Ovulation</span>
           <span><span class="dot" style="background:#E8DFC6;"></span>Lutéale</span>
         </div>
+        <div id="cal-caring-message" style="display:none;" class="note-box">🌸 Ton corps évolue à son propre rythme. Ce calendrier t'accompagne jour après jour, sans pression.</div>
 
-        <div class="section-title">🩸 Tes règles</div>
-        <div id="period-tracker-card"></div>
+        <div id="cal-period-section">
+          <div class="section-title">🩸 Tes règles</div>
+          <div id="period-tracker-card"></div>
+        </div>
       </div>
 
       <div class="card" style="margin-top:16px;" id="calorie-card">
@@ -1077,7 +1088,8 @@
       <div class="card" style="margin-top:16px;">
         <div class="section-title" style="margin-top:0;">📖 Ton agenda alimentaire de la semaine</div>
         <p style="font-size:13px; color:var(--taupe); margin-top:-4px;" id="agenda-subtitle">Menus indicatifs, ajustés selon la phase de ton cycle chaque jour.</p>
-        <div id="weekly-agenda"></div>
+        <div class="swipe-outer"><div class="swipe-track" id="weekly-agenda"></div></div>
+        <p class="swipe-hint">👉 Glisse pour voir les jours suivants</p>
         <div class="nav-row" style="margin-top:14px;">
           <button class="btn btn-primary btn-full" onclick="generateShoppingListPdf()">🛒 Télécharger mon menu & ma liste de courses</button>
         </div>
@@ -1114,7 +1126,9 @@
       <div id="training-level-info"></div>
       <div id="training-week-info"></div>
       <p id="training-intro" style="color:var(--taupe); font-size:13.5px; line-height:1.6;"></p>
-      <div id="training-sessions"></div>
+      <div class="swipe-outer"><div class="swipe-track" id="training-sessions"></div></div>
+      <p class="swipe-hint" id="training-swipe-hint">👉 Glisse pour voir tes autres séances</p>
+      <div id="training-teaser"></div>
     </div>
 
     <div class="link-row storm-cta-row">
@@ -1187,43 +1201,23 @@
       <p>⚖️ Le poids n'est qu'un nombre sur la balance. L'important, c'est de te sentir mieux dans ton corps, semaine après semaine. Ce suivi est là pour t'accompagner avec douceur, pas pour te juger 🌸</p>
     </div>
 
-    <div id="advisor-notes-block" style="display:none; margin-bottom:20px;">
-      <h3 style="font-size:14px; margin-bottom:10px;">💬 Notes de ta conseillère</h3>
-      <div id="advisor-notes-list"></div>
-    </div>
-
-    <div class="segmented" id="tracker-metric-toggle">
-      <button class="active" data-metric="weight" onclick="setTrackerMetric('weight')">⚖️ Poids</button>
-      <button data-metric="measurements" onclick="setTrackerMetric('measurements')">📏 Mensurations</button>
-    </div>
-
-    <div class="measure-pills" id="tracker-measure-pills" style="display:none;">
-      <button class="active" data-m="ventre_nombril" onclick="setTrackerSubMetric('ventre_nombril')">Ventre (nombril)</button>
-      <button data-m="taille" onclick="setTrackerSubMetric('taille')">Taille</button>
-      <button data-m="hanches" onclick="setTrackerSubMetric('hanches')">Hanches</button>
-      <button data-m="poitrine" onclick="setTrackerSubMetric('poitrine')">Poitrine</button>
-      <button data-m="cuisse_droite" onclick="setTrackerSubMetric('cuisse_droite')">Cuisse droite</button>
-      <button data-m="cuisse_gauche" onclick="setTrackerSubMetric('cuisse_gauche')">Cuisse gauche</button>
-      <button data-m="mollet_droit" onclick="setTrackerSubMetric('mollet_droit')">Mollet droit</button>
-      <button data-m="mollet_gauche" onclick="setTrackerSubMetric('mollet_gauche')">Mollet gauche</button>
-      <button data-m="bras_droit" onclick="setTrackerSubMetric('bras_droit')">Bras droit</button>
-      <button data-m="bras_gauche" onclick="setTrackerSubMetric('bras_gauche')">Bras gauche</button>
-    </div>
-
-    <div class="segmented" id="tracker-view-toggle">
-      <button class="active" data-view="weekly" onclick="setTrackerView('weekly')">Semaine (S1-S12)</button>
-      <button data-view="monthly" onclick="setTrackerView('monthly')">Mois (M1-M3)</button>
-    </div>
-
     <div class="tracker-chart-card">
       <div id="tracker-chart-container"></div>
     </div>
 
-    <div class="tracker-week-list" id="tracker-week-list"></div>
+    <div class="tracker-swipe-outer">
+      <div class="tracker-swipe-track" id="tracker-week-list"></div>
+    </div>
 
     <div class="nav-row">
       <button class="btn btn-primary btn-full" onclick="openTrackerForm()">+ Ajouter le suivi de cette semaine</button>
     </div>
+  </div>
+
+  <!-- TRACKER : détail d'une semaine (mensurations + retour de la conseillère) -->
+  <div class="card" id="screen-tracker-week-detail" style="display:none;">
+    <button onclick="closeTrackerWeekDetail()" style="background:none;border:none;color:var(--taupe);font-family:'Poppins';font-size:13px;margin-bottom:10px;cursor:pointer;">← Retour</button>
+    <div id="tracker-week-detail-content"></div>
   </div>
 
   <!-- TRACKER : formulaire hebdomadaire -->
@@ -1404,6 +1398,9 @@
     <div class="field">
       <label for="admin-report-rdv">Date du prochain rdv (optionnel)</label>
       <input type="date" id="admin-report-rdv">
+
+      <label for="admin-report-retours-globaux" style="margin-top:10px; display:block;">Retours globaux</label>
+      <textarea id="admin-report-retours-globaux" rows="4" placeholder="Ce que tu veux qu'elle retrouve dans Mon Évolution cette semaine..." style="width:100%; padding:14px 16px; border-radius:16px; border:none; font-family:'Poppins'; font-size:14px; color:var(--brown); background:var(--neu-base); box-shadow: var(--shadow-inset); resize:vertical;"></textarea>
     </div>
     <p id="admin-report-error" style="display:none; color:#8a3b34; font-size:13.5px; margin:0 0 10px;"></p>
     <p id="admin-report-success" style="display:none; color:#4a7a5a; font-size:13.5px; margin:0 0 10px;"></p>
@@ -1844,24 +1841,8 @@ function hideAppHeader(){
    ============================================================ */
 let trackerData = [];
 let currentWeekMenus = [];
-let trackerMetric = "weight";      // "weight" | "measurements"
-let trackerSubMetric = "ventre_nombril";
-let trackerView = "weekly";        // "weekly" | "monthly"
 let trackerLoadError = null;
-
-const TRACKER_LABELS = {
-  weight: "Poids (kg)",
-  ventre_nombril: "Ventre - nombril (cm)",
-  taille: "Taille (cm)",
-  hanches: "Hanches (cm)",
-  poitrine: "Poitrine (cm)",
-  cuisse_droite: "Cuisse droite (cm)",
-  cuisse_gauche: "Cuisse gauche (cm)",
-  mollet_droit: "Mollet droit (cm)",
-  mollet_gauche: "Mollet gauche (cm)",
-  bras_droit: "Bras droit (cm)",
-  bras_gauche: "Bras gauche (cm)"
-};
+let trackerAdvisorNotesByWeek = {};
 
 function openTrackerFromMenu(){
   closeMenu();
@@ -1873,7 +1854,7 @@ function openTrackerFromMenu(){
 
 function hideAllTopScreens(){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  ["screen-result","screen-tracker","screen-tracker-form","screen-sos-intro","screen-sos-cause","screen-sos-tips","screen-video","screen-congrats"].forEach(id=>{
+  ["screen-result","screen-tracker","screen-tracker-form","screen-tracker-week-detail","screen-sos-intro","screen-sos-cause","screen-sos-tips","screen-video","screen-congrats"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.display = "none";
   });
@@ -1890,41 +1871,10 @@ function closeTrackerScreen(){
   showBilanHome();
 }
 
-async function loadAdvisorNotesForClient(){
-  const block = document.getElementById("advisor-notes-block");
-  const list = document.getElementById("advisor-notes-list");
-  if(!block || !list || !supabaseClient) return;
-  try{
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(!userData || !userData.user){ block.style.display = "none"; return; }
-    const { data, error } = await supabaseClient
-      .from("advisor_notes")
-      .select("note, next_rdv_date, created_at")
-      .eq("client_user_id", userData.user.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    if(error || !data || !data.length){ block.style.display = "none"; return; }
-    block.style.display = "block";
-    list.innerHTML = data.map(n=>{
-      const date = new Date(n.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
-      const rdvLine = n.next_rdv_date
-        ? `<div style="margin-top:6px; font-weight:700; color:var(--gold-deep); font-size:12.5px;">📅 Prochain rdv : ${new Date(n.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</div>`
-        : "";
-      return `<div class="reco-card">
-        <div class="reco-title">${date}</div>
-        ${n.note ? `<div class="reco-desc">${n.note}</div>` : ""}
-        ${rdvLine}
-      </div>`;
-    }).join("");
-  }catch(e){
-    block.style.display = "none";
-  }
-}
-
 async function loadTrackerData(){
   trackerData = [];
   trackerLoadError = null;
-  loadAdvisorNotesForClient();
+  trackerAdvisorNotesByWeek = {};
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
@@ -1943,6 +1893,21 @@ async function loadTrackerData(){
     }else{
       trackerData = json.data || [];
     }
+
+    // Retours de Lindsay associés à une semaine précise (voir champ "Retours globaux"
+    // du compte-rendu admin), indexés par numéro de semaine pour les fusionner aux tuiles
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if(userData && userData.user){
+      const { data: notes } = await supabaseClient
+        .from("advisor_notes")
+        .select("note, week_number, next_rdv_date, created_at")
+        .eq("client_user_id", userData.user.id)
+        .not("week_number", "is", null)
+        .order("created_at", { ascending: false });
+      (notes || []).forEach(n=>{
+        if(!trackerAdvisorNotesByWeek[n.week_number]) trackerAdvisorNotesByWeek[n.week_number] = n;
+      });
+    }
   }catch(e){
     console.error("Erreur chargement tracker:", e);
     trackerLoadError = e.message || "Erreur inconnue";
@@ -1951,61 +1916,25 @@ async function loadTrackerData(){
   renderTrackerWeekList();
 }
 
-function setTrackerMetric(metric){
-  trackerMetric = metric;
-  document.querySelectorAll("#tracker-metric-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.metric===metric));
-  document.getElementById("tracker-measure-pills").style.display = (metric==="measurements") ? "flex" : "none";
-  renderTrackerChart();
-}
-
-function setTrackerSubMetric(m){
-  trackerSubMetric = m;
-  document.querySelectorAll("#tracker-measure-pills button").forEach(b=>b.classList.toggle("active", b.dataset.m===m));
-  renderTrackerChart();
-}
-
-function setTrackerView(view){
-  trackerView = view;
-  document.querySelectorAll("#tracker-view-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.view===view));
-  renderTrackerChart();
-}
-
-function trackerCurrentKey(){
-  return trackerMetric === "weight" ? "weight" : trackerSubMetric;
-}
-
 function renderTrackerChart(){
-  const key = trackerCurrentKey();
   const container = document.getElementById("tracker-chart-container");
 
-  // construit un tableau de 12 valeurs (semaine 1 à 12), null si pas de donnée
+  // Graph simplifié : poids par semaine uniquement (S1 à S12)
   const weeklyValues = Array(12).fill(null);
   trackerData.forEach(row=>{
     if(row.week_number>=1 && row.week_number<=12){
-      weeklyValues[row.week_number-1] = row[key];
+      weeklyValues[row.week_number-1] = row.weight;
     }
   });
-
-  let values, labels;
-  if(trackerView === "weekly"){
-    values = weeklyValues;
-    labels = values.map((_,i)=>"S"+(i+1));
-  }else{
-    // vue mensuelle : moyenne des semaines 1-4 / 5-8 / 9-12
-    values = [0,1,2].map(m=>{
-      const chunk = weeklyValues.slice(m*4, m*4+4).filter(v=>v!==null && v!==undefined);
-      if(chunk.length===0) return null;
-      return chunk.reduce((a,b)=>a+b,0) / chunk.length;
-    });
-    labels = ["M1","M2","M3"];
-  }
+  const values = weeklyValues;
+  const labels = values.map((_,i)=>"S"+(i+1));
 
   const known = values.filter(v=>v!==null && v!==undefined);
   if(known.length === 0){
     if(trackerLoadError){
       container.innerHTML = `<div class="tracker-chart-empty">⚠️ Erreur de chargement : ${trackerLoadError}</div>`;
     }else{
-      container.innerHTML = `<div class="tracker-chart-empty">Pas encore de données pour "${TRACKER_LABELS[key]}".<br>Ajoute ton premier suivi ci-dessous 🌸</div>`;
+      container.innerHTML = `<div class="tracker-chart-empty">Pas encore de données de poids.<br>Ajoute ton premier suivi ci-dessous 🌸</div>`;
     }
     return;
   }
@@ -2022,7 +1951,6 @@ function renderTrackerChart(){
     return [x,y];
   });
 
-  // trace uniquement les segments entre points consécutifs connus
   let pathD = "";
   let started = false;
   points.forEach(p=>{
@@ -2043,13 +1971,42 @@ function renderTrackerChart(){
       ${dots}
       ${labelsRow}
     </svg>
-    <div style="text-align:center; font-size:11.5px; color:var(--taupe); margin-top:2px;">${TRACKER_LABELS[key]}</div>
+    <div style="text-align:center; font-size:11.5px; color:var(--taupe); margin-top:2px;">Poids (kg)</div>
   `;
 }
 
 function renderTrackerWeekList(){
   const list = document.getElementById("tracker-week-list");
-  if(trackerData.length === 0){ list.innerHTML = ""; return; }
+  const hint = document.getElementById("tracker-swipe-hint");
+  if(trackerData.length === 0){
+    list.innerHTML = "";
+    if(hint) hint.style.display = "none";
+    return;
+  }
+  const sorted = [...trackerData].sort((a,b)=>b.week_number-a.week_number);
+  const cards = sorted.map((row, i)=>{
+    const advisorNote = trackerAdvisorNotesByWeek[row.week_number];
+    const retourHtml = advisorNote && advisorNote.note
+      ? `<div class="reco-desc">${advisorNote.note}</div>`
+      : `<div class="reco-desc" style="font-style:italic; color:var(--taupe);">Pas encore de retour de ta conseillère pour cette semaine.</div>`;
+    return `
+      <div class="tracker-week-card" onclick="openTrackerWeekDetail(${row.week_number})">
+        <div class="tracker-week-card-header">
+          <span class="tracker-week-badge">Semaine ${row.week_number}</span>
+          ${i===0 ? `<span style="font-size:11px; color:var(--gold-deep); font-weight:700;">Plus récente</span>` : ""}
+        </div>
+        ${retourHtml}
+      </div>`;
+  }).join("");
+  list.innerHTML = cards;
+  list.parentElement.scrollLeft = 0;
+  if(hint){ hint.style.display = sorted.length > 1 ? "block" : "none"; }
+}
+
+function openTrackerWeekDetail(weekNumber){
+  const row = trackerData.find(r=>r.week_number===weekNumber);
+  if(!row) return;
+  const advisorNote = trackerAdvisorNotesByWeek[weekNumber];
   const statDefs = [
     { key:"weight", label:"Poids", unit:"kg" },
     { key:"ventre_nombril", label:"Ventre", unit:"cm" },
@@ -2063,18 +2020,36 @@ function renderTrackerWeekList(){
     { key:"bras_droit", label:"Bras D.", unit:"cm" },
     { key:"bras_gauche", label:"Bras G.", unit:"cm" }
   ];
-  const cards = [...trackerData].sort((a,b)=>b.week_number-a.week_number).map(row=>{
-    const stats = statDefs
-      .filter(s=>row[s.key]!=null)
-      .map(s=>`<div class="tracker-stat"><span class="tracker-stat-label">${s.label}</span><span class="tracker-stat-value">${row[s.key]} ${s.unit}</span></div>`)
-      .join("");
-    return `
-      <div class="tracker-week-card">
-        <div class="tracker-week-card-header"><span class="tracker-week-badge">Semaine ${row.week_number}</span></div>
-        <div class="tracker-week-stats">${stats}</div>
-      </div>`;
-  }).join("");
-  list.innerHTML = cards;
+  const stats = statDefs
+    .filter(s=>row[s.key]!=null)
+    .map(s=>`<div class="tracker-stat"><span class="tracker-stat-label">${s.label}</span><span class="tracker-stat-value">${row[s.key]} ${s.unit}</span></div>`)
+    .join("");
+
+  const rdvLine = advisorNote && advisorNote.next_rdv_date
+    ? `<div class="note-box" style="margin-top:14px;">📅 Prochain rdv : ${new Date(advisorNote.next_rdv_date + "T00:00:00").toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</div>`
+    : "";
+
+  document.getElementById("tracker-week-detail-content").innerHTML = `
+    <div class="hero" style="margin-bottom:6px;">
+      <div class="subtitle">Semaine ${weekNumber}</div>
+      <h1 style="font-size:22px;">Ton <em>bilan</em> de la semaine</h1>
+    </div>
+    <div class="section-title" style="margin-top:0;">📏 Mensurations</div>
+    <div class="tracker-week-stats" style="margin-bottom:16px;">${stats || "<div class='tracker-stat'>Aucune mensuration renseignée</div>"}</div>
+    ${row.ressenti_global ? `<div class="section-title">💭 Ton ressenti</div><div class="reco-card" style="margin-bottom:16px;"><div class="reco-desc">${row.ressenti_global}</div></div>` : ""}
+    <div class="section-title">💬 Retours de ta conseillère</div>
+    <div class="reco-card">
+      <div class="reco-desc">${advisorNote && advisorNote.note ? advisorNote.note : "Pas encore de retour pour cette semaine."}</div>
+    </div>
+    ${rdvLine}
+  `;
+  document.getElementById("screen-tracker").style.display = "none";
+  document.getElementById("screen-tracker-week-detail").style.display = "block";
+}
+
+function closeTrackerWeekDetail(){
+  document.getElementById("screen-tracker-week-detail").style.display = "none";
+  document.getElementById("screen-tracker").style.display = "block";
 }
 
 const TRACKER_FORM_FIELDS = ["week-number","weight","ventre_nombril","taille","hanches","poitrine","cuisse_droite","cuisse_gauche","mollet_droit","mollet_gauche","bras_droit","bras_gauche"];
@@ -3161,6 +3136,7 @@ async function submitAdvisorReport(){
   const clientEmail = document.getElementById("admin-report-email").value.trim();
   const weekNumber = parseInt(document.getElementById("admin-report-week").value, 10);
   const ressenti = document.getElementById("admin-report-ressenti").value.trim();
+  const retoursGlobaux = document.getElementById("admin-report-retours-globaux").value.trim();
   const nextRdvDate = document.getElementById("admin-report-rdv").value || null;
 
   if(!clientEmail){
@@ -3200,12 +3176,13 @@ async function submitAdvisorReport(){
     return;
   }
 
-  // Note + prochain rdv, pour l'historique "dernier rdv" et l'affichage côté cliente
-  if(ressenti || nextRdvDate){
+  // Retours globaux + prochain rdv, associés à cette semaine précise — c'est ce qui
+  // s'affiche désormais côté cliente dans Mon Évolution (plus les mensurations brutes)
+  if(retoursGlobaux || nextRdvDate){
     await fetch("/.netlify/functions/admin-add-note", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ clientEmail, note: ressenti, nextRdvDate })
+      body: JSON.stringify({ clientEmail, note: retoursGlobaux, nextRdvDate, weekNumber })
     });
   }
 
@@ -3214,6 +3191,7 @@ async function submitAdvisorReport(){
   document.getElementById("admin-report-week").value = "";
   ADMIN_REPORT_MEASURE_FIELDS.forEach(key=>{ document.getElementById("admin-report-" + key).value = ""; });
   document.getElementById("admin-report-ressenti").value = "";
+  document.getElementById("admin-report-retours-globaux").value = "";
   document.getElementById("admin-report-rdv").value = "";
 }
 
@@ -4755,7 +4733,7 @@ async function loadLatestPeriodLog(){
       .from("period_logs")
       .select("id, start_date, end_date")
       .eq("user_id", userData.user.id)
-      .order("start_date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if(error) return null;
@@ -4795,12 +4773,25 @@ async function renderPeriodTrackerCard(){
 }
 
 async function confirmPeriodStart(){
+  if(window.__periodSubmitInFlight) return;
   const dateVal = document.getElementById("period-start-input").value;
   if(!dateVal || !supabaseClient) return;
+  window.__periodSubmitInFlight = true;
   const { data: userData } = await supabaseClient.auth.getUser();
-  if(!userData || !userData.user) return;
+  if(!userData || !userData.user){ window.__periodSubmitInFlight = false; return; }
 
-  await supabaseClient.from("period_logs").insert({ user_id: userData.user.id, start_date: dateVal });
+  // Avant ce fix : chaque clic créait une NOUVELLE ligne en base, même si une
+  // règle était déjà en cours (non terminée) — plusieurs lignes "ouvertes"
+  // s'accumulaient et loadLatestPeriodLog() (triée par date) pouvait alors
+  // pointer sur la mauvaise, cassant le bouton "fin des règles" suivant.
+  // Désormais : si une règle est déjà ouverte (pas de end_date), on met à
+  // jour sa date de début au lieu d'en recréer une.
+  const existing = await loadLatestPeriodLog();
+  if(existing && !existing.end_date){
+    await supabaseClient.from("period_logs").update({ start_date: dateVal }).eq("id", existing.id);
+  } else {
+    await supabaseClient.from("period_logs").insert({ user_id: userData.user.id, start_date: dateVal });
+  }
 
   // Cette date devient la nouvelle référence de cycle pour tous les calculs à venir
   const cycleData = loadCycleData() || {};
@@ -4808,12 +4799,15 @@ async function confirmPeriodStart(){
   try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(cycleData)); }catch(e){}
   updateQuizResultsDirect(cycleData).catch(()=>{});
 
+  window.__periodSubmitInFlight = false;
   renderCycleTab();
 }
 
 async function confirmPeriodEnd(){
+  if(window.__periodSubmitInFlight) return;
   const dateVal = document.getElementById("period-end-input").value;
   if(!dateVal || !window.__currentPeriodLog || !supabaseClient) return;
+  window.__periodSubmitInFlight = true;
 
   await supabaseClient
     .from("period_logs")
@@ -4836,6 +4830,7 @@ async function confirmPeriodEnd(){
 
   renderPeriodTrackerCard();
   renderCycleTab();
+  window.__periodSubmitInFlight = false;
 }
 
 function renderCycleTab(){
@@ -4853,6 +4848,9 @@ function renderCycleTab(){
 
   if(data.hasCycle){
     document.getElementById("calendar-card").style.display = "block";
+    document.getElementById("cal-legend").style.display = "flex";
+    document.getElementById("cal-caring-message").style.display = "none";
+    document.getElementById("cal-period-section").style.display = "block";
     document.getElementById("agenda-subtitle").textContent = "Menus indicatifs, ajustés selon la phase de ton cycle chaque jour.";
 
     const lastPeriod = new Date(data.lastPeriod + "T00:00:00");
@@ -4883,10 +4881,18 @@ function renderCycleTab(){
     renderCalorieCard(data, PHASE_CALORIE_MODIFIER[phaseKey] || 0, "cette phase du cycle");
     renderCalendar(lastPeriod, cycleLength, periodLength, today);
     renderWeeklyAgendaCycle(lastPeriod, cycleLength, periodLength, today, data.objectif);
+    document.getElementById("weekly-agenda").parentElement.scrollLeft = 0;
     renderPeriodTrackerCard();
 
   } else {
-    document.getElementById("calendar-card").style.display = "none";
+    const isMenopauseTab = data.cycleStatus === "menopause";
+    document.getElementById("calendar-card").style.display = isMenopauseTab ? "block" : "none";
+    if(isMenopauseTab){
+      document.getElementById("cal-legend").style.display = "none";
+      document.getElementById("cal-caring-message").style.display = "block";
+      document.getElementById("cal-period-section").style.display = "none";
+      renderPlainCalendar(today);
+    }
     document.getElementById("agenda-subtitle").textContent = "Menus indicatifs, adaptés à ton objectif.";
 
     const objectifIdx = data.goalObjectif !== undefined ? data.goalObjectif : 0;
@@ -4912,6 +4918,43 @@ function renderCycleTab(){
 
     renderCalorieCard(data, data.weightGoalModifier || 0, "selon ton objectif");
     renderWeeklyAgendaGeneral(objectifIdx, today);
+    document.getElementById("weekly-agenda").parentElement.scrollLeft = 0;
+  }
+}
+
+function renderPlainCalendar(today){
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
+
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const dayNames = ["L","M","M","J","V","S","D"];
+  dayNames.forEach(d=>{
+    const el = document.createElement("div");
+    el.className = "cal-day pad";
+    el.style.fontWeight = "700";
+    el.style.color = "var(--taupe)";
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  for(let i=0;i<startWeekday;i++){
+    const el = document.createElement("div");
+    el.className = "cal-day pad";
+    grid.appendChild(el);
+  }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const date = new Date(year, month, d);
+    const el = document.createElement("div");
+    el.className = "cal-day";
+    if(date.getTime() === today.getTime()) el.classList.add("today");
+    el.textContent = d;
+    grid.appendChild(el);
   }
 }
 
@@ -5252,7 +5295,18 @@ function renderTrainingProgram(){
     }
   }
 
-  document.getElementById("training-sessions").innerHTML = program.sessions.map((s,idx)=>{
+  // La ou les séances programmées aujourd'hui passent en premier dans le carrousel ;
+  // l'ordre relatif des autres séances est conservé (tri stable)
+  const todayWeekday = new Date().getDay();
+  const orderedSessions = program.sessions
+    .map((s, idx) => ({ s, idx }))
+    .sort((a, b) => {
+      const aToday = getScheduledDays(objectifIdx, a.idx).includes(todayWeekday) ? 0 : 1;
+      const bToday = getScheduledDays(objectifIdx, b.idx).includes(todayWeekday) ? 0 : 1;
+      return aToday - bToday;
+    });
+
+  document.getElementById("training-sessions").innerHTML = orderedSessions.map(({s, idx})=>{
     const levelVideo = LEVEL_VIDEOS[s.type] ? LEVEL_VIDEOS[s.type][activityLevel] : null;
     const effectiveUrl = levelVideo ? levelVideo.url : s.videoUrl;
     const effectiveLabel = levelVideo ? levelVideo.label : s.videoLabel;
@@ -5265,6 +5319,8 @@ function renderTrainingProgram(){
     const recoTag = isRecommended ? `<div style="font-size:11px; font-weight:700; color:var(--gold-deep); margin-bottom:6px;">⭐ Recommandé pour ta problématique</div>` : "";
 
     const scheduledDays = getScheduledDays(objectifIdx, idx);
+    const isToday = scheduledDays.includes(todayWeekday);
+    const todayTag = isToday ? `<div style="font-size:11px; font-weight:700; color:var(--gold-deep); margin-bottom:6px;">🎯 Programmée aujourd'hui</div>` : "";
     const dayButtons = WEEKDAY_LABELS.map((label, dayIdx)=>{
       const active = scheduledDays.includes(dayIdx);
       return `<button onclick="toggleScheduleDay(${objectifIdx},${idx},${dayIdx})" style="width:28px; height:28px; border-radius:8px; border:none; font-size:11px; font-weight:700; cursor:pointer; margin-right:4px; background:${active ? 'var(--gold-deep)' : 'var(--ivoire)'}; color:${active ? '#fff' : 'var(--taupe)'};">${label}</button>`;
@@ -5272,6 +5328,7 @@ function renderTrainingProgram(){
 
     return `
       <div class="reco-card">
+        ${todayTag}
         ${recoTag}
         <div class="reco-title">${s.title} · <span style="color:var(--gold-deep);">${s.duration}</span></div>
         <div class="reco-desc" style="margin-bottom:6px;">${s.focus}</div>
@@ -5284,10 +5341,13 @@ function renderTrainingProgram(){
       </div>
     `;
   }).join("");
+  document.getElementById("training-sessions").parentElement.scrollLeft = 0;
+  const trainingHint = document.getElementById("training-swipe-hint");
+  if(trainingHint) trainingHint.style.display = program.sessions.length > 1 ? "block" : "none";
 
   // teaser vers l'onglet Boost (la cure recommandée s'y trouve, mise en avant)
-  const teaserWrap = document.getElementById("training-sessions");
-  teaserWrap.innerHTML += `
+  const teaserWrap = document.getElementById("training-teaser");
+  teaserWrap.innerHTML = `
     <div class="note-box" style="margin-top:8px; cursor:pointer;" onclick="handleFourthNavClick()">
       ✨ Un soutien complémentaire est disponible pour accompagner ce programme → onglet <strong>✨ Boost</strong>
     </div>
