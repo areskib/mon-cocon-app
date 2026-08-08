@@ -1,11 +1,20 @@
 const crypto = require("crypto");
+const webpush = require("web-push");
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ENCRYPTION_KEY = process.env.TRACKING_ENCRYPTION_KEY;
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfvXnq7kSdSf2sgeMdiaQ6BHHEdQmKiIA9w_LrBS_i6CW-q1Cma3mejyqWif3CwjsHEs";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+
+webpush.setVapidDetails(
+  process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 function encrypt(plainObj) {
   const key = Buffer.from(ENCRYPTION_KEY, "base64");
@@ -14,6 +23,18 @@ function encrypt(plainObj) {
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(plainObj), "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
   return Buffer.concat([iv, authTag, encrypted]).toString("base64");
+}
+
+function decrypt(b64) {
+  const key = Buffer.from(ENCRYPTION_KEY, "base64");
+  const raw = Buffer.from(b64, "base64");
+  const iv = raw.subarray(0, 12);
+  const authTag = raw.subarray(12, 28);
+  const ciphertext = raw.subarray(28);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(authTag);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return JSON.parse(decrypted.toString("utf8"));
 }
 
 async function getUserFromToken(accessToken) {
@@ -73,28 +94,33 @@ exports.handler = async function (event) {
   }
   const clientUserId = lookupRows[0].user_id;
 
-  const encryptedData = encrypt({
-    weight: body.weight ?? null,
-    ventre_nombril: body.ventre_nombril ?? null,
-    taille: body.taille ?? null,
-    hanches: body.hanches ?? null,
-    poitrine: body.poitrine ?? null,
-    cuisse_droite: body.cuisse_droite ?? null,
-    cuisse_gauche: body.cuisse_gauche ?? null,
-    mollet_droit: body.mollet_droit ?? null,
-    mollet_gauche: body.mollet_gauche ?? null,
-    bras_droit: body.bras_droit ?? null,
-    bras_gauche: body.bras_gauche ?? null,
-    ressenti_global: body.ressenti_global ?? null,
-    filled_by_advisor: true
-  });
-
   // Vérifie si cette semaine existe déjà pour cette cliente : on met à jour plutôt que dupliquer
   const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/body_tracking?select=id&user_id=eq.${clientUserId}&week_number=eq.${weekNumber}`,
+    `${SUPABASE_URL}/rest/v1/body_tracking?select=id,encrypted_data&user_id=eq.${clientUserId}&week_number=eq.${weekNumber}`,
     { headers }
   );
   const existingRows = existingRes.ok ? await existingRes.json() : [];
+
+  // Important : on FUSIONNE avec les données déjà enregistrées plutôt que de tout
+  // remplacer. Avant ce fix, soumettre juste un "Retours globaux" (sans retaper les
+  // mensurations) écrasait silencieusement le poids/mensurations/ressenti déjà
+  // enregistrés pour cette semaine avec des valeurs vides — une cliente pouvait ainsi
+  // perdre tout son suivi de la semaine simplement parce que Lindsay ajoutait une note.
+  let existingParsed = {};
+  if (existingRows.length > 0) {
+    try { existingParsed = decrypt(existingRows[0].encrypted_data); } catch (e) { existingParsed = {}; }
+  }
+  const MEASURE_FIELDS = ["weight","ventre_nombril","taille","hanches","poitrine","cuisse_droite","cuisse_gauche","mollet_droit","mollet_gauche","bras_droit","bras_gauche"];
+  const merged = {};
+  MEASURE_FIELDS.forEach(key => {
+    merged[key] = (body[key] !== undefined && body[key] !== null) ? body[key] : (existingParsed[key] ?? null);
+  });
+  merged.ressenti_global = (body.ressenti_global !== undefined && body.ressenti_global !== null && body.ressenti_global !== "")
+    ? body.ressenti_global
+    : (existingParsed.ressenti_global ?? null);
+  merged.filled_by_advisor = true;
+
+  const encryptedData = encrypt(merged);
 
   let writeRes;
   if (existingRows.length > 0) {
@@ -115,6 +141,31 @@ exports.handler = async function (event) {
     const errText = await writeRes.text();
     console.error("Erreur écriture body_tracking (admin):", errText);
     return { statusCode: 500, body: JSON.stringify({ error: "Une erreur est survenue, réessaie." }) };
+  }
+
+  // Notifie la cliente qu'un nouveau compte-rendu est disponible
+  try {
+    const subsRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?select=*&user_id=eq.${clientUserId}`,
+      { headers }
+    );
+    const subs = subsRes.ok ? await subsRes.json() : [];
+    if (subs.length) {
+      const payload = JSON.stringify({
+        title: "🌿 Nouveau compte-rendu",
+        body: `Ta conseillère a mis à jour ton suivi de la semaine ${weekNumber}. Va voir Mon Évolution 🌸`
+      });
+      await Promise.allSettled(
+        subs.map(sub =>
+          webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload
+          )
+        )
+      );
+    }
+  } catch (e) {
+    console.error("Erreur notification push cliente:", e);
   }
 
   return { statusCode: 200, body: JSON.stringify({ ok: true }) };

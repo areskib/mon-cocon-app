@@ -2876,6 +2876,11 @@ function showAdminClientDetail(index){
     </div>
 
     <div class="result-block" style="margin-top:26px;">
+      <h3 style="font-size:14px; margin-top:0;">📊 Historique du suivi</h3>
+      <div id="admin-client-history-content"><p class="kcal-note">Chargement...</p></div>
+    </div>
+
+    <div class="result-block" style="margin-top:26px;">
       <h3 style="font-size:14px;">🔑 Réinitialiser le mot de passe</h3>
       <div class="field">
         <label for="admin-reset-pw-input">Nouveau mot de passe</label>
@@ -2888,6 +2893,51 @@ function showAdminClientDetail(index){
   `;
   document.getElementById("screen-admin-clients").style.display = "none";
   document.getElementById("screen-admin-client-detail").style.display = "block";
+  loadAdminClientHistory(c.email);
+}
+
+async function loadAdminClientHistory(clientEmail){
+  const wrap = document.getElementById("admin-client-history-content");
+  if(!wrap) return;
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+    if(!token){ wrap.innerHTML = `<p class="kcal-note">Session expirée, reconnecte-toi.</p>`; return; }
+
+    const res = await fetch("/.netlify/functions/admin-client-tracking-history?clientEmail=" + encodeURIComponent(clientEmail), {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const json = await res.json();
+    if(!res.ok){ wrap.innerHTML = `<p class="kcal-note">${json.error || "Erreur de chargement."}</p>`; return; }
+
+    const weeks = json.weeks || [];
+    if(!weeks.length){ wrap.innerHTML = `<p class="kcal-note">Aucun suivi enregistré pour l'instant.</p>`; return; }
+
+    const measureLabels = [
+      ["weight","Poids","kg"], ["ventre_nombril","Ventre","cm"], ["taille","Taille","cm"], ["hanches","Hanches","cm"],
+      ["poitrine","Poitrine","cm"], ["cuisse_droite","Cuisse D.","cm"], ["cuisse_gauche","Cuisse G.","cm"],
+      ["mollet_droit","Mollet D.","cm"], ["mollet_gauche","Mollet G.","cm"], ["bras_droit","Bras D.","cm"], ["bras_gauche","Bras G.","cm"]
+    ];
+    wrap.innerHTML = weeks.map(w=>{
+      const stats = measureLabels
+        .filter(([k])=>w[k]!=null)
+        .map(([k,label,unit])=>`<div class="tracker-stat"><span class="tracker-stat-label">${label}</span><span class="tracker-stat-value">${w[k]} ${unit}</span></div>`)
+        .join("");
+      const notesHtml = (w.notes||[]).map(n=>{
+        const d = new Date(n.created_at).toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
+        return `<div class="reco-card" style="margin-top:6px;"><div class="reco-title" style="font-size:12.5px;">${d} — ${n.created_by || ""}</div>${n.note ? `<div class="reco-desc">${n.note}</div>` : ""}</div>`;
+      }).join("");
+      return `
+        <div class="tracker-week-card" style="margin-bottom:12px;">
+          <div class="tracker-week-card-header"><span class="tracker-week-badge">Semaine ${w.week_number}</span></div>
+          ${w.ressenti_global ? `<div class="reco-desc" style="margin-bottom:8px; font-style:italic;">💭 ${w.ressenti_global}</div>` : ""}
+          <div class="tracker-week-stats">${stats || "<div class='tracker-stat'>Aucune mensuration</div>"}</div>
+          ${notesHtml}
+        </div>`;
+    }).join("");
+  }catch(e){
+    wrap.innerHTML = `<p class="kcal-note">Erreur de chargement de l'historique.</p>`;
+  }
 }
 
 async function submitAdminPasswordReset(clientUserId){
