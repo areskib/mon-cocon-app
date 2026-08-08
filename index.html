@@ -396,7 +396,7 @@
   .tracker-week-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
   .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px 20px; padding:0 24px; }
   .tracker-swipe-track{ display:flex; gap:12px; }
-  .tracker-swipe-track .tracker-week-card{ flex:0 0 100%; scroll-snap-align:center; cursor:pointer; }
+  .tracker-swipe-track .tracker-week-card{ flex:0 0 100%; scroll-snap-align:center; cursor:pointer; box-shadow:0 2px 10px rgba(76,52,46,.10); border:1px solid rgba(176,141,87,.14); }
   .tracker-swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:-14px 0 18px; }
   .tracker-week-card{
     background:var(--neu-base); border-radius:18px; padding:15px 17px; box-shadow: var(--shadow-sm);
@@ -598,24 +598,21 @@
   }
   .btn-neu-secondary:active{ box-shadow: var(--shadow-inset); transform: scale(.98); }
 
-  /* ÉCRAN DE RETOUR */
-  #screen-welcome-back{ text-align:center; padding:70px 24px; }
-  .welcome-back-emoji{
-    width:82px; height:82px; margin:0 auto 22px;
-    display:flex; align-items:center; justify-content:center;
-    animation: welcomeBackIn .7s cubic-bezier(.2,.8,.2,1);
+  /* SPLASH D'OUVERTURE : logo qui grossit puis s'estompe */
+  .splash-screen{ display:flex; align-items:center; justify-content:center; min-height:70vh; background:transparent; box-shadow:none; padding:0; }
+  .splash-logo{
+    width:104px; height:104px; border-radius:24px; object-fit:contain;
+    box-shadow: 0 16px 38px rgba(76,52,46,.32);
+    opacity:0; transform:scale(.8);
+    animation: splashPop 1.7s cubic-bezier(.22,.9,.32,1) forwards;
   }
-  .welcome-back-emoji img{ width:100%; height:100%; object-fit:contain; border-radius:22%; }
-  .welcome-back-title{
-    font-family:'Lora'; font-weight:500; font-size:23px; line-height:1.4; color:var(--brown);
-    animation: welcomeBackIn .8s cubic-bezier(.2,.8,.2,1) .1s backwards;
+  @keyframes splashPop{
+    0%   { opacity:0; transform:scale(.8); }
+    32%  { opacity:1; transform:scale(1.05); }
+    52%  { opacity:1; transform:scale(1); }
+    78%  { opacity:1; transform:scale(1); }
+    100% { opacity:0; transform:scale(1.08); }
   }
-  .welcome-back-title em{
-    font-style:italic; font-weight:700;
-    background: linear-gradient(135deg, var(--gold-deep), var(--taupe));
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
-  @keyframes welcomeBackIn{ from{ opacity:0; transform:translateY(10px) scale(.97);} to{ opacity:1; transform:translateY(0) scale(1);} }
 
   /* CHOICE */
   .choice-actions{ display:flex; flex-direction:column; gap:10px; margin-top:22px; }
@@ -642,7 +639,8 @@
   .day-card.today{ box-shadow: var(--shadow-inset); }
   .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px; padding:0 24px 4px; }
   .swipe-track{ display:flex; gap:12px; }
-  .swipe-track > *{ flex:0 0 100%; scroll-snap-align:center; margin-bottom:0; }
+  .swipe-track > *{ flex:0 0 100%; scroll-snap-align:center; margin-bottom:0; box-shadow:0 2px 10px rgba(76,52,46,.10); border:1px solid rgba(176,141,87,.14); }
+  .swipe-track > *.today{ box-shadow:0 2px 10px rgba(76,52,46,.10); }
   .swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:8px 0 0; }
   .day-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .day-card-head .day-name{ font-family:'Lora'; font-weight:600; font-size:15px; }
@@ -706,8 +704,10 @@
   <!-- ============ TAB 1 : BILAN (quiz existant) ============ -->
   <div class="view active" id="view-bilan">
 
-    <!-- SPLASH -->
-    <div style="display:none;" id="screen-splash"></div>
+    <!-- SPLASH : logo qui grossit puis s'estompe à l'ouverture -->
+    <div class="card splash-screen" style="display:none;" id="screen-splash">
+      <img src="images/logo.png" alt="Mon Cocon" class="splash-logo">
+    </div>
 
     <div class="card" id="screen-choice">
       <div class="welcome-logo">
@@ -723,14 +723,6 @@
       <div class="welcome-actions">
         <button class="btn btn-primary btn-full" onclick="startQuiz()">S'inscrire</button>
         <button class="btn-neu-secondary" onclick="showLoginScreen()">Se connecter</button>
-      </div>
-    </div>
-
-    <!-- ÉCRAN DE RETOUR (accueil chaleureux au réveil de session) -->
-    <div class="card" id="screen-welcome-back" style="display:none;">
-      <div class="welcome-back-inner">
-        <div class="welcome-back-emoji"><img src="images/logo.png" alt="Mon Cocon"></div>
-        <h1 class="welcome-back-title">Contente de te revoir<br><em id="welcome-back-name"></em></h1>
       </div>
     </div>
 
@@ -2413,22 +2405,17 @@ function restoreSessionFromRawData(rawDataRaw){
   document.getElementById("screen-choice").style.display = "none";
   showAppHeader();
 
-  let firstname = "";
-  try{ firstname = localStorage.getItem("moncocon_firstname") || ""; }catch(e){}
-  showWelcomeBackScreen(firstname, function(){ showResult(); });
+  showResult();
 }
 
 // Reste connectée entre deux visites : si une session existe déjà, on retrouve directement son espace
 async function checkExistingSession(){
-  if(!supabaseClient) return;
+  if(!supabaseClient){ document.getElementById("screen-choice").style.display = "block"; return; }
   const { data: sessionData } = await supabaseClient.auth.getSession();
-  if(!sessionData || !sessionData.session) return;
-
-  // Dès qu'une session valide est trouvée, on masque l'accueil immédiatement —
-  // avant même d'avoir fini de charger le profil — pour ne jamais laisser les
-  // deux écrans visibles en même temps le temps que les appels réseau se terminent.
-  document.getElementById("screen-splash").style.display = "none";
-  document.getElementById("screen-choice").style.display = "none";
+  if(!sessionData || !sessionData.session){
+    document.getElementById("screen-choice").style.display = "block";
+    return;
+  }
 
   const userId = sessionData.session.user.id;
   const { data: rows } = await supabaseClient
@@ -2441,7 +2428,22 @@ async function checkExistingSession(){
   if(rows && rows.length > 0){
     checkAdminStatus(sessionData.session.user.email);
     restoreSessionFromRawData(rows[0].raw_data);
+  } else {
+    document.getElementById("screen-choice").style.display = "block";
   }
+}
+
+// Splash d'ouverture : logo qui grossit puis s'estompe, pendant qu'on vérifie
+// en tâche de fond s'il y a déjà une session active — remplace l'ancien écran
+// texte "Contente de te revoir" par une transition purement visuelle et pro
+function playSplashThen(callback){
+  const splash = document.getElementById("screen-splash");
+  document.getElementById("screen-choice").style.display = "none";
+  splash.style.display = "flex";
+  setTimeout(()=>{
+    splash.style.display = "none";
+    callback();
+  }, 1700);
 }
 
 
@@ -2478,16 +2480,6 @@ function renderWelcomeMessage(){
 function cycleWelcomeMessage(){
   welcomeMsgIndex = (welcomeMsgIndex + 1) % POSITIVE_PHRASES.length;
   renderWelcomeMessage();
-}
-
-function showWelcomeBackScreen(firstname, onDone){
-  const nameEl = document.getElementById("welcome-back-name");
-  nameEl.textContent = firstname ? firstname : "";
-  document.getElementById("screen-welcome-back").style.display = "block";
-  setTimeout(()=>{
-    document.getElementById("screen-welcome-back").style.display = "none";
-    if(onDone) onDone();
-  }, 1900);
 }
 
 // ── Installation à l'écran d'accueil ──
@@ -2584,7 +2576,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // l'établissement de la session, sans jamais restaurer de session normale.
       handleRecoveryLink();
     } else {
-      checkExistingSession();
+      playSplashThen(() => { checkExistingSession(); });
     }
     if(isIos() && !isInStandaloneMode()){
       setTimeout(() => showInstallBanner("ios"), 3500);
