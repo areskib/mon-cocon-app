@@ -357,6 +357,8 @@
   .phase-hero .emoji{ font-size:38px; }
   .phase-hero h2{ margin:6px 0 2px; font-size:22px; }
   .phase-hero .day-count{ font-size:13px; opacity:.9; font-weight:500; }
+  .phase-hero .kcal-badge{ display:inline-block; margin-top:12px; padding:6px 16px; border-radius:99px; background:rgba(255,255,255,.22); font-size:14px; font-weight:700; letter-spacing:.02em; }
+  .phase-hero .kcal-badge .unit{ font-weight:500; opacity:.85; font-size:12px; margin-left:2px; }
 
   .phase-menstruelle{ background: linear-gradient(135deg,#B5535B,#8D3A42); }
   .phase-folliculaire{ background: linear-gradient(135deg,#C9A96E,#B08D4F); }
@@ -392,9 +394,9 @@
   }
   .tracker-chart-empty{ text-align:center; padding:30px 10px; color:var(--taupe); font-size:13.5px; }
   .tracker-week-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
-  .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px 20px; padding:0 24px; scroll-padding-left:24px; }
-  .tracker-swipe-track{ display:flex; gap:14px; }
-  .tracker-swipe-track .tracker-week-card{ flex:0 0 85%; scroll-snap-align:start; cursor:pointer; }
+  .tracker-swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px 20px; padding:0 24px; }
+  .tracker-swipe-track{ display:flex; gap:12px; }
+  .tracker-swipe-track .tracker-week-card{ flex:0 0 100%; scroll-snap-align:center; cursor:pointer; }
   .tracker-swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:-14px 0 18px; }
   .tracker-week-card{
     background:var(--neu-base); border-radius:18px; padding:15px 17px; box-shadow: var(--shadow-sm);
@@ -638,9 +640,9 @@
 
   .day-card{ background: var(--neu-base); border: none; border-radius:18px; padding:16px; margin-bottom:12px; box-shadow: var(--shadow-sm); }
   .day-card.today{ box-shadow: var(--shadow-inset); }
-  .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px; padding:0 24px 4px; scroll-padding-left:24px; }
-  .swipe-track{ display:flex; gap:14px; }
-  .swipe-track > *{ flex:0 0 85%; scroll-snap-align:start; margin-bottom:0; }
+  .swipe-outer{ overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; margin:0 -24px; padding:0 24px 4px; }
+  .swipe-track{ display:flex; gap:12px; }
+  .swipe-track > *{ flex:0 0 100%; scroll-snap-align:center; margin-bottom:0; }
   .swipe-hint{ text-align:center; font-size:11px; color:var(--taupe); margin:8px 0 0; }
   .day-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .day-card-head .day-name{ font-family:'Lora'; font-weight:600; font-size:15px; }
@@ -1045,6 +1047,7 @@
         <div class="emoji" id="phase-emoji">🌸</div>
         <h2 id="phase-name">Phase</h2>
         <div class="day-count" id="phase-daycount">Jour 1</div>
+        <div class="kcal-badge" id="phase-kcal-badge" style="display:none;"></div>
       </div>
 
       <div class="card" id="calendar-card">
@@ -1061,14 +1064,6 @@
         <div id="cal-period-section">
           <div class="section-title">🩸 Tes règles</div>
           <div id="period-tracker-card"></div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:16px;" id="calorie-card">
-        <div class="section-title" style="margin-top:0;">🔢 Besoins caloriques estimés — aujourd'hui</div>
-        <div id="calorie-content"></div>
-        <div class="safety-box" style="margin-top:12px; background:#FBF0DD; border-left-color:var(--gold-deep); color:#5c4a2a;">
-          ⚖️ <strong>Pourquoi ne pas se fixer un objectif uniquement sur le chiffre de la balance :</strong> le poids affiché ne fait pas la différence entre masse grasse, masse musculaire et eau. Rétention d'eau, inflammation, cycle hormonal, stress ou simplement l'heure de la pesée peuvent le faire varier de plusieurs kilos sans que cela reflète tes vrais progrès. Mesure plutôt tes avancées avec tes mensurations, tes photos, ton énergie et la façon dont tes vêtements te vont. 🌿
         </div>
       </div>
 
@@ -4484,18 +4479,14 @@ function computeCalorieNeeds(data, modifier){
 }
 
 function renderCalorieCard(data, modifier, modifierContextLabel){
-  const content = document.getElementById("calorie-content");
+  const badge = document.getElementById("phase-kcal-badge");
   const result = computeCalorieNeeds(data, modifier);
   if(!result){
-    content.innerHTML = `<p class="kcal-note">Renseigne ton âge, ton poids et ta taille dans tes paramètres pour obtenir une fourchette calorique indicative.</p>`;
+    badge.style.display = "none";
     return;
   }
-  const modLabel = result.modifier > 0 ? `+${Math.round(result.modifier*100)}% — ${modifierContextLabel}` : (result.modifier < 0 ? `${Math.round(result.modifier*100)}% — ${modifierContextLabel}` : modifierContextLabel);
-  content.innerHTML = `
-    <div class="kcal-modifier">${modLabel}</div>
-    <div class="kcal-range"><span class="num">${result.low}–${result.high}</span><span class="unit">kcal / jour</span></div>
-    <p class="kcal-note">Cette fourchette est une estimation indicative basée sur ton profil — elle ne remplace pas l'avis d'un professionnel de santé ou d'une diététicienne. Écoute toujours tes sensations de faim et de satiété avant tout chiffre. 🌿</p>
-  `;
+  badge.style.display = "inline-block";
+  badge.innerHTML = `${result.low}–${result.high}<span class="unit">kcal/j</span>`;
 }
 
 const DAY_NAMES_FULL = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
