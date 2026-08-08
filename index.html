@@ -1071,9 +1071,6 @@
         <div class="section-title" style="margin-top:0;">🍽️ Alimentation conseillée</div>
         <div id="reco-nutrition"></div>
 
-        <div class="section-title">🏋️ Entraînement conseillé</div>
-        <div id="reco-training"></div>
-
         <div class="encouragement" style="margin-top:16px;">
           <div class="tag">Message pour toi</div>
           <p id="cycle-encouragement"></p>
@@ -4815,12 +4812,13 @@ function getPhaseForDay(dayInCycle, cycleLength, periodLength){
 async function loadLatestPeriodLog(){
   if(!supabaseClient) return null;
   try{
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(!userData || !userData.user) return null;
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const userId = sessionData && sessionData.session ? sessionData.session.user.id : null;
+    if(!userId) return null;
     const { data, error } = await supabaseClient
       .from("period_logs")
       .select("id, start_date, end_date")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -4865,20 +4863,24 @@ async function confirmPeriodStart(){
   const dateVal = document.getElementById("period-start-input").value;
   if(!dateVal || !supabaseClient) return;
   window.__periodSubmitInFlight = true;
-  const { data: userData } = await supabaseClient.auth.getUser();
-  if(!userData || !userData.user){ window.__periodSubmitInFlight = false; return; }
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const userId = sessionData && sessionData.session ? sessionData.session.user.id : null;
+  if(!userId){ window.__periodSubmitInFlight = false; return; }
 
   // Avant ce fix : chaque clic créait une NOUVELLE ligne en base, même si une
   // règle était déjà en cours (non terminée) — plusieurs lignes "ouvertes"
   // s'accumulaient et loadLatestPeriodLog() (triée par date) pouvait alors
   // pointer sur la mauvaise, cassant le bouton "fin des règles" suivant.
   // Désormais : si une règle est déjà ouverte (pas de end_date), on met à
-  // jour sa date de début au lieu d'en recréer une.
+  // jour sa date de début au lieu d'en recréer une. Le vrai déclencheur du bug
+  // était en fait getUser() (appel réseau live, pouvait échouer juste après une
+  // reconnexion) — remplacé par getSession() (lecture directe de la session déjà
+  // établie), plus fiable et cohérent avec le reste de l'app.
   const existing = await loadLatestPeriodLog();
   if(existing && !existing.end_date){
     await supabaseClient.from("period_logs").update({ start_date: dateVal }).eq("id", existing.id);
   } else {
-    await supabaseClient.from("period_logs").insert({ user_id: userData.user.id, start_date: dateVal });
+    await supabaseClient.from("period_logs").insert({ user_id: userId, start_date: dateVal });
   }
 
   // Cette date devient la nouvelle référence de cycle pour tous les calculs à venir
@@ -4959,9 +4961,6 @@ function renderCycleTab(){
     document.getElementById("reco-nutrition").innerHTML = phase.nutrition.map(n=>
       `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
     ).join("");
-    document.getElementById("reco-training").innerHTML = phase.training.map(n=>
-      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
-    ).join("") + `<div class="note-box" style="margin-top:8px;">${phase.tip}</div>`;
 
     document.getElementById("cycle-encouragement").textContent =
       CYCLE_ENCOURAGEMENTS[Math.floor(Math.random()*CYCLE_ENCOURAGEMENTS.length)];
@@ -4997,9 +4996,6 @@ function renderCycleTab(){
     document.getElementById("reco-nutrition").innerHTML = profile.nutrition.map(n=>
       `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
     ).join("");
-    document.getElementById("reco-training").innerHTML = profile.training.map(n=>
-      `<div class="reco-card"><div class="reco-title">${n.t}</div><div class="reco-desc">${n.d}</div></div>`
-    ).join("") + `<div class="note-box" style="margin-top:8px;">${profile.tip}</div>`;
 
     document.getElementById("cycle-encouragement").textContent =
       CYCLE_ENCOURAGEMENTS[Math.floor(Math.random()*CYCLE_ENCOURAGEMENTS.length)];
