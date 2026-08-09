@@ -85,6 +85,22 @@
     font-family:'Poppins'; font-size:10.5px; font-weight:500;
     transition: color .2s ease;
   }
+  .notif-banner{
+    position:sticky; top:0; z-index:60;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:linear-gradient(135deg, var(--gold-deep), var(--gold));
+    color:#fff; border-radius:14px;
+    padding:11px 14px; margin:0 0 16px;
+    box-shadow:0 6px 18px rgba(176,141,87,.28);
+    font-family:'Poppins'; font-size:12.5px; line-height:1.45;
+  }
+  .notif-banner span:first-child{ cursor:pointer; flex:1; }
+  .notif-banner strong{ text-decoration:underline; }
+  .notif-banner button{
+    flex-shrink:0; background:rgba(255,255,255,.22); border:none; color:#fff;
+    width:22px; height:22px; border-radius:50%; font-size:12px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
   .nav-icon-wrap{
     display:flex; align-items:center; justify-content:center;
     width:34px; height:30px; border-radius:13px;
@@ -708,6 +724,11 @@
       <span>Menu</span>
     </button>
   </nav>
+
+  <div class="notif-banner" id="notif-banner" style="display:none;">
+    <span onclick="enablePushNotifications()">🔔 Pense à bien activer tes rappels dans le menu : <strong>Autoriser les notifications</strong></span>
+    <button type="button" onclick="dismissNotifBanner()" aria-label="Fermer">✕</button>
+  </div>
 
   <!-- ============ TAB 1 : BILAN (quiz existant) ============ -->
   <div class="view active" id="view-bilan">
@@ -1483,7 +1504,7 @@
     <button class="drawer-close" onclick="closeMenu()">✕</button>
   </div>
   <div class="drawer-items">
-    <button onclick="enablePushNotifications()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg></span><span>Rappels hydratation</span></button>
+    <button onclick="enablePushNotifications()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg></span><span>Activer les notifications</span></button>
     <button onclick="playPresentationVideo()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg></span><span>Vidéo de présentation</span></button>
     <button onclick="contactAdvisorFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg></span><span>Mon rdv de suivi hebdo</span></button>
     <button id="menu-tracker-item" onclick="openTrackerFromMenu()"><span class="drawer-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9C12 9 8 9 8 5C8 5 12 3 12 9M12 9C12 9 16 9 16 5C16 5 12 3 12 9M6 14c0 3.5 2.5 6 6 6s6-2.5 6-6c0-2-1.5-3.5-3-4"/></svg></span><span>Mon Évolution</span></button>
@@ -1578,6 +1599,7 @@ async function enablePushNotifications(){
     }, { onConflict: "endpoint" });
 
     alert("Notifications activées 💧 Tu recevras un petit rappel hydratation entre 8h et 21h.");
+    updateNotifBannerVisibility();
     closeMenu();
   }catch(e){
     console.error("Erreur activation push:", e);
@@ -1850,6 +1872,20 @@ function closeMenu(){
 
 function showAppHeader(){
   document.getElementById("app-header").style.display = "flex";
+  updateNotifBannerVisibility();
+}
+
+function updateNotifBannerVisibility(){
+  const banner = document.getElementById("notif-banner");
+  if(!banner) return;
+  const supported = ("Notification" in window) && ("serviceWorker" in navigator);
+  const granted = supported && Notification.permission === "granted";
+  banner.style.display = (supported && !granted && !window.__notifBannerDismissed) ? "flex" : "none";
+}
+
+function dismissNotifBanner(){
+  window.__notifBannerDismissed = true;
+  document.getElementById("notif-banner").style.display = "none";
 }
 
 function hideAppHeader(){
