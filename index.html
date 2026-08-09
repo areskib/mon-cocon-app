@@ -2294,6 +2294,7 @@ function openStormFromMenu(){
    ============================================================ */
 let congratsCallback = null;
 let congratsEmail = "";
+let congratsFirstname = "";
 let congratsQuizData = null;
 let congratsSubmitInFlight = false;
 
@@ -2368,6 +2369,7 @@ function togglePasswordVisibility(inputId, btn){
 function showCongratsScreen(firstname, email, onContinue){
   congratsCallback = onContinue || null;
   congratsEmail = email || "";
+  congratsFirstname = firstname || "";
   const name = firstname ? firstname : "";
   document.getElementById("congrats-title").textContent = `Félicitations ${name} 🥳`;
   document.getElementById("congrats-text").innerHTML =
@@ -2474,6 +2476,25 @@ async function submitCongratsPassword(){
     }
     congratsQuizData = null;
   }
+
+  // Mail de bienvenue via Resend, envoyé pile ici — juste après la création du
+  // mot de passe (remplace le dernier module Gmail du flow Make). Fire-and-forget :
+  // un souci d'envoi ne doit jamais bloquer la suite de l'inscription.
+  (async ()=>{
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+      if(token){
+        await fetch("/.netlify/functions/send-welcome-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ firstname: congratsFirstname || "" })
+        });
+      }
+    }catch(e){
+      console.error("Erreur envoi mail de bienvenue:", e);
+    }
+  })();
 
   document.getElementById("screen-congrats").style.display = "none";
   const cb = congratsCallback;
