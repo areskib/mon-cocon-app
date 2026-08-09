@@ -2265,13 +2265,20 @@ let curePreviewOnContinue = null;
 
 function showCurePreviewScreen(family, onContinue){
   const data = window.__curesData || {};
-  const variants = [
+  let variants = [
     { pack:"starter", weeks:4, label:"4 semaines" },
     { pack:"standard", weeks:8, label:"8 semaines" },
     { pack:"premium", weeks:12, label:"12 semaines" }
   ].map(v => ({ ...v, variant: data[family + "_" + v.pack] })).filter(v => v.variant);
 
+  if(!variants.length && data[family]){
+    // Repli : certaines cures n'ont qu'une seule ligne dans le Sheet, sans suffixe
+    // _starter/_standard/_premium — on affiche au moins cette variante-là (12 sem. par défaut)
+    variants = [{ pack:"premium", weeks:12, label:"12 semaines", variant:data[family] }];
+  }
+
   if(!variants.length){
+    console.error("showCurePreviewScreen: aucune variante trouvée pour la famille", family, "clés disponibles:", Object.keys(data).filter(k=>k.startsWith(family)));
     // Aucune variante disponible pour cette cure : on ne bloque pas l'inscription
     if(onContinue) onContinue();
     return;
