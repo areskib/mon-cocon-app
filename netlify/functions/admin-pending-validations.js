@@ -2,7 +2,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveAdminAccess } = require("./lib/tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -23,15 +23,20 @@ exports.handler = async function (event) {
   }
   const accessToken = authHeader.replace(/^Bearer\s+/i, "");
   const user = await getUserFromToken(accessToken);
-  if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+  if (!user || !user.email) {
+    return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
+  }
+  const adminAccess = await resolveAdminAccess(user.email);
+  if (!adminAccess.isSuperAdmin && !adminAccess.tenantId) {
     return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
   }
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
+  const tenantFilter = adminAccess.isSuperAdmin ? "" : `&tenant_id=eq.${adminAccess.tenantId}`;
 
   const [pendingRes, quizRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/cure_validation?select=user_id,cure_family,status,created_at&status=eq.pending&order=created_at.asc`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/quiz_results?select=user_id,email,raw_data`, { headers })
+    fetch(`${SUPABASE_URL}/rest/v1/cure_validation?select=user_id,cure_family,status,created_at&status=eq.pending&order=created_at.asc${tenantFilter}`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/quiz_results?select=user_id,email,raw_data${tenantFilter}`, { headers })
   ]);
 
   if (!pendingRes.ok) {

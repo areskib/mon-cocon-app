@@ -3,7 +3,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRK
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CURES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzd8QyWoYL9HvW7ZMYFTbfv-BF1Y430m-J0t4sCYZ8TzKuSUTkwuyDDqFNw0f4lSijJakWI1m2vZL5/pub?gid=741790958&single=true&output=csv";
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveAdminAccess } = require("./lib/tenant-auth");
 
 function parseCSV(text) {
   const rows = [];
@@ -121,17 +121,22 @@ exports.handler = async function (event) {
   }
   const accessToken = authHeader.replace(/^Bearer\s+/i, "");
   const user = await getUserFromToken(accessToken);
-  if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+  if (!user || !user.email) {
+    return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
+  }
+  const adminAccess = await resolveAdminAccess(user.email);
+  if (!adminAccess.isSuperAdmin && !adminAccess.tenantId) {
     return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
   }
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
+  const tenantFilter = adminAccess.isSuperAdmin ? "" : `&tenant_id=eq.${adminAccess.tenantId}`;
 
   const [quizRes, cureRes, notesRes, resetReqRes, cureNames] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/quiz_results?select=user_id,email,raw_data,created_at`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/cure_progress?select=user_id,cure_family,cure_duration_weeks,objectif_idx,started_at`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/advisor_notes?select=client_user_id,next_rdv_date,created_at&order=created_at.desc`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/password_reset_requests?select=user_id&status=eq.pending`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/quiz_results?select=user_id,email,raw_data,created_at${tenantFilter}`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/cure_progress?select=user_id,cure_family,cure_duration_weeks,objectif_idx,started_at${tenantFilter}`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/advisor_notes?select=client_user_id,next_rdv_date,created_at&order=created_at.desc${tenantFilter}`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/password_reset_requests?select=user_id&status=eq.pending${tenantFilter}`, { headers }),
     getCureFamilyNames()
   ]);
 

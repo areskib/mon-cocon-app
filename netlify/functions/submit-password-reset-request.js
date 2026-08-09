@@ -5,7 +5,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfvXnq7kSdSf2sgeMdiaQ6BHHEdQmKiIA9w_LrBS_i6CW-q1Cma3mejyqWif3CwjsHEs";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveUserTenantId, resolveUserIdByEmail } = require("./lib/tenant-auth");
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
@@ -43,22 +43,31 @@ exports.handler = async function (event) {
   const userId = lookupRows.length ? lookupRows[0].user_id : null;
 
   if (userId) {
+    const tenantId = await resolveUserTenantId(userId);
     await fetch(`${SUPABASE_URL}/rest/v1/password_reset_requests`, {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ user_id: userId, email, status: "pending" })
+      body: JSON.stringify({ user_id: userId, tenant_id: tenantId, email, status: "pending" })
     });
 
-    // Notifie Lindsay et Areski par push
+    // Notifie les admins du tenant de cette utilisatrice (+ les super-admins)
     try {
-      const adminIds = [];
-      for (const adminEmail of ADMIN_EMAILS) {
-        const r = await fetch(
-          `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(adminEmail)}&limit=1`,
+      let notifyEmails = [];
+      if (tenantId) {
+        const tenantRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/tenants?select=admin_emails&id=eq.${tenantId}`,
           { headers }
         );
-        const rows = r.ok ? await r.json() : [];
-        if (rows.length) adminIds.push(rows[0].user_id);
+        const tenantRows = tenantRes.ok ? await tenantRes.json() : [];
+        notifyEmails = (tenantRows[0] && tenantRows[0].admin_emails) || [];
+      }
+      const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || "").split(",").map(s => s.trim()).filter(Boolean);
+      notifyEmails = [...new Set([...notifyEmails, ...superAdminEmails].map(e => e.toLowerCase()))];
+
+      const adminIds = [];
+      for (const adminEmail of notifyEmails) {
+        const id = await resolveUserIdByEmail(adminEmail);
+        if (id) adminIds.push(id);
       }
       if (adminIds.length) {
         const orFilter = adminIds.map(id => `user_id.eq.${id}`).join(",");

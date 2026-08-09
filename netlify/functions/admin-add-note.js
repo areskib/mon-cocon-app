@@ -2,8 +2,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
-const { resolveUserTenantId } = require("./lib/tenant-auth");
+const { resolveUserTenantId, resolveAdminAccess } = require("./lib/tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -27,7 +26,11 @@ exports.handler = async function (event) {
   }
   const accessToken = authHeader.replace(/^Bearer\s+/i, "");
   const adminUser = await getUserFromToken(accessToken);
-  if (!adminUser || !adminUser.email || !ADMIN_EMAILS.includes(adminUser.email.toLowerCase())) {
+  if (!adminUser || !adminUser.email) {
+    return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
+  }
+  const adminAccess = await resolveAdminAccess(adminUser.email);
+  if (!adminAccess.isSuperAdmin && !adminAccess.tenantId) {
     return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
   }
 
@@ -51,10 +54,11 @@ exports.handler = async function (event) {
   }
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
+  const tenantFilter = adminAccess.isSuperAdmin ? "" : `&tenant_id=eq.${adminAccess.tenantId}`;
 
   // Retrouver le user_id à partir de l'email (via quiz_results, qui stocke déjà l'email)
   const lookupRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(clientEmail)}&limit=1`,
+    `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(clientEmail)}&limit=1${tenantFilter}`,
     { headers }
   );
   if (!lookupRes.ok) {

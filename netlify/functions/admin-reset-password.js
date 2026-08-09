@@ -2,7 +2,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveUserTenantId, resolveAdminAccess } = require("./lib/tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -26,7 +26,11 @@ exports.handler = async function (event) {
   }
   const accessToken = authHeader.replace(/^Bearer\s+/i, "");
   const adminUser = await getUserFromToken(accessToken);
-  if (!adminUser || !adminUser.email || !ADMIN_EMAILS.includes(adminUser.email.toLowerCase())) {
+  if (!adminUser || !adminUser.email) {
+    return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
+  }
+  const adminAccess = await resolveAdminAccess(adminUser.email);
+  if (!adminAccess.isSuperAdmin && !adminAccess.tenantId) {
     return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
   }
 
@@ -41,6 +45,17 @@ exports.handler = async function (event) {
   const newPassword = body.new_password;
   if (!clientUserId || !newPassword || newPassword.length < 6) {
     return { statusCode: 400, body: JSON.stringify({ error: "Mot de passe invalide (6 caractères min.)." }) };
+  }
+
+  // L'API Admin Supabase ne sait pas filtrer par tenant : on vérifie donc
+  // manuellement, avant tout appel, que la cliente ciblée appartient bien au
+  // tenant de l'admin (sauf super-admin) — sinon n'importe quel admin
+  // whitelisté pourrait reset le mot de passe de n'importe quel user_id.
+  if (!adminAccess.isSuperAdmin) {
+    const clientTenantId = await resolveUserTenantId(clientUserId);
+    if (clientTenantId !== adminAccess.tenantId) {
+      return { statusCode: 404, body: JSON.stringify({ error: "Cliente introuvable dans ton espace." }) };
+    }
   }
 
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${clientUserId}`, {

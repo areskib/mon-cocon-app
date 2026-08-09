@@ -6,8 +6,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfvXnq7kSdSf2sgeMdiaQ6BHHEdQmKiIA9w_LrBS_i6CW-q1Cma3mejyqWif3CwjsHEs";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
-const { resolveUserTenantId } = require("./lib/tenant-auth");
+const { resolveUserTenantId, resolveUserIdByEmail } = require("./lib/tenant-auth");
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
@@ -96,14 +95,22 @@ exports.handler = async function (event) {
       }
     } catch (e) {}
 
+    // N'alerte que les admins du tenant de cette cliente (+ les super-admins,
+    // valables pour tous les tenants), résolus via l'API Admin Supabase —
+    // fiable même si l'admin n'a jamais rempli le quiz lui-même.
+    const tenantRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/tenants?select=admin_emails&id=eq.${tenantId}`,
+      { headers }
+    );
+    const tenantRows = tenantRes.ok ? await tenantRes.json() : [];
+    const tenantAdminEmails = (tenantRows[0] && tenantRows[0].admin_emails) || [];
+    const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || "").split(",").map(s => s.trim()).filter(Boolean);
+    const notifyEmails = [...new Set([...tenantAdminEmails, ...superAdminEmails].map(e => e.toLowerCase()))];
+
     const adminIds = [];
-    for (const adminEmail of ADMIN_EMAILS) {
-      const lookupRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(adminEmail)}&limit=1`,
-        { headers }
-      );
-      const rows = lookupRes.ok ? await lookupRes.json() : [];
-      if (rows.length) adminIds.push(rows[0].user_id);
+    for (const adminEmail of notifyEmails) {
+      const id = await resolveUserIdByEmail(adminEmail);
+      if (id) adminIds.push(id);
     }
     if (adminIds.length) {
       const orFilter = adminIds.map(id => `user_id.eq.${id}`).join(",");

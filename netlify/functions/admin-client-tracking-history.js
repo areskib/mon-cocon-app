@@ -5,7 +5,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRK
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ENCRYPTION_KEY = process.env.TRACKING_ENCRYPTION_KEY;
 
-const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveAdminAccess } = require("./lib/tenant-auth");
 
 function decrypt(b64) {
   const key = Buffer.from(ENCRYPTION_KEY, "base64");
@@ -41,7 +41,11 @@ exports.handler = async function (event) {
   }
   const accessToken = authHeader.replace(/^Bearer\s+/i, "");
   const adminUser = await getUserFromToken(accessToken);
-  if (!adminUser || !adminUser.email || !ADMIN_EMAILS.includes(adminUser.email.toLowerCase())) {
+  if (!adminUser || !adminUser.email) {
+    return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
+  }
+  const adminAccess = await resolveAdminAccess(adminUser.email);
+  if (!adminAccess.isSuperAdmin && !adminAccess.tenantId) {
     return { statusCode: 403, body: JSON.stringify({ error: "Accès réservé." }) };
   }
 
@@ -51,9 +55,10 @@ exports.handler = async function (event) {
   }
 
   const headers = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
+  const tenantFilter = adminAccess.isSuperAdmin ? "" : `&tenant_id=eq.${adminAccess.tenantId}`;
 
   const lookupRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(clientEmail)}&limit=1`,
+    `${SUPABASE_URL}/rest/v1/quiz_results?select=user_id&email=eq.${encodeURIComponent(clientEmail)}&limit=1${tenantFilter}`,
     { headers }
   );
   if (!lookupRes.ok) {

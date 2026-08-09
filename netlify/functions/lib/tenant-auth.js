@@ -36,4 +36,44 @@ async function resolveTenantByHost(host) {
   return fallbackRows.length ? fallbackRows[0].id : null;
 }
 
-module.exports = { resolveUserTenantId, resolveTenantByHost, FALLBACK_TENANT_SLUG };
+// Droits admin d'un email : super-admin (accès global, via SUPER_ADMIN_EMAILS)
+// ou admin d'un tenant précis (email présent dans tenants.admin_emails).
+// { isSuperAdmin:false, tenantId:null } = pas admin du tout.
+async function resolveAdminAccess(email) {
+  const normalized = (email || "").trim().toLowerCase();
+  if (!normalized) return { isSuperAdmin: false, tenantId: null };
+
+  const superAdmins = (process.env.SUPER_ADMIN_EMAILS || "")
+    .split(",")
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (superAdmins.includes(normalized)) {
+    return { isSuperAdmin: true, tenantId: null };
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tenants?select=id,admin_emails`, { headers: serviceHeaders() });
+  const rows = res.ok ? await res.json() : [];
+  const tenant = rows.find(t => (t.admin_emails || []).some(e => (e || "").toLowerCase() === normalized));
+  return tenant ? { isSuperAdmin: false, tenantId: tenant.id } : { isSuperAdmin: false, tenantId: null };
+}
+
+// Résout un user_id à partir d'un email via l'API Admin Supabase (fiable, ne
+// dépend pas de quiz_results — un admin n'a pas forcément rempli le quiz).
+async function resolveUserIdByEmail(email) {
+  const res = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+    { headers: serviceHeaders() }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  const users = Array.isArray(data) ? data : (data.users || []);
+  return users.length ? users[0].id : null;
+}
+
+module.exports = {
+  resolveUserTenantId,
+  resolveTenantByHost,
+  resolveAdminAccess,
+  resolveUserIdByEmail,
+  FALLBACK_TENANT_SLUG
+};
