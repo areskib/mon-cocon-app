@@ -4,6 +4,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ENCRYPTION_KEY = process.env.TRACKING_ENCRYPTION_KEY; // base64, 32 bytes
+const { resolveUserTenantId } = require("./_tenant-auth");
 
 function encrypt(plainObj) {
   const key = Buffer.from(ENCRYPTION_KEY, "base64");
@@ -74,6 +75,11 @@ exports.handler = async function (event) {
     };
   }
 
+  const tenantId = await resolveUserTenantId(user.id);
+  if (!tenantId) {
+    return { statusCode: 500, body: JSON.stringify({ error: "Profil incomplet, reconnecte-toi." }) };
+  }
+
   const encryptedData = encrypt({
     weight: body.weight ?? null,
     ventre_nombril: body.ventre_nombril ?? null,
@@ -98,6 +104,7 @@ exports.handler = async function (event) {
     },
     body: JSON.stringify({
       user_id: user.id,
+      tenant_id: tenantId,
       week_number: weekNumber,
       encrypted_data: encryptedData
     })

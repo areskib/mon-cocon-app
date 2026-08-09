@@ -9,6 +9,7 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfv
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveUserTenantId } = require("./_tenant-auth");
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
@@ -130,10 +131,14 @@ exports.handler = async function (event) {
       body: JSON.stringify({ encrypted_data: encryptedData })
     });
   } else {
+    const clientTenantId = await resolveUserTenantId(clientUserId);
+    if (!clientTenantId) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Profil cliente incomplet." }) };
+    }
     writeRes = await fetch(`${SUPABASE_URL}/rest/v1/body_tracking`, {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ user_id: clientUserId, week_number: weekNumber, encrypted_data: encryptedData })
+      body: JSON.stringify({ user_id: clientUserId, tenant_id: clientTenantId, week_number: weekNumber, encrypted_data: encryptedData })
     });
   }
 

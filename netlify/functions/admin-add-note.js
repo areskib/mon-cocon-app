@@ -3,6 +3,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRK
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveUserTenantId } = require("./_tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -64,12 +65,17 @@ exports.handler = async function (event) {
     return { statusCode: 404, body: JSON.stringify({ error: "Aucune cliente trouvée avec cet email." }) };
   }
   const clientUserId = lookupRows[0].user_id;
+  const clientTenantId = await resolveUserTenantId(clientUserId);
+  if (!clientTenantId) {
+    return { statusCode: 500, body: JSON.stringify({ error: "Profil cliente incomplet." }) };
+  }
 
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/advisor_notes`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify({
       client_user_id: clientUserId,
+      tenant_id: clientTenantId,
       note: note || null,
       next_rdv_date: nextRdvDate,
       week_number: weekNumber,

@@ -1554,6 +1554,19 @@ const supabaseClient = (SUPABASE_URL.startsWith("http"))
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+// Tenant de l'utilisatrice connectée, lu via la fonction SQL current_tenant_id()
+// (source unique de vérité, basée sur profiles.tenant_id) — à fournir sur tout
+// insert/upsert que les RLS exigent désormais avec un tenant_id.
+window.__myTenantId = null;
+async function refreshMyTenantId(){
+  if(!supabaseClient) return null;
+  try{
+    const { data } = await supabaseClient.rpc("current_tenant_id");
+    window.__myTenantId = data || null;
+  }catch(e){ console.error("Erreur résolution tenant courant:", e); }
+  return window.__myTenantId;
+}
+
 /* ============================================================
    NOTIFICATIONS PUSH — rappel hydratation
    ============================================================ */
@@ -1591,8 +1604,10 @@ async function enablePushNotifications(){
     if(!userData || !userData.user) return;
 
     const sub = subscription.toJSON();
+    if(!window.__myTenantId) await refreshMyTenantId();
     await supabaseClient.from("push_subscriptions").upsert({
       user_id: userData.user.id,
+      tenant_id: window.__myTenantId,
       endpoint: sub.endpoint,
       p256dh: sub.keys.p256dh,
       auth: sub.keys.auth
@@ -1654,6 +1669,7 @@ async function attemptLogin(){
 
   const userId = authData.user.id;
   checkAdminStatus(authData.user.email);
+  refreshMyTenantId();
   const { data: rows, error: fetchError } = await supabaseClient
     .from("quiz_results")
     .select("raw_data")
@@ -2458,14 +2474,37 @@ async function submitCongratsPassword(){
     return;
   }
 
+  // Crée la ligne profiles (id + tenant_id) AVANT toute écriture qui en dépend :
+  // les RLS exigent tenant_id = current_tenant_id(), qui lit profiles et renvoie
+  // NULL tant que cette ligne n'existe pas. Le tenant est résolu côté serveur
+  // (Host de la requête), jamais par une valeur envoyée par le client — c'est la
+  // seule source de vérité, réutilisée ici pour l'insert quiz_results qui suit.
+  let myTenantId = null;
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+    if(token){
+      const profileRes = await fetch("/.netlify/functions/create-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }
+      });
+      if(profileRes.ok){
+        const profileData = await profileRes.json();
+        myTenantId = profileData.tenant_id || null;
+        window.__myTenantId = myTenantId;
+      }
+    }
+  }catch(e){ console.error("Erreur création profil:", e); }
+
   // Le compte vient d'être créé : on écrit maintenant quiz_results avec l'user_id
   // fraîchement obtenu (repris de ce que faisait le webhook Make jusqu'ici).
   if(congratsQuizData){
     try{
       const { data: userData } = await supabaseClient.auth.getUser();
-      if(userData && userData.user){
+      if(userData && userData.user && myTenantId){
         await supabaseClient.from("quiz_results").insert({
           user_id: userData.user.id,
+          tenant_id: myTenantId,
           email: congratsEmail,
           raw_data: JSON.stringify(congratsQuizData)
         });
@@ -2587,6 +2626,7 @@ async function checkExistingSession(){
 
   if(rows && rows.length > 0){
     checkAdminStatus(sessionData.session.user.email);
+    refreshMyTenantId();
     restoreSessionFromRawData(rows[0].raw_data);
   } else {
     document.getElementById("screen-choice").style.display = "block";
@@ -5019,7 +5059,8 @@ async function confirmPeriodStart(){
   if(existing && !existing.end_date){
     await supabaseClient.from("period_logs").update({ start_date: dateVal }).eq("id", existing.id);
   } else {
-    await supabaseClient.from("period_logs").insert({ user_id: userId, start_date: dateVal });
+    if(!window.__myTenantId) await refreshMyTenantId();
+    await supabaseClient.from("period_logs").insert({ user_id: userId, tenant_id: window.__myTenantId, start_date: dateVal });
   }
 
   // Cette date devient la nouvelle référence de cycle pour tous les calculs à venir

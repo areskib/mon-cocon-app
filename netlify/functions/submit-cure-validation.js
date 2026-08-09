@@ -7,6 +7,7 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfv
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
+const { resolveUserTenantId } = require("./_tenant-auth");
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",
@@ -62,10 +63,15 @@ exports.handler = async function (event) {
     return { statusCode: 200, body: JSON.stringify({ ok: true, status: existingRows[0].status, already: true }) };
   }
 
+  const tenantId = await resolveUserTenantId(user.id);
+  if (!tenantId) {
+    return { statusCode: 500, body: JSON.stringify({ error: "Profil incomplet, reconnecte-toi." }) };
+  }
+
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/cure_validation`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify({ user_id: user.id, cure_family: cureFamily, status: "pending" })
+    body: JSON.stringify({ user_id: user.id, tenant_id: tenantId, cure_family: cureFamily, status: "pending" })
   });
   console.log("submit-cure-validation: insertRes.status=" + insertRes.status + " insertRes.ok=" + insertRes.ok);
 
