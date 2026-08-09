@@ -799,7 +799,7 @@
           <button type="submit" class="btn btn-primary" id="login-submit-btn">Me connecter</button>
         </div>
         <div class="link-row" style="margin-top:14px;">
-          <button type="button" onclick="window.open('https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT', '_blank')">En cas de difficulté à te connecter, contacte le support</button>
+          <button type="button" onclick="window.open(getTenantCalendarLink(), '_blank')">En cas de difficulté à te connecter, contacte le support</button>
         </div>
       </form>
     </div>
@@ -1566,6 +1566,53 @@ async function refreshMyTenantId(){
   }catch(e){ console.error("Erreur résolution tenant courant:", e); }
   return window.__myTenantId;
 }
+
+/* ============================================================
+   BRANDING MULTI-TENANT — résolu par hostname, avant même la
+   connexion. Fallback = ne rien changer (les valeurs en dur du
+   HTML/CSS restent actives) si aucun tenant ne matche ou que ses
+   champs sont vides.
+   ============================================================ */
+window.__tenant = null;
+const FALLBACK_CALENDAR_LINK = "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT";
+
+function getTenantCalendarLink(){
+  return (window.__tenant && window.__tenant.calendar_link) || FALLBACK_CALENDAR_LINK;
+}
+
+function applyTenantBranding(tenant){
+  if(!tenant) return;
+  if(tenant.primary_color){
+    document.documentElement.style.setProperty("--gold", tenant.primary_color);
+    document.documentElement.style.setProperty("--gold-deep", tenant.primary_color);
+  }
+  if(tenant.secondary_color){
+    document.documentElement.style.setProperty("--brown", tenant.secondary_color);
+    document.documentElement.style.setProperty("--taupe", tenant.secondary_color);
+  }
+  if(tenant.logo_url){
+    document.querySelectorAll('img[src="images/logo.png"]').forEach(img => { img.src = tenant.logo_url; });
+  }
+  if(tenant.name){
+    document.querySelectorAll(".drawer-logo").forEach(el => {
+      el.innerHTML = '<span class="emoji">🌿</span> ' + tenant.name;
+    });
+  }
+}
+
+(async function resolveTenantBranding(){
+  if(!supabaseClient) return;
+  try{
+    const { data } = await supabaseClient
+      .from("tenants")
+      .select("id,name,primary_color,secondary_color,logo_url,calendar_link")
+      .eq("domain", window.location.hostname)
+      .maybeSingle();
+    if(!data) return;
+    window.__tenant = data;
+    applyTenantBranding(data);
+  }catch(e){ console.error("Erreur résolution tenant (branding):", e); }
+})();
 
 /* ============================================================
    NOTIFICATIONS PUSH — rappel hydratation
@@ -2582,7 +2629,7 @@ function maybeOpenTrackerFromNotification(){
 
 function contactAdvisorFromMenu(){
   closeMenu();
-  window.open("https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT", "_blank");
+  window.open(getTenantCalendarLink(), "_blank");
 }
 
 // Reconstruit l'état de l'appli (answers + données profil) à partir du raw_data stocké
@@ -2712,7 +2759,7 @@ function showInstallBanner(platform){
     txt.textContent = "Installe l'appli : appuie sur ⬆️ Partager, puis \"Sur l'écran d'accueil\".";
     btn.style.display = "none";
   } else {
-    txt.textContent = "Installe Mon Cocon sur ton téléphone pour un accès plus rapide.";
+    txt.textContent = "Installe " + ((window.__tenant && window.__tenant.name) || "Mon Cocon") + " sur ton téléphone pour un accès plus rapide.";
     btn.style.display = "inline-block";
   }
   banner.style.display = "block";
