@@ -4,7 +4,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ENCRYPTION_KEY = process.env.TRACKING_ENCRYPTION_KEY; // base64, 32 bytes
-const { resolveUserTenantId } = require("./_tenant-auth");
+const { resolveUserTenantId } = require("./lib/tenant-auth");
 
 function encrypt(plainObj) {
   const key = Buffer.from(ENCRYPTION_KEY, "base64");

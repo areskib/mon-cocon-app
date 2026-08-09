@@ -3,7 +3,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRK
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
-const { resolveUserTenantId } = require("./_tenant-auth");
+const { resolveUserTenantId } = require("./lib/tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {

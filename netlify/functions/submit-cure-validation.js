@@ -7,7 +7,7 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BNtC1YOP-O0ySUY8-JpDfv
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "IititExeaZKHiOy4OQIflSlCS9kI_N9xeFJhy3yT6hg";
 
 const ADMIN_EMAILS = ["lindsay.ag@hotmail.fr", "projet@scalyo-ai.com"];
-const { resolveUserTenantId } = require("./_tenant-auth");
+const { resolveUserTenantId } = require("./lib/tenant-auth");
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || "mailto:contact@ma-prevention-sante.com",

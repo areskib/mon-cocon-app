@@ -1,7 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const { resolveUserTenantId } = require("./_tenant-auth");
+const { resolveUserTenantId } = require("./lib/tenant-auth");
 
 async function getUserFromToken(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
