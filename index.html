@@ -1418,6 +1418,22 @@
 
   <button id="sos-fab" onclick="openSosFlow()" style="display:none;">🍫 SOS Fringale</button>
 
+  <!-- CURE RECOMMANDÉE (juste après le questionnaire, avant la création du compte) -->
+  <div class="card" id="screen-cure-preview" style="display:none;">
+    <div class="hero">
+      <div class="subtitle">Basé sur tes réponses</div>
+      <h1>Cure recommandée pour toi</h1>
+      <p id="cure-preview-name" style="font-family:'Lora'; font-style:italic; font-size:20px; color:var(--gold-deep); margin-top:6px;"></p>
+    </div>
+
+    <p style="font-size:13.5px; color:var(--taupe); text-align:center; margin:-4px 0 4px;">Choisis la durée qui t'intéresse</p>
+    <div class="duration-tiles" id="cure-preview-tiles"></div>
+
+    <div class="nav-row" style="margin-top:24px;">
+      <button class="btn btn-primary btn-full" onclick="confirmCurePreviewChoice()">Continuer →</button>
+    </div>
+  </div>
+
   <!-- VIDÉO DE PRÉSENTATION -->
   <!-- FÉLICITATIONS (juste après le questionnaire, avant la vidéo) -->
   <div class="card" id="screen-congrats" style="display:none;">
@@ -1860,7 +1876,7 @@ function openTrackerFromMenu(){
 
 function hideAllTopScreens(){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  ["screen-result","screen-tracker","screen-tracker-form","screen-tracker-week-detail","screen-sos-intro","screen-sos-cause","screen-sos-tips","screen-video","screen-congrats"].forEach(id=>{
+  ["screen-result","screen-tracker","screen-tracker-form","screen-tracker-week-detail","screen-sos-intro","screen-sos-cause","screen-sos-tips","screen-video","screen-congrats","screen-cure-preview"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.display = "none";
   });
@@ -2244,6 +2260,55 @@ let congratsCallback = null;
 let congratsEmail = "";
 let congratsQuizData = null;
 let congratsSubmitInFlight = false;
+
+let curePreviewOnContinue = null;
+
+function showCurePreviewScreen(family, onContinue){
+  const data = window.__curesData || {};
+  const variants = [
+    { pack:"starter", weeks:4, label:"4 semaines" },
+    { pack:"standard", weeks:8, label:"8 semaines" },
+    { pack:"premium", weeks:12, label:"12 semaines" }
+  ].map(v => ({ ...v, variant: data[family + "_" + v.pack] })).filter(v => v.variant);
+
+  if(!variants.length){
+    // Aucune variante disponible pour cette cure : on ne bloque pas l'inscription
+    if(onContinue) onContinue();
+    return;
+  }
+
+  curePreviewOnContinue = onContinue;
+  selectedPack = variants.some(v=>v.pack==="premium") ? "premium" : variants[0].pack;
+
+  const nameEl = document.getElementById("cure-preview-name");
+  nameEl.textContent = variants[0].variant.problematique || "";
+
+  document.getElementById("cure-preview-tiles").innerHTML = variants.map(v=>`
+    <button type="button" class="duration-tile ${v.pack === selectedPack ? "active" : ""}" data-pack="${v.pack}" onclick="selectCurePreviewPack('${v.pack}')">
+      <span class="duration-num">${v.weeks}</span>
+      <span class="duration-label">semaines</span>
+      <span class="duration-price">${v.variant.prix || ""}</span>
+    </button>
+  `).join("");
+
+  document.getElementById("screen-quiz").style.display = "none";
+  document.getElementById("screen-profile").style.display = "none";
+  document.getElementById("screen-cure-preview").style.display = "block";
+}
+
+function selectCurePreviewPack(pack){
+  selectedPack = pack;
+  document.querySelectorAll("#cure-preview-tiles .duration-tile").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.pack === pack);
+  });
+}
+
+function confirmCurePreviewChoice(){
+  document.getElementById("screen-cure-preview").style.display = "none";
+  const cb = curePreviewOnContinue;
+  curePreviewOnContinue = null;
+  if(cb) cb();
+}
 
 const EYE_OPEN_SVG = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>';
 const EYE_CLOSED_SVG = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.5 19.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a19.5 19.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
@@ -4447,9 +4512,19 @@ function saveProfileAndShowResult(){
     // après la création du compte (voir congratsQuizData). Make servait enfin à l'email
     // de bienvenue : à reconstruire séparément (hors course avec la création de compte).
     congratsQuizData = data;
-    showCongratsScreen(firstname, email, function(){
-      showPresentationVideo(function(){ showResult(); });
-    });
+    const proceedToCongrats = function(){
+      showCongratsScreen(firstname, email, function(){
+        showPresentationVideo(function(){ showResult(); });
+      });
+    };
+    const family = pickCureFamily(data);
+    if(family){
+      loadCuresData().then(()=>{
+        showCurePreviewScreen(family, proceedToCongrats);
+      });
+    } else {
+      proceedToCongrats();
+    }
   }
 }
 
