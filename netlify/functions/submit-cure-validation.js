@@ -77,6 +77,19 @@ exports.handler = async function (event) {
 
   // Notifie Lindsay (et Areski) par push, si iels ont un abonnement actif
   try {
+    // Prénom de la cliente pour personnaliser la notif (repli sur "Une championne" si introuvable)
+    let clientFirstname = "";
+    try {
+      const qrRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/quiz_results?select=raw_data&user_id=eq.${user.id}&order=created_at.desc&limit=1`,
+        { headers }
+      );
+      const qrRows = qrRes.ok ? await qrRes.json() : [];
+      if (qrRows.length) {
+        clientFirstname = JSON.parse(qrRows[0].raw_data).firstname || "";
+      }
+    } catch (e) {}
+
     const adminIds = [];
     for (const adminEmail of ADMIN_EMAILS) {
       const lookupRes = await fetch(
@@ -93,9 +106,10 @@ exports.handler = async function (event) {
         { headers }
       );
       const subs = subsRes.ok ? await subsRes.json() : [];
+      const nameLabel = clientFirstname ? clientFirstname : "Une championne";
       const payload = JSON.stringify({
         title: "🏆 Nouvelle cure à valider",
-        body: "Une championne a répondu au questionnaire, sa cure est en attente de validation."
+        body: `${nameLabel} a répondu au questionnaire, sa cure est en attente de validation.`
       });
       await Promise.allSettled(
         subs.map(sub =>
