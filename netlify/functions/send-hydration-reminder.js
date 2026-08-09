@@ -34,19 +34,13 @@ exports.handler = async function () {
     return { statusCode: 500, body: "Variables d'environnement Supabase manquantes." };
   }
 
-  // Récupère tous les abonnements push
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=*`, {
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`
-    }
-  });
+  const dbHeaders = { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` };
 
-  if (!res.ok) {
-    return { statusCode: 500, body: `Erreur lecture Supabase: ${res.status}` };
+  const tenantsRes = await fetch(`${SUPABASE_URL}/rest/v1/tenants?select=id`, { headers: dbHeaders });
+  if (!tenantsRes.ok) {
+    return { statusCode: 500, body: `Erreur lecture tenants: ${tenantsRes.status}` };
   }
-
-  const subscriptions = await res.json();
+  const tenants = await tenantsRes.json();
 
   const MESSAGES = [
     "Petit rappel : pense à bien t'hydrater 💧",
@@ -57,32 +51,41 @@ exports.handler = async function () {
     body: MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
   });
 
-  const results = await Promise.allSettled(
-    subscriptions.map((sub) =>
-      webpush
-        .sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload
-        )
-        .catch(async (err) => {
-          // Abonnement expiré ou révoqué → on le supprime pour ne pas réessayer inutilement
-          if (err.statusCode === 404 || err.statusCode === 410) {
-            await fetch(
-              `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
-              {
-                method: "DELETE",
-                headers: {
-                  apikey: SERVICE_ROLE_KEY,
-                  Authorization: `Bearer ${SERVICE_ROLE_KEY}`
-                }
-              }
-            );
-          }
-          throw err;
-        })
-    )
-  );
+  let totalSent = 0;
+  let totalSubs = 0;
 
-  const sent = results.filter((r) => r.status === "fulfilled").length;
-  return { statusCode: 200, body: `Envoyé à ${sent}/${subscriptions.length} abonnées.` };
+  // Boucle par tenant : chaque abonnement push n'est notifié qu'avec les
+  // abonnées de son propre tenant.
+  for (const tenant of tenants) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?select=*&tenant_id=eq.${tenant.id}`,
+      { headers: dbHeaders }
+    );
+    if (!res.ok) continue;
+    const subscriptions = await res.json();
+    totalSubs += subscriptions.length;
+
+    const results = await Promise.allSettled(
+      subscriptions.map((sub) =>
+        webpush
+          .sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload
+          )
+          .catch(async (err) => {
+            // Abonnement expiré ou révoqué → on le supprime pour ne pas réessayer inutilement
+            if (err.statusCode === 404 || err.statusCode === 410) {
+              await fetch(
+                `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
+                { method: "DELETE", headers: dbHeaders }
+              );
+            }
+            throw err;
+          })
+      )
+    );
+    totalSent += results.filter((r) => r.status === "fulfilled").length;
+  }
+
+  return { statusCode: 200, body: `Envoyé à ${totalSent}/${totalSubs} abonnées (${tenants.length} tenant(s)).` };
 };

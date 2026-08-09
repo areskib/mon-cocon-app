@@ -1,10 +1,19 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://gugioqxuwdktruibzisk.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_uZVRKxk0FOjuTFhGGFLGwQ_ktAqXHC5";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM = process.env.RESEND_FROM || "Lindsay - Mon Cocon <contact@ma-prevention-sante.com>";
+const { resolveUserTenantId } = require("./lib/tenant-auth");
 
-function welcomeEmailHtml(prenom){
+const DEFAULT_BRAND_NAME = "Mon Cocon";
+const DEFAULT_LOGO_URL = "https://ma-prevention-sante.com/images/logo.png";
+const DEFAULT_CALENDAR_LINK = "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT";
+
+function welcomeEmailHtml(prenom, tenant){
   const safeName = prenom || "";
+  const brandName = (tenant && tenant.name) || DEFAULT_BRAND_NAME;
+  const logoUrl = (tenant && tenant.logo_url) || DEFAULT_LOGO_URL;
+  const calendarLink = (tenant && tenant.calendar_link) || DEFAULT_CALENDAR_LINK;
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -20,8 +29,8 @@ function welcomeEmailHtml(prenom){
 
           <tr>
             <td align="center" style="background-color:#4C342E; padding:28px 24px;">
-              <img src="https://ma-prevention-sante.com/images/logo.png" width="64" height="64" alt="Mon Cocon" style="border-radius:14px; display:block; margin:0 auto 10px;">
-              <span style="color:#D9B978; font-family: Georgia, serif; font-size:20px; letter-spacing:0.5px;">Mon Cocon</span>
+              <img src="${logoUrl}" width="64" height="64" alt="${brandName}" style="border-radius:14px; display:block; margin:0 auto 10px;">
+              <span style="color:#D9B978; font-family: Georgia, serif; font-size:20px; letter-spacing:0.5px;">${brandName}</span>
             </td>
           </tr>
 
@@ -35,7 +44,7 @@ function welcomeEmailHtml(prenom){
               </p>
 
               <p style="margin:0 0 16px; font-family: Georgia, serif; font-size:15.5px; line-height:1.7; color:#4C342E;">
-                Je m'appelle <strong>Lindsay</strong>, je suis ta conseillère — c'est moi qui vais t'accompagner tout au long de ce programme. Tu as maintenant accès à ton espace personnel dans <strong>Mon Cocon</strong>, où tu retrouveras une cure pensée spécifiquement pour toi, ton alimentation adaptée à ton profil, ton programme sportif, et un suivi ultra-personnalisé au fil des semaines.
+                Je m'appelle <strong>Lindsay</strong>, je suis ta conseillère — c'est moi qui vais t'accompagner tout au long de ce programme. Tu as maintenant accès à ton espace personnel dans <strong>${brandName}</strong>, où tu retrouveras une cure pensée spécifiquement pour toi, ton alimentation adaptée à ton profil, ton programme sportif, et un suivi ultra-personnalisé au fil des semaines.
               </p>
 
               <p style="margin:0 0 24px; font-family: Georgia, serif; font-size:15.5px; line-height:1.7; color:#4C342E;">
@@ -55,7 +64,7 @@ function welcomeEmailHtml(prenom){
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 32px;">
                 <tr>
                   <td align="center" style="border-radius:99px; background-color:#4C342E;">
-                    <a href="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ183gUyUguqRr3Q9X29SXDjzezae2e3IhJ2cdalzuf5yAenlswLd5BCt6ORHpElrNCYEwQFw1rT"
+                    <a href="${calendarLink}"
                        style="display:inline-block; padding:15px 30px; font-family: Arial, sans-serif; font-size:14.5px; font-weight:bold; color:#D9B978; text-decoration:none; border-radius:99px;">
                       📅 Prendre rendez-vous avec Lindsay
                     </a>
@@ -80,7 +89,7 @@ function welcomeEmailHtml(prenom){
 
           <tr>
             <td align="center" style="background-color:#EFE2D2; padding:18px 24px;">
-              <p style="margin:0; font-family: Arial, sans-serif; font-size:11.5px; color:#8D6F3E;">Mon Cocon — Construis ta liberté 🌿</p>
+              <p style="margin:0; font-family: Arial, sans-serif; font-size:11.5px; color:#8D6F3E;">${brandName} — Construis ta liberté 🌿</p>
             </td>
           </tr>
 
@@ -124,6 +133,19 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); } catch (e) {}
   const prenom = (body.firstname || "").trim();
 
+  let tenant = null;
+  try {
+    const tenantId = await resolveUserTenantId(user.id);
+    if (tenantId) {
+      const tenantRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/tenants?select=name,logo_url,calendar_link&id=eq.${tenantId}`,
+        { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` } }
+      );
+      const rows = tenantRes.ok ? await tenantRes.json() : [];
+      tenant = rows[0] || null;
+    }
+  } catch (e) { console.error("Erreur résolution tenant (welcome email):", e); }
+
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -132,7 +154,7 @@ exports.handler = async function (event) {
         from: RESEND_FROM,
         to: [user.email],
         subject: "Bienvenue dans ton parcours 🌿",
-        html: welcomeEmailHtml(prenom)
+        html: welcomeEmailHtml(prenom, tenant)
       })
     });
     if (!res.ok) {
