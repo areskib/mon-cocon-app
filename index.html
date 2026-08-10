@@ -5151,8 +5151,7 @@ async function confirmPeriodStart(){
   try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(cycleData)); }catch(e){}
   updateQuizResultsDirect(cycleData).catch(()=>{});
 
-  await renderPeriodTrackerCard(savedLog);
-  renderCycleTab();
+  renderCycleTab(savedLog);
 }
 
 async function confirmPeriodEnd(){
@@ -5188,11 +5187,14 @@ async function confirmPeriodEnd(){
     updateQuizResultsDirect(cycleData).catch(()=>{});
   }
 
-  await renderPeriodTrackerCard(null);
-  renderCycleTab();
+  renderCycleTab(null);
 }
 
-function renderCycleTab(){
+// preloadedPeriodLog optionnel : transmis à renderPeriodTrackerCard pour
+// éviter une relecture DB redondante (et potentiellement pas encore
+// cohérente juste après une écriture) quand l'appelant connaît déjà l'état
+// à jour — voir confirmPeriodStart/confirmPeriodEnd.
+function renderCycleTab(preloadedPeriodLog){
   const data = loadCycleData();
   if(!data){
     document.getElementById("cycle-empty").style.display = "block";
@@ -5238,7 +5240,7 @@ function renderCycleTab(){
     renderCalendar(lastPeriod, cycleLength, periodLength, today);
     renderWeeklyAgendaCycle(lastPeriod, cycleLength, periodLength, today, data.objectif);
     document.getElementById("weekly-agenda").parentElement.scrollLeft = 0;
-    renderPeriodTrackerCard();
+    renderPeriodTrackerCard(preloadedPeriodLog);
 
   } else {
     const isMenopauseTab = data.cycleStatus === "menopause";
