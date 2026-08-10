@@ -5048,17 +5048,21 @@ async function loadLatestPeriodLog(){
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if(error) return null;
+    if(error){ console.error("Erreur lecture period_logs:", error); return null; }
     return data;
   }catch(e){
+    console.error("Erreur lecture period_logs (exception):", e);
     return null;
   }
 }
 
-async function renderPeriodTrackerCard(){
+// preloadedLog optionnel : évite de redemander à la base juste après une
+// écriture qu'on vient de faire nous-mêmes (source de vérité = la réponse
+// de l'écriture, pas une relecture qui peut échouer silencieusement).
+async function renderPeriodTrackerCard(preloadedLog){
   const wrap = document.getElementById("period-tracker-card");
   if(!wrap) return;
-  const log = await loadLatestPeriodLog();
+  const log = (preloadedLog !== undefined) ? preloadedLog : await loadLatestPeriodLog();
   window.__currentPeriodLog = log;
   const todayStr = new Date().toISOString().slice(0,10);
 
@@ -5093,21 +5097,52 @@ async function confirmPeriodStart(){
   const userId = sessionData && sessionData.session ? sessionData.session.user.id : null;
   if(!userId){ window.__periodSubmitInFlight = false; return; }
 
-  // Avant ce fix : chaque clic créait une NOUVELLE ligne en base, même si une
-  // règle était déjà en cours (non terminée) — plusieurs lignes "ouvertes"
-  // s'accumulaient et loadLatestPeriodLog() (triée par date) pouvait alors
-  // pointer sur la mauvaise, cassant le bouton "fin des règles" suivant.
-  // Désormais : si une règle est déjà ouverte (pas de end_date), on met à
-  // jour sa date de début au lieu d'en recréer une. Le vrai déclencheur du bug
-  // était en fait getUser() (appel réseau live, pouvait échouer juste après une
-  // reconnexion) — remplacé par getSession() (lecture directe de la session déjà
-  // établie), plus fiable et cohérent avec le reste de l'app.
+  // Si une règle est déjà ouverte (pas de end_date), on met à jour sa date de
+  // début au lieu d'en recréer une. Filet de sécurité en base (contrainte
+  // d'unicité period_logs_one_open_per_user) au cas où cette vérification
+  // ratait une ligne ouverte existante — l'insert échoue alors proprement
+  // (code 23505) au lieu de créer un doublon, et on bascule sur un update.
   const existing = await loadLatestPeriodLog();
+  let savedLog = null;
+
   if(existing && !existing.end_date){
-    await supabaseClient.from("period_logs").update({ start_date: dateVal }).eq("id", existing.id);
+    const { data, error } = await supabaseClient
+      .from("period_logs")
+      .update({ start_date: dateVal })
+      .eq("id", existing.id)
+      .select("id, start_date, end_date")
+      .single();
+    if(error) console.error("Erreur mise à jour début de règles:", error);
+    else savedLog = data;
   } else {
     if(!window.__myTenantId) await refreshMyTenantId();
-    await supabaseClient.from("period_logs").insert({ user_id: userId, tenant_id: window.__myTenantId, start_date: dateVal });
+    const { data, error } = await supabaseClient
+      .from("period_logs")
+      .insert({ user_id: userId, tenant_id: window.__myTenantId, start_date: dateVal })
+      .select("id, start_date, end_date")
+      .single();
+    if(!error){
+      savedLog = data;
+    } else if(error.code === "23505"){
+      const { data: retryLog, error: retryError } = await supabaseClient
+        .from("period_logs")
+        .update({ start_date: dateVal })
+        .eq("user_id", userId)
+        .is("end_date", null)
+        .select("id, start_date, end_date")
+        .single();
+      if(retryError) console.error("Erreur rattrapage début de règles:", retryError);
+      else savedLog = retryLog;
+    } else {
+      console.error("Erreur création début de règles:", error);
+    }
+  }
+
+  window.__periodSubmitInFlight = false;
+
+  if(!savedLog){
+    alert("Une erreur est survenue, réessaie dans un instant.");
+    return;
   }
 
   // Cette date devient la nouvelle référence de cycle pour tous les calculs à venir
@@ -5116,7 +5151,7 @@ async function confirmPeriodStart(){
   try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(cycleData)); }catch(e){}
   updateQuizResultsDirect(cycleData).catch(()=>{});
 
-  window.__periodSubmitInFlight = false;
+  await renderPeriodTrackerCard(savedLog);
   renderCycleTab();
 }
 
@@ -5126,16 +5161,24 @@ async function confirmPeriodEnd(){
   if(!dateVal || !window.__currentPeriodLog || !supabaseClient) return;
   window.__periodSubmitInFlight = true;
 
-  await supabaseClient
+  const { data: updatedLog, error } = await supabaseClient
     .from("period_logs")
     .update({ end_date: dateVal })
-    .eq("id", window.__currentPeriodLog.id);
+    .eq("id", window.__currentPeriodLog.id)
+    .select("id, start_date, end_date")
+    .single();
+
+  window.__periodSubmitInFlight = false;
+
+  if(error || !updatedLog){
+    console.error("Erreur enregistrement fin de règles:", error);
+    alert("Une erreur est survenue, réessaie dans un instant.");
+    return;
+  }
 
   // La vraie durée des règles (fin − début, dates réelles déclarées) remplace
-  // désormais la durée estimée du questionnaire pour tous les calculs de phase —
-  // avant ce fix, end_date était bien enregistrée mais jamais réutilisée pour
-  // affiner periodLength, donc la phase menstruelle restait basée sur l'estimation.
-  const startDate = new Date(window.__currentPeriodLog.start_date + "T00:00:00");
+  // désormais la durée estimée du questionnaire pour tous les calculs de phase.
+  const startDate = new Date(updatedLog.start_date + "T00:00:00");
   const endDate = new Date(dateVal + "T00:00:00");
   const realPeriodLength = Math.round((endDate - startDate) / 86400000) + 1;
   if(realPeriodLength > 0 && realPeriodLength <= 15){
@@ -5145,9 +5188,8 @@ async function confirmPeriodEnd(){
     updateQuizResultsDirect(cycleData).catch(()=>{});
   }
 
-  renderPeriodTrackerCard();
+  await renderPeriodTrackerCard(null);
   renderCycleTab();
-  window.__periodSubmitInFlight = false;
 }
 
 function renderCycleTab(){
