@@ -2506,12 +2506,12 @@ async function submitCongratsPassword(){
   }
 
   const { error } = result;
-  btn.textContent = originalLabel;
-  btn.disabled = false;
-  congratsSubmitInFlight = false;
-  window.__criticalOpInProgress = false;
 
   if(error){
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+    congratsSubmitInFlight = false;
+    window.__criticalOpInProgress = false;
     if(error.message && error.message.toLowerCase().includes("already")){
       errorEl.textContent = "Un compte existe déjà avec cet email. Essaie de te connecter plutôt.";
     } else {
@@ -2521,47 +2521,42 @@ async function submitCongratsPassword(){
     return;
   }
 
-  // Crée la ligne profiles (id + tenant_id) AVANT toute écriture qui en dépend :
-  // les RLS exigent tenant_id = current_tenant_id(), qui lit profiles et renvoie
-  // NULL tant que cette ligne n'existe pas. Le tenant est résolu côté serveur
-  // (Host de la requête), jamais par une valeur envoyée par le client — c'est la
-  // seule source de vérité, réutilisée ici pour l'insert quiz_results qui suit.
-  let myTenantId = null;
+  // Important : le verrou anti-double-soumission (congratsSubmitInFlight) et
+  // le drapeau anti-reload (__criticalOpInProgress) restent actifs jusqu'à la
+  // toute fin de ce bloc, PAS juste après signUp() — sinon un second tap
+  // pendant la création du profil pouvait déclencher un second signUp() en
+  // parallèle (constaté en prod : deuxième appel "compte déjà existant").
+  //
+  // Le profil ET quiz_results sont créés en une seule requête serveur
+  // (create-profile.js, service_role) plutôt que de laisser le client
+  // réinsérer quiz_results séparément juste après via supabase-js : ça
+  // évite toute course entre "le profil vient d'être créé" et "la policy
+  // RLS de quiz_results relit bien ce profil tout frais" — cause confirmée
+  // d'un vrai échec 403 en prod sur une inscription réelle.
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
     if(token){
       const profileRes = await fetch("/.netlify/functions/create-profile", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({
+          email: congratsEmail,
+          raw_data: congratsQuizData ? JSON.stringify(congratsQuizData) : undefined
+        })
       });
       if(profileRes.ok){
         const profileData = await profileRes.json();
-        myTenantId = profileData.tenant_id || null;
-        window.__myTenantId = myTenantId;
+        window.__myTenantId = profileData.tenant_id || null;
       }
     }
   }catch(e){ console.error("Erreur création profil:", e); }
+  congratsQuizData = null;
 
-  // Le compte vient d'être créé : on écrit maintenant quiz_results avec l'user_id
-  // fraîchement obtenu (repris de ce que faisait le webhook Make jusqu'ici).
-  if(congratsQuizData){
-    try{
-      const { data: userData } = await supabaseClient.auth.getUser();
-      if(userData && userData.user && myTenantId){
-        await supabaseClient.from("quiz_results").insert({
-          user_id: userData.user.id,
-          tenant_id: myTenantId,
-          email: congratsEmail,
-          raw_data: JSON.stringify(congratsQuizData)
-        });
-      }
-    }catch(e){
-      console.error("Erreur écriture quiz_results:", e);
-      // Non bloquant : on n'empêche pas la suite de l'inscription pour ça
-    }
-    congratsQuizData = null;
-  }
+  btn.textContent = originalLabel;
+  btn.disabled = false;
+  congratsSubmitInFlight = false;
+  window.__criticalOpInProgress = false;
 
   // Mail de bienvenue via Resend, envoyé pile ici — juste après la création du
   // mot de passe (remplace le dernier module Gmail du flow Make). Fire-and-forget :
@@ -3092,7 +3087,7 @@ function renderAdminClientsList(entries){
       : "";
     return `<div class="day-card" style="cursor:pointer;" onclick="showAdminClientDetail(${i})">
       <div class="day-card-head">
-        <span class="day-name">${c.firstname || c.email}</span>
+        <span class="day-name">${c.firstname || c.email || "Cliente"}</span>
       </div>
       <div class="meal-row"><span class="meal-label">Cure</span><span>${cureLabel}</span></div>
       ${resetBadge}
@@ -3122,7 +3117,7 @@ function showAdminClientDetail(index){
     : "Pas de rdv fixé";
   content.innerHTML = `
     <div class="cure-hero-card" style="text-align:center; margin-bottom:20px;">
-      <h2 style="margin:0; font-size:21px;">${c.firstname || c.email}</h2>
+      <h2 style="margin:0; font-size:21px;">${c.firstname || c.email || "Cliente"}</h2>
     </div>
     <div class="result-block">
       <div class="meal-row"><span class="meal-label">Email</span><span>${c.email}</span></div>
@@ -3358,7 +3353,7 @@ async function loadAdminPendingList(){
     wrap.innerHTML = adminPendingData.map((p,i)=>{
       const cureLabel = p.cure_family ? (cureNames[p.cure_family] || p.cure_family) : "Cure non déterminée";
       return `<div class="day-card" style="cursor:pointer;" onclick="showAdminPendingDetail(${i})">
-        <div class="day-card-head"><span class="day-name">${p.firstname || p.email}</span></div>
+        <div class="day-card-head"><span class="day-name">${p.firstname || p.email || "Cliente"}</span></div>
         <div class="meal-row"><span class="meal-label">Cure recommandée</span><span>${cureLabel}</span></div>
       </div>`;
     }).join("");
@@ -3377,7 +3372,7 @@ function showAdminPendingDetail(index){
   ).join("");
   content.innerHTML = `
     <div class="cure-hero-card" style="text-align:center; margin-bottom:20px;">
-      <h2 style="margin:0; font-size:21px;">${p.firstname || p.email}</h2>
+      <h2 style="margin:0; font-size:21px;">${p.firstname || p.email || "Cliente"}</h2>
     </div>
     <div class="result-block">
       <h3 style="font-size:14px;">📋 Réponses au bilan</h3>

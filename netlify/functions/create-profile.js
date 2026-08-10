@@ -54,5 +54,40 @@ exports.handler = async function (event) {
     return { statusCode: 500, body: JSON.stringify({ error: "Une erreur est survenue, réessaie." }) };
   }
 
+  // Écrit aussi quiz_results ici, côté serveur avec service_role, si des
+  // données de quiz sont fournies. Fait dans LA MÊME requête que la création
+  // du profil plutôt que de laisser le client réinsérer séparément juste
+  // après (via supabase-js, soumis aux RLS) : ça évite toute course entre
+  // "le profil vient d'être créé" et "la policy RLS de quiz_results relit
+  // bien ce profil tout frais" — cause d'un vrai échec en prod (403 RLS).
+  let body = {};
+  try { body = JSON.parse(event.body || "{}"); } catch (e) {}
+  const rawData = body.raw_data;
+  const email = typeof body.email === "string" ? body.email : null;
+
+  if (rawData) {
+    const existingRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/quiz_results?select=id&user_id=eq.${user.id}&limit=1`,
+      { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` } }
+    );
+    const existingRows = existingRes.ok ? await existingRes.json() : [];
+    if (!existingRows.length) {
+      const quizRes = await fetch(`${SUPABASE_URL}/rest/v1/quiz_results`, {
+        method: "POST",
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({ user_id: user.id, tenant_id: tenantId, email, raw_data: rawData })
+      });
+      if (!quizRes.ok) {
+        const errText = await quizRes.text();
+        console.error("Erreur insertion quiz_results:", errText);
+      }
+    }
+  }
+
   return { statusCode: 200, body: JSON.stringify({ ok: true, tenant_id: tenantId }) };
 };
