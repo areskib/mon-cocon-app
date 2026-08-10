@@ -5092,6 +5092,13 @@ async function confirmPeriodStart(){
   if(window.__periodSubmitInFlight) return;
   const dateVal = document.getElementById("period-start-input").value;
   if(!dateVal || !supabaseClient) return;
+  // L'attribut HTML max="aujourd'hui" n'est pas toujours respecté par le
+  // sélecteur natif de date sur tous les navigateurs/appareils — on
+  // revalide donc explicitement côté JS avant tout enregistrement.
+  if(dateVal > new Date().toISOString().slice(0,10)){
+    alert("La date de début ne peut pas être dans le futur.");
+    return;
+  }
   window.__periodSubmitInFlight = true;
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const userId = sessionData && sessionData.session ? sessionData.session.user.id : null;
@@ -5158,6 +5165,16 @@ async function confirmPeriodEnd(){
   if(window.__periodSubmitInFlight) return;
   const dateVal = document.getElementById("period-end-input").value;
   if(!dateVal || !window.__currentPeriodLog || !supabaseClient) return;
+  // Revalidation JS de la borne "aujourd'hui" (voir confirmPeriodStart) et de
+  // la cohérence avec la date de début, pour les mêmes raisons.
+  if(dateVal > new Date().toISOString().slice(0,10)){
+    alert("La date de fin ne peut pas être dans le futur.");
+    return;
+  }
+  if(dateVal < window.__currentPeriodLog.start_date){
+    alert("La date de fin ne peut pas être avant la date de début.");
+    return;
+  }
   window.__periodSubmitInFlight = true;
 
   const { data: updatedLog, error } = await supabaseClient
