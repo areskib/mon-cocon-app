@@ -4034,6 +4034,18 @@ function stopCureValidationPolling(){
   }
 }
 
+// iOS gèle les setInterval dès que la PWA passe en arrière-plan : le polling
+// de validation (60 s) ne tourne alors plus du tout. Sans ce re-contrôle au
+// retour au premier plan, une cliente dont la conseillère vient de valider la
+// cure reste bloquée sur "en attente de validation" jusqu'à ce qu'elle pense à
+// relancer complètement l'app — ce qu'elle ne fera jamais.
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible") return;
+  if(!supabaseClient) return;
+  if(window.__cureValidationStatus !== "pending") return;
+  renderCureSection();
+});
+
 async function checkCureValidation(family){
   if(!supabaseClient) return null;
   try{
