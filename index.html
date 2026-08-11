@@ -1633,13 +1633,14 @@ async function enablePushNotifications(){
       });
     }
 
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(!userData || !userData.user) return;
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const sessionUser = (sessionData && sessionData.session) ? sessionData.session.user : null;
+    if(!sessionUser) return;
 
     const sub = subscription.toJSON();
     if(!window.__myTenantId) await refreshMyTenantId();
     await supabaseClient.from("push_subscriptions").upsert({
-      user_id: userData.user.id,
+      user_id: sessionUser.id,
       tenant_id: window.__myTenantId,
       endpoint: sub.endpoint,
       p256dh: sub.keys.p256dh,
@@ -1855,10 +1856,11 @@ async function submitNewPasswordFromRecovery(){
 // ── Compte : infos, changement de mot de passe, déconnexion ──
 async function loadAccountInfo(){
   if(!supabaseClient) return;
-  const { data } = await supabaseClient.auth.getUser();
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const sessionUser = (sessionData && sessionData.session) ? sessionData.session.user : null;
   const emailEl = document.getElementById("account-email");
-  if(data && data.user){
-    emailEl.textContent = data.user.email;
+  if(sessionUser){
+    emailEl.textContent = sessionUser.email;
   }
 }
 
@@ -2003,12 +2005,13 @@ async function loadTrackerData(){
 
     // Retours de Lindsay associés à une semaine précise (voir champ "Retours globaux"
     // du compte-rendu admin), indexés par numéro de semaine pour les fusionner aux tuiles
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(userData && userData.user){
+    // On réutilise la session déjà lue plus haut plutôt que d'en relire une.
+    const sessionUser = sessionData.session.user;
+    if(sessionUser){
       const { data: notes } = await supabaseClient
         .from("advisor_notes")
         .select("note, week_number, next_rdv_date, created_at")
-        .eq("client_user_id", userData.user.id)
+        .eq("client_user_id", sessionUser.id)
         .not("week_number", "is", null)
         .order("created_at", { ascending: false });
       (notes || []).forEach(n=>{
@@ -4034,15 +4037,27 @@ function stopCureValidationPolling(){
 async function checkCureValidation(family){
   if(!supabaseClient) return null;
   try{
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if(!userData || !userData.user) return null;
+    // getSession() et JAMAIS getUser() ici : getUser() fait un appel réseau
+    // live qui peut renvoyer un état incohérent juste après une inscription
+    // ou une reconnexion (même piège que le bouton "fin de règles"). L'enjeu
+    // est ici bien plus grave : si la réponse concerne l'ancien compte encore
+    // en session, une cliente se voit annoncer "cure validée par ta
+    // conseillère" avec la cure de quelqu'un d'autre, alors que la sienne est
+    // en attente. C'est exactement ce qui a été observé en test.
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = (sessionData && sessionData.session) ? sessionData.session : null;
+    if(!session || !session.user) return null;
+    const currentUserId = session.user.id;
 
     // Crée (une seule fois, idempotent) la demande de validation + notifie la conseillère
     // Important : on ATTEND cet appel (pas de fire-and-forget) — sur mobile, un fetch
     // non attendu peut être interrompu si l'app passe en arrière-plan juste après.
-    if(!window.__cureValidationSubmitted){
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
+    // Le flag mémorise l'ID du compte pour lequel la demande a été envoyée, et
+    // non un simple booléen : sinon, après un changement de compte dans le même
+    // onglet, la demande de validation du nouveau compte était purement et
+    // simplement sautée — la conseillère ne voyait jamais la cure à valider.
+    if(window.__cureValidationSubmitted !== currentUserId){
+      const token = session.access_token || null;
       if(token){
         try{
           const res = await fetch("/.netlify/functions/submit-cure-validation", {
@@ -4051,7 +4066,7 @@ async function checkCureValidation(family){
             body: JSON.stringify({ cure_family: family })
           });
           if(res.ok){
-            window.__cureValidationSubmitted = true;
+            window.__cureValidationSubmitted = currentUserId;
           }
         }catch(e){
           console.error("Erreur création demande de validation:", e);
@@ -4062,10 +4077,16 @@ async function checkCureValidation(family){
 
     const { data, error } = await supabaseClient
       .from("cure_validation")
-      .select("status, cure_family")
-      .eq("user_id", userData.user.id)
+      .select("user_id, status, cure_family")
+      .eq("user_id", currentUserId)
       .maybeSingle();
     if(error || !data) return null;
+    // Garde-fou : on n'accepte jamais une ligne qui n'appartient pas au compte
+    // actuellement connecté, quelle qu'en soit la raison (session en cours de
+    // bascule après inscription, cache, réponse d'une requête précédente).
+    // Sans ce contrôle, le pire cas est d'annoncer une cure validée à une
+    // cliente dont la cure ne l'est pas.
+    if(data.user_id !== currentUserId) return null;
     return data;
   }catch(e){
     return null;
@@ -4718,13 +4739,14 @@ function initShowcaseModeIfNeeded(){
 // Met à jour la ligne Supabase existante d'une utilisatrice déjà connectée (pas de recréation de compte)
 async function updateQuizResultsDirect(data){
   if(!supabaseClient) return;
-  const { data: userData } = await supabaseClient.auth.getUser();
-  if(!userData || !userData.user) return;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const sessionUser = (sessionData && sessionData.session) ? sessionData.session.user : null;
+  if(!sessionUser) return;
 
   await supabaseClient
     .from("quiz_results")
     .update({ raw_data: JSON.stringify(data) })
-    .eq("user_id", userData.user.id);
+    .eq("user_id", sessionUser.id);
 }
 
 // ── Capture des réponses du questionnaire ──
