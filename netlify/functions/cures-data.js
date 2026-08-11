@@ -63,6 +63,10 @@ exports.handler = async function (event) {
     const iFeedback = idx("Feedback");
     const iPhotos = idx("Photos");
     const iPrix = idx("Prix");
+    // Colonnes L et M : nom et description destinés aux clientes. "Problématique"
+    // reste le critère clinique interne (matching + vue conseillère).
+    const iNomCommercial = idx("Nom Commercial");
+    const iDescription = idx("Description");
 
     const cures = {};
     for (let r = 1; r < rows.length; r++) {
@@ -73,6 +77,8 @@ exports.handler = async function (event) {
       if (!key || !lien || lien === "—") continue;
       cures[key] = {
         problematique: (row[iProblematique] || "").trim(),
+        nom_commercial: iNomCommercial >= 0 ? (row[iNomCommercial] || "").trim() : "",
+        description: iDescription >= 0 ? (row[iDescription] || "").trim() : "",
         pack: (row[iPack] || "").trim(),
         duree: (row[iDuree] || "").trim(),
         declencheur: (row[iDeclencheur] || "").trim(),

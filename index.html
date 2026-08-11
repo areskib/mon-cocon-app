@@ -235,19 +235,6 @@
 
   .nav-row{ display:flex; gap:12px; margin-top:22px; }
 
-  .duration-tiles{ display:flex; gap:10px; margin-top:18px; }
-  .duration-tile{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
-    background: var(--neu-base); border:none; position:relative;
-    border-radius:18px; padding:16px 8px; cursor:pointer;
-    transition: all .2s ease; box-shadow: var(--shadow-sm);
-  }
-  .duration-tile .duration-num{ font-family:'Lora'; font-weight:700; font-size:24px; color:var(--brown); }
-  .duration-tile .duration-label{ font-family:'Poppins'; font-size:11.5px; color:var(--taupe); font-weight:600; }
-  .duration-tile .duration-price{ font-family:'Poppins'; font-size:11px; color:var(--gold-deep); font-weight:700; margin-top:2px; }
-  .duration-tile.active{
-    box-shadow: var(--shadow-inset);
-  }
   .btn-cure-started{
     background: var(--neu-base);
     box-shadow: var(--shadow-sm);
@@ -1447,8 +1434,7 @@
       <p id="cure-preview-name" style="font-family:'Lora'; font-style:italic; font-size:20px; color:var(--gold-deep); margin-top:6px;"></p>
     </div>
 
-    <p style="font-size:13.5px; color:var(--taupe); text-align:center; margin:-4px 0 4px;">Choisis la durée qui t'intéresse</p>
-    <div class="duration-tiles" id="cure-preview-tiles"></div>
+    <p id="cure-preview-description" style="font-family:'Lora'; font-size:14.5px; color:var(--brown); line-height:1.75; white-space:pre-line; margin:2px 0 0;"></p>
 
     <div class="nav-row" style="margin-top:24px;">
       <button class="btn btn-primary btn-full" onclick="confirmCurePreviewChoice()">Continuer →</button>
@@ -2385,29 +2371,21 @@ function showCurePreviewScreen(family, onContinue){
   }
 
   curePreviewOnContinue = onContinue;
+  // La durée (4/8/12 sem.) n'est plus choisie par la cliente ici : elle se
+  // décide avec la conseillère. On garde la variante la plus complète comme
+  // référence par défaut — selectedPack alimente encore la suite du parcours
+  // (produits/posologie, timeline, durée envoyée à cure-start).
   selectedPack = variants.some(v=>v.pack==="premium") ? "premium" : variants[0].pack;
+  const refVariant = (variants.find(v=>v.pack===selectedPack) || variants[0]).variant;
 
-  const nameEl = document.getElementById("cure-preview-name");
-  nameEl.textContent = variants[0].variant.problematique || "";
-
-  document.getElementById("cure-preview-tiles").innerHTML = variants.map(v=>`
-    <button type="button" class="duration-tile ${v.pack === selectedPack ? "active" : ""}" data-pack="${v.pack}" onclick="selectCurePreviewPack('${v.pack}')">
-      <span class="duration-num">${v.weeks}</span>
-      <span class="duration-label">semaines</span>
-      <span class="duration-price">${v.variant.prix || ""}</span>
-    </button>
-  `).join("");
+  document.getElementById("cure-preview-name").textContent =
+    refVariant.nom_commercial || refVariant.problematique || "";
+  document.getElementById("cure-preview-description").textContent =
+    refVariant.description || "";
 
   document.getElementById("screen-quiz").style.display = "none";
   document.getElementById("screen-profile").style.display = "none";
   document.getElementById("screen-cure-preview").style.display = "block";
-}
-
-function selectCurePreviewPack(pack){
-  selectedPack = pack;
-  document.querySelectorAll("#cure-preview-tiles .duration-tile").forEach(btn=>{
-    btn.classList.toggle("active", btn.dataset.pack === pack);
-  });
 }
 
 function confirmCurePreviewChoice(){
@@ -4160,8 +4138,11 @@ async function renderCureSection(){
   const variant = data[family + "_premium"] || data[family + "_standard"] || data[family + "_starter"];
   if(!variant) return;
 
-  document.getElementById("res-cure-title").textContent = variant.problematique;
-  document.getElementById("res-started-cure-title").textContent = variant.problematique;
+  // Nom commercial (colonne L du Sheet) pour tout ce qui est vu par la cliente ;
+  // repli sur problematique si la colonne n'est pas remplie pour cette cure.
+  const cureLabel = variant.nom_commercial || variant.problematique;
+  document.getElementById("res-cure-title").textContent = cureLabel;
+  document.getElementById("res-started-cure-title").textContent = cureLabel;
   applyCureVariantToUI(variant, family);
 
   // cures complémentaires (max 2, affichage compact)
@@ -4172,7 +4153,7 @@ async function renderCureSection(){
     document.getElementById("res-complementary-cures").innerHTML = complementaryFamilies.map(fam=>{
       const v = data[fam + "_premium"] || data[fam + "_standard"] || data[fam + "_starter"];
       if(!v) return "";
-      return `<a href="${v.lien}" target="_blank" rel="noopener"><span>${v.problematique}</span><span class="mini-tile-arrow">→</span></a>`;
+      return `<a href="${v.lien}" target="_blank" rel="noopener"><span>${v.nom_commercial || v.problematique}</span><span class="mini-tile-arrow">→</span></a>`;
     }).join("");
   } else {
     compBlock.style.display = "none";
