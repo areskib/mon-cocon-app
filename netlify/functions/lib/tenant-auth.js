@@ -70,10 +70,46 @@ async function resolveUserIdByEmail(email) {
   return users.length ? users[0].id : null;
 }
 
+// URL du Google Sheet des cures, propre à chaque tenant : chaque conseillère a
+// sa propre copie du tableau (prix, liens panier, feedbacks, noms de cures).
+// Résolue par tenantId quand il est connu, sinon par le Host de la requête
+// (cures-data est appelée sans authentification depuis le client).
+//
+// Règle de sécurité : si le tenant est identifié mais n'a pas d'URL
+// configurée, on renvoie null (catalogue vide) — JAMAIS l'URL d'un autre
+// tenant. Le repli sur le tenant par défaut ne vaut que pour un host inconnu
+// (dev local, preview Netlify).
+async function resolveCuresCsvUrl({ tenantId, host }) {
+  if (tenantId) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/tenants?select=cures_csv_url&id=eq.${tenantId}`,
+      { headers: serviceHeaders() }
+    );
+    const rows = res.ok ? await res.json() : [];
+    return rows.length ? (rows[0].cures_csv_url || null) : null;
+  }
+
+  const cleanHost = (host || "").split(":")[0].replace(/^www\./i, "").toLowerCase();
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/tenants?select=cures_csv_url&domain=eq.${encodeURIComponent(cleanHost)}`,
+    { headers: serviceHeaders() }
+  );
+  const rows = res.ok ? await res.json() : [];
+  if (rows.length) return rows[0].cures_csv_url || null;
+
+  const fallbackRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/tenants?select=cures_csv_url&slug=eq.${FALLBACK_TENANT_SLUG}`,
+    { headers: serviceHeaders() }
+  );
+  const fallbackRows = fallbackRes.ok ? await fallbackRes.json() : [];
+  return fallbackRows.length ? (fallbackRows[0].cures_csv_url || null) : null;
+}
+
 module.exports = {
   resolveUserTenantId,
   resolveTenantByHost,
   resolveAdminAccess,
   resolveUserIdByEmail,
+  resolveCuresCsvUrl,
   FALLBACK_TENANT_SLUG
 };

@@ -25,11 +25,26 @@ function parseCSV(text) {
   return rows;
 }
 
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzd8QyWoYL9HvW7ZMYFTbfv-BF1Y430m-J0t4sCYZ8TzKuSUTkwuyDDqFNw0f4lSijJakWI1m2vZL5/pub?gid=741790958&single=true&output=csv";
+const { resolveCuresCsvUrl } = require("./lib/tenant-auth");
 
-exports.handler = async function () {
+exports.handler = async function (event) {
   try {
-    const res = await fetch(CSV_URL);
+    // Le catalogue de cures (prix, liens panier, feedbacks) est propre à chaque
+    // conseillère : on résout son Google Sheet à partir du domaine appelant.
+    // Cette fonction est appelée sans authentification, donc pas de token à
+    // exploiter — le Host est la seule source d'identification du tenant.
+    const host = (event && event.headers) ? (event.headers.host || event.headers.Host || "") : "";
+    const csvUrl = await resolveCuresCsvUrl({ host });
+    if (!csvUrl) {
+      console.error("Aucun catalogue de cures configuré pour le host:", host);
+      return {
+        statusCode: 200,
+        headers: { "Cache-Control": "no-store" },
+        body: JSON.stringify({ cures: {} })
+      };
+    }
+
+    const res = await fetch(csvUrl);
     if (!res.ok) {
       return { statusCode: 500, body: JSON.stringify({ error: "Impossible de lire le tableau des cures." }) };
     }
@@ -71,7 +86,10 @@ exports.handler = async function () {
 
     return {
       statusCode: 200,
-      headers: { "Cache-Control": "public, max-age=120" },
+      // Vary: Host — la réponse dépend maintenant du tenant, donc du domaine
+      // appelant. Sans ça, un cache partagé pourrait servir le catalogue (et
+      // les prix) d'une conseillère aux clientes d'une autre.
+      headers: { "Cache-Control": "public, max-age=120", Vary: "Host" },
       body: JSON.stringify({ cures })
     };
   } catch (e) {
