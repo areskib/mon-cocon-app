@@ -2609,13 +2609,24 @@ function contactAdvisorFromMenu(){
 function restoreSessionFromRawData(rawDataRaw){
   const data = (typeof rawDataRaw === "string") ? JSON.parse(rawDataRaw) : rawDataRaw;
 
+  // ATTENTION : ce mapping doit rester aligné sur TOUS les champs que
+  // pickCureFamily() consulte, sinon la cure recalculée à la reconnexion
+  // diffère de celle calculée juste après le questionnaire. texture,
+  // ressenti et postpartum manquaient ici alors qu'ils sont bien
+  // persistés (voir data.texture/ressenti/postpartum plus bas) : une
+  // utilisatrice avec objectif "Énergie & Vitalité" retombait sur
+  // `texture === undefined`, donc aucune cure trouvée, donc l'écran
+  // "pas de cure à te proposer" après chaque reconnexion.
   answers = {
     objectif: data.objectif,
     zones: data.zones || [],
     douleurs: data.douleurs || [],
     activite: data.activite,
     problematique: data.problematique || [],
-    temps: data.temps
+    temps: data.temps,
+    ressenti: data.ressenti || [],
+    texture: data.texture,
+    postpartum: data.postpartum
   };
 
   try{ localStorage.setItem(CYCLE_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
@@ -4084,7 +4095,10 @@ function updateBilanVisibility(){
     notStartedBlock.style.display = "none";
     startedBlock.style.display = "block";
     renderCureStartedDaily(loadCycleData() || {});
-  } else if(window.__cureValidationStatus === "validated"){
+  } else if(window.__cureValidationStatus === "validated" || window.__cureValidationStatus === "none"){
+    // "none" = aucune cure à proposer : même conteneur que "validated", mais
+    // renderCureSection() y masque le hero (et donc le tag "Cure validée")
+    // pour n'afficher que la note explicative.
     pendingBlock.style.display = "none";
     notStartedBlock.style.display = "block";
     startedBlock.style.display = "none";
@@ -4102,7 +4116,11 @@ async function renderCureSection(){
 
   if(!computedFamily){
     // cas particulier : post-partum trop récent, ou aucun signal précis (objectif "corps en général")
-    window.__cureValidationStatus = "validated";
+    // État dédié "none" : il n'y a AUCUNE cure à valider ici. Avant, ce cas
+    // était marqué "validated", ce qui faisait mentir l'état de validation —
+    // une cliente pouvait se retrouver dans la branche "cure validée" sans
+    // qu'aucune conseillère n'ait validé quoi que ce soit.
+    window.__cureValidationStatus = "none";
     updateBilanVisibility();
     document.getElementById("res-cure-hero").style.display = "none";
     document.getElementById("cure-feedback-card").style.display = "none";
