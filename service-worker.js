@@ -1,4 +1,8 @@
-const CACHE_NAME = "mon-cocon-v6";
+// v7 : purge obligatoire — les caches précédents contiennent des réponses
+// d'API Supabase mémorisées à tort (voir le handler fetch plus bas). Le
+// handler "activate" supprime tout cache dont le nom diffère, donc changer
+// cette valeur suffit à nettoyer les appareils déjà touchés.
+const CACHE_NAME = "mon-cocon-v7";
 const ASSETS_TO_CACHE = [
   "/index.html",
   "/manifest.json",
@@ -59,6 +63,22 @@ self.addEventListener("fetch", (event) => {
   // serveur. On laisse simplement le navigateur gérer ces appels nativement.
   const isApiCall = req.url.includes("/.netlify/functions/");
   if (isApiCall) {
+    return;
+  }
+
+  // TOUT ce qui n'est pas servi par notre propre origine est laissé au
+  // navigateur, sans jamais passer par le cache. C'est capital : les appels à
+  // l'API Supabase (rest/v1, auth/v1) ne sont ni du HTML ni une fonction
+  // Netlify — ils tombaient donc dans le cache-first ci-dessous et étaient
+  // mémorisés définitivement. Conséquences observées en production :
+  //   - une cure validée par la conseillère continuait d'apparaître "en
+  //     attente de validation" côté cliente, même après déconnexion, car la
+  //     première réponse "pending" était resservie depuis le cache ;
+  //   - le cache étant lié à l'APPAREIL et non au compte, la réponse obtenue
+  //     par une utilisatrice pouvait être resservie à une autre sur le même
+  //     téléphone — fuite de données entre comptes.
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) {
     return;
   }
 
