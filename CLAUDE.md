@@ -64,6 +64,20 @@ repenser.
   `period_logs`, compte `signUp`) sont venus de l'absence de cette garde.
 - **Service worker** : le mécanisme de mise à jour forcée (`reloadWhenSafe()`) ne doit jamais
   recharger la page pendant une opération critique en cours (`window.__criticalOpInProgress`).
+- **Service worker et cache des API** ⚠️ **le piège le plus coûteux à ce jour** : le handler
+  `fetch` n'excluait du cache que `/.netlify/functions/`. Les appels à l'API **Supabase**
+  (`rest/v1`, `auth/v1`) n'étant ni du HTML ni une fonction Netlify, ils tombaient dans la
+  branche cache-first et étaient mémorisés **définitivement**. Une cure validée restait
+  affichée "en attente" pour toujours (la 1re réponse `pending` était resservie depuis le
+  cache), et surtout — le cache étant lié à l'**appareil et non au compte** — la réponse d'une
+  utilisatrice pouvait être resservie à une autre sur le même téléphone. Désormais toute
+  requête **cross-origin** est laissée au navigateur sans passer par le cache
+  (`url.origin !== self.location.origin`). Deux réflexes à garder : ne jamais mettre en cache
+  autre chose que ses propres assets statiques, et **penser au cache SW avant de conclure
+  qu'un correctif de logique est inefficace** — trois correctifs corrects ont paru sans effet
+  parce que la donnée lue ne venait pas du réseau. Toute correction du SW doit s'accompagner
+  d'un bump de `CACHE_NAME` (`activate` purge les caches au nom différent), sinon les
+  appareils déjà pollués le restent.
 - **Emojis dans les images générées côté serveur** (Pillow/PDF) : les polices DejaVu n'ont pas
   de glyphes emoji → tofu boxes. Dessiner des icônes vectorielles simples à la place.
 

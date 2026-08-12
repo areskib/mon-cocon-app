@@ -938,8 +938,6 @@
           <div class="tag" style="margin-bottom:8px;">🕐 En attente de validation</div>
           <h2 style="margin:0; font-size:19px;">Cure en attente de validation</h2>
           <p style="font-size:14px; color:var(--taupe); margin-top:10px; line-height:1.6;">Ta conseillère va valider avec toi la cure la plus adaptée à ta situation lors de votre rendez-vous. 🌿</p>
-          <!-- DIAGNOSTIC TEMPORAIRE — à retirer une fois le bug de validation élucidé -->
-          <p id="cure-validation-debug" style="display:none; font-family:monospace; font-size:10px; color:#8a3b34; margin-top:12px; word-break:break-all;"></p>
         </div>
         <div class="nav-row" style="margin-top:22px;">
           <button class="btn btn-primary btn-full" onclick="contactAdvisorFromMenu()">📅 Prendre rdv avec ma conseillère</button>
@@ -4094,11 +4092,6 @@ async function checkCureValidation(family){
       .select("user_id, status, cure_family")
       .eq("user_id", currentUserId)
       .maybeSingle();
-    // DIAGNOSTIC TEMPORAIRE : trace la raison exacte d'un éventuel échec de
-    // lecture, pour l'afficher dans l'écran "en attente". À retirer ensuite.
-    window.__cureValidationDebug = error
-      ? ("erreur:" + (error.code || "?") + " " + (error.message || ""))
-      : (!data ? "aucune ligne lue" : ("lu:" + data.status + "/" + data.cure_family));
     if(error || !data) return null;
     // Garde-fou : on n'accepte jamais une ligne qui n'appartient pas au compte
     // actuellement connecté, quelle qu'en soit la raison (session en cours de
@@ -4115,13 +4108,6 @@ async function checkCureValidation(family){
 function showCureValidationPending(){
   window.__cureValidationStatus = "pending";
   updateBilanVisibility();
-  // DIAGNOSTIC TEMPORAIRE : affiche pourquoi l'écran reste en attente.
-  const dbg = document.getElementById("cure-validation-debug");
-  if(dbg){
-    dbg.textContent = "diag · calculée=" + (window.__mainCureFamily || "aucune")
-      + " · " + (window.__cureValidationDebug || "lecture non effectuée");
-    dbg.style.display = "block";
-  }
 }
 
 function showCureValidationApproved(){
