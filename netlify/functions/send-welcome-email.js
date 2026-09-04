@@ -109,6 +109,55 @@ async function getUserFromToken(accessToken) {
   return res.json();
 }
 
+/** Boîte qui reçoit l'alerte d'inscription (Scalyo, pas la conseillère). */
+const NOTIF_TO = process.env.NOTIF_TO || "projet@scalyo-ai.com";
+
+/**
+ * Prévient Scalyo qu'une nouvelle utilisatrice vient de s'inscrire.
+ *
+ * Envoyée avant le mail de bienvenue et indépendamment de lui : l'inscription
+ * a eu lieu même si le mail à l'utilisatrice échoue. Toute erreur est avalée,
+ * une alerte ratée ne doit jamais gêner une inscription.
+ */
+async function previensScalyo(user, prenom, tenant) {
+  const marque = (tenant && tenant.name) || DEFAULT_BRAND_NAME;
+  const lignes = [
+    ["Prénom", prenom || "non renseigné"],
+    ["E-mail", user.email],
+    ["Espace", marque],
+    ["Inscrite le", new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" })],
+  ];
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [NOTIF_TO],
+        reply_to: [user.email],
+        subject: `Mon Cocon — nouvelle inscrite : ${prenom || user.email} (${marque})`,
+        html: `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+                    max-width:520px;color:#4C342E;line-height:1.6">
+  <h1 style="font-size:19px;margin:0 0 16px">Nouvelle inscription sur Mon Cocon</h1>
+  <table style="border-collapse:collapse;font-size:14px">${lignes
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 16px 4px 0;color:#8a7a6f;vertical-align:top">${k}</td>
+             <td style="padding:4px 0"><strong>${v}</strong></td></tr>`
+    )
+    .join("")}</table>
+  <p style="font-size:13px;color:#8a7a6f;margin:20px 0 0">
+    Répondre à cet e-mail écrit directement à l'utilisatrice.
+  </p>
+</div>`,
+      }),
+    });
+    if (!r.ok) console.error("Alerte inscription non envoyée:", r.status, await r.text());
+  } catch (e) {
+    console.error("Alerte inscription non envoyée:", e.message);
+  }
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
@@ -145,6 +194,10 @@ exports.handler = async function (event) {
       tenant = rows[0] || null;
     }
   } catch (e) { console.error("Erreur résolution tenant (welcome email):", e); }
+
+  // L'inscription est acquise à ce stade : on alerte Scalyo avant d'envoyer le
+  // mail de bienvenue, pour être prévenu même si cet envoi-là échoue.
+  await previensScalyo(user, prenom, tenant);
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
